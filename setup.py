@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
-from io import open
+import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
@@ -21,7 +20,7 @@ test_requires = [
     'pytest-faker',
 ]
 
-with open('README.md', mode='r', encoding='utf-8') as f:
+with io.open('README.md', mode='r', encoding='utf-8') as f:
     readme = f.read()
 
 setup(
