@@ -4,7 +4,7 @@ from io import open
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '0.1.0'
+package_version = '0.1.3'
 
 requires = [
     'docopt',
