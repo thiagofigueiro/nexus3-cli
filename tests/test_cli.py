@@ -45,3 +45,27 @@ def test_repo_create_hosted(repo_format, w_policy, strict, nexus_client):
     repositories = nexus_client.repo_list()
 
     assert any(r['name'] == repo_name for r in repositories)
+
+
+@pytest.mark.parametrize(
+    'v_policy, l_policy, w_policy, strict', itertools.product(
+        list(nexuscli.cli.NexusClient.POLICIES['version']),  # v_policy
+        list(nexuscli.cli.NexusClient.POLICIES['layout']),  # l_policy
+        list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
+        ['', '--strict-content'],  # strict
+    ))
+@pytest.mark.integration
+def test_repo_create_hosted_maven(
+        v_policy, l_policy, w_policy, strict, nexus_client):
+    strict_name = strict[2:8]
+    repo_name = ('hosted-maven-{v_policy}-{l_policy}-{w_policy}'
+                 '-{strict_name}').format(**locals())
+    argv = ('repo create hosted maven {repo_name} '
+            '--write={w_policy} --layout={l_policy} --version={v_policy} '
+            '{strict}'.format(**locals())).split(' ')
+
+    nexuscli.cli.main(argv=list(filter(None, argv)))
+
+    repositories = nexus_client.repo_list()
+
+    assert any(r['name'] == repo_name for r in repositories)
