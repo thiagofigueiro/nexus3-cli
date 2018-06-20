@@ -16,6 +16,8 @@ script:
 - flake8 *.py src tests --format=pylint
 - pytest -m 'not integration'
 - "./tests/wait-for-nexus.sh && pytest -m integration"
+after_success:
+  - codecov
 deploy:
   provider: pypi
   user: thiagofigueiro

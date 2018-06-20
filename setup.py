@@ -13,6 +13,7 @@ requires = [
 ]
 
 test_requires = [
+    'codecov',
     'flake8',
     'pytest-cov',
     'pytest-helpers-namespace',
