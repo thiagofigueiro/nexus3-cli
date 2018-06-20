@@ -2,28 +2,28 @@
 """Nexus 3 CLI
 
 Usage:
-  nexus-cli.py --help, -h
-  nexus-cli.py login
-  nexus-cli.py repo create hosted maven <repo_name>
-               [--blob=<store_name>] [--version=<v_policy>]
-               [--layout=<l_policy>] [--strict-content]
-               [--write=<w_policy>]
-  nexus-cli.py repo create hosted (npm|pypi|raw|rubygems) <repo_name>
-               [--blob=<store_name>] [--write=<w_policy>] [--strict-content]
-  nexus-cli.py repo create hosted yum <repo_name>
-               [--blob=<store_name>] [--write=<w_policy>]
-               [--depth=<repo_depth>] [--strict-content]
-  nexus-cli.py repo create proxy maven <repo_name> <remote_url>
-               [--blob=<store_name>] [--version=<v_policy>]
-               [--layout=<l_policy>] [--strict-content]
-  nexus-cli.py repo create proxy (npm|pypi|raw|rubygems|yum)
-                <repo_name> <remote_url>
-               [--blob=<store_name>] [--strict-content]
-  nexus-cli.py repo list
-  nexus-cli.py repo rm <repo_name>
-  nexus-cli.py script create <script.json>
-  nexus-cli.py script list
-  nexus-cli.py script (rm|run) <script_name>
+  nexus3 --help, -h
+  nexus3 login
+  nexus3 repo create hosted maven <repo_name>
+         [--blob=<store_name>] [--version=<v_policy>]
+         [--layout=<l_policy>] [--strict-content]
+         [--write=<w_policy>]
+  nexus3 repo create hosted (npm|pypi|raw|rubygems) <repo_name>
+         [--blob=<store_name>] [--write=<w_policy>] [--strict-content]
+  nexus3 repo create hosted yum <repo_name>
+         [--blob=<store_name>] [--write=<w_policy>]
+         [--depth=<repo_depth>] [--strict-content]
+  nexus3 repo create proxy maven <repo_name> <remote_url>
+         [--blob=<store_name>] [--version=<v_policy>]
+         [--layout=<l_policy>] [--strict-content]
+  nexus3 repo create proxy (npm|pypi|raw|rubygems|yum)
+          <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content]
+  nexus3 repo list
+  nexus3 repo rm <repo_name>
+  nexus3 script create <script.json>
+  nexus3 script list
+  nexus3 script (rm|run) <script_name>
 
 Options:
   -h --help             This screen
@@ -565,8 +565,8 @@ def cmd_repo(args):
         raise NotImplementedError
 
 
-def main():
-    arguments = docopt(__doc__)
+def main(argv=None):
+    arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
         do_login()
         get_client().repo_list()

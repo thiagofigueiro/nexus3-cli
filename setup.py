@@ -45,8 +45,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 2.7',
     ],
-    packages=['nexuscli'],
-    package_dir={'nexuscli': 'nexuscli'},
+    packages=find_packages('src'),
+    # packages=['nexuscli'],
+    package_dir={'': 'src'},
     entry_points={
         'console_scripts': [
             'nexus3=nexuscli.cli:main',
