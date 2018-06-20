@@ -23,4 +23,4 @@ deploy:
   on:
     tags: true
   distributions: "sdist bdist_wheel"
-  condition: $TRAVIS_PYTHON_VERSION = "3.6"
+  condition: "$TRAVIS_PYTHON_VERSION = 3.6"
