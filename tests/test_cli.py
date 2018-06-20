@@ -69,3 +69,23 @@ def test_repo_create_hosted_maven(
     repositories = nexus_client.repo_list()
 
     assert any(r['name'] == repo_name for r in repositories)
+
+
+@pytest.mark.parametrize(
+    'w_policy, depth, strict', itertools.product(
+        list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
+        list(range(6)),  # depth
+        ['', '--strict-content'],  # strict
+    ))
+@pytest.mark.integration
+def test_repo_create_hosted_yum(w_policy, depth, strict, nexus_client):
+    strict_name = strict[2:8]
+    repo_name = 'hosted-yum-{w_policy}-{depth}-{strict_name}'.format(**locals())
+    argv = ('repo create hosted yum {repo_name} --write={w_policy} '
+            '--depth={depth} {strict}'.format(**locals())).split(' ')
+
+    nexuscli.cli.main(argv=list(filter(None, argv)))
+
+    repositories = nexus_client.repo_list()
+
+    assert any(r['name'] == repo_name for r in repositories)
