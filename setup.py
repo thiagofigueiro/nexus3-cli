@@ -29,6 +29,7 @@ setup(
     name=package_name,
     version=package_version,
     description='A python-based CLI for Sonatype Nexus OSS 3',
+    url='https://github.com/thiagofigueiro/nexus3-cli',
     long_description=readme,
     install_requires=requires,
     tests_require=test_requires,
@@ -44,7 +45,6 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     packages=find_packages('src'),
-    # packages=['nexuscli'],
     package_dir={'': 'src'},
     entry_points={
         'console_scripts': [
