@@ -19,8 +19,6 @@ test_requires = [
     'pytest-helpers-namespace',
     'pytest-mock',
     'pytest-faker',
-    'twine>=1.5.0',
-    'wheel',
 ]
 
 with open('README.md', mode='r', encoding='utf-8') as f:
