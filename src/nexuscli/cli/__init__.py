@@ -213,8 +213,8 @@ def _input(prompt, default=None):
     value = real_input('{prompt} ({default}):'.format(**locals()))
     if value:
         return value
-    else:
-        return default
+
+    return default
 
 
 def do_login():
@@ -513,8 +513,7 @@ def args_to_repo_format(args):
         if args.get(format_name) is True:
             if format_name == 'pypi':
                 return 'PyPi'  # bloody bastards 🤬
-            else:
-                return format_name.title()
+            return format_name.title()
     # Just in case:
     raise AttributeError(
         'User arguments did not match a recognised format: {}'.format(

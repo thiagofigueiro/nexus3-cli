@@ -28,12 +28,12 @@ def test_repo_list(mocker):
 
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict', itertools.product(
-        ['npm', 'pypi', 'raw', 'rubygems', 'yum'],  # format
+        ['npm', 'pypi', 'raw', 'rubygems'],  # format
         list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted(repo_format, w_policy, strict, nexus_client):
+def test_repo_create_hosted(repo_format, w_policy, strict):
     strict_name = strict[2:8]
     repo_name = 'hosted-{repo_format}-{w_policy}-{strict_name}'.format(
         **locals())
@@ -77,5 +77,56 @@ def test_repo_create_hosted_yum(w_policy, depth, strict):
     argv = pytest.helpers.create_argv(
         'repo create hosted yum {repo_name} --write={w_policy} '
         '--depth={depth} {strict}', **locals())
+
+    assert pytest.helpers.create_and_inspect(argv, repo_name)
+
+
+@pytest.mark.parametrize(
+    'repo_format, strict', itertools.product(
+        ['npm', 'pypi', 'raw', 'rubygems', 'yum'],  # format
+        ['', '--strict-content'],  # strict
+    ))
+@pytest.mark.integration
+def test_repo_create_proxy(repo_format, strict, faker):
+    """
+    Test all variations of this command:
+
+    nexus3 repo create proxy (npm|pypi|raw|rubygems|yum)
+           <repo_name> <remote_url>
+           [--blob=<store_name>] [--strict-content]
+    """
+    strict_name = strict[2:8]
+    remote_url = faker.uri()
+    repo_name = 'proxy-{repo_format}-{strict_name}'.format(
+        **locals())
+    argv = pytest.helpers.create_argv(
+        'repo create proxy {repo_format} {repo_name} {remote_url} '
+        '{strict}', **locals())
+
+    assert pytest.helpers.create_and_inspect(argv, repo_name)
+
+
+@pytest.mark.parametrize(
+    'v_policy, l_policy, strict', itertools.product(
+        list(nexuscli.cli.NexusClient.POLICIES['version']),  # v_policy
+        list(nexuscli.cli.NexusClient.POLICIES['layout']),  # l_policy
+        ['', '--strict-content'],  # strict
+    ))
+@pytest.mark.integration
+def test_repo_create_proxy_maven(v_policy, l_policy, strict, faker):
+    """
+    Test all variations of this command:
+
+    nexus3 repo create proxy maven <repo_name> <remote_url>
+           [--blob=<store_name>] [--version=<v_policy>]
+           [--layout=<l_policy>] [--strict-content]
+    """
+    strict_name = strict[2:8]
+    remote_url = faker.uri()
+    repo_name = 'proxy-maven-{v_policy}-{l_policy}-{strict_name}'.format(
+        **locals())
+    argv = pytest.helpers.create_argv(
+        'repo create proxy maven {repo_name} {remote_url} '
+        '--layout={l_policy} --version={v_policy} {strict}', **locals())
 
     assert pytest.helpers.create_and_inspect(argv, repo_name)
