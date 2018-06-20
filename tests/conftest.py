@@ -39,3 +39,17 @@ def docopt_args(faker):
 @pytest.fixture(scope='session')
 def nexus_client():
     return nexuscli.cli.get_client()
+
+
+@pytest.helpers.register
+def create_and_inspect(argv, expected_repo_name):
+    nexuscli.cli.main(argv=list(filter(None, argv)))
+    repositories = nexus_client().repo_list()
+
+    return any(r['name'] == expected_repo_name for r in repositories)
+
+
+@pytest.helpers.register
+def create_argv(argv_string, **kwargs):
+    argv = argv_string.format(**kwargs).split(' ')
+    return list(filter(None, argv))

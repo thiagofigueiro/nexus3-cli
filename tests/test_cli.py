@@ -37,14 +37,11 @@ def test_repo_create_hosted(repo_format, w_policy, strict, nexus_client):
     strict_name = strict[2:8]
     repo_name = 'hosted-{repo_format}-{w_policy}-{strict_name}'.format(
         **locals())
-    argv = ('repo create hosted {repo_format} {repo_name} '
-            '--write={w_policy} {strict}'.format(**locals())).split(' ')
+    argv = pytest.helpers.create_argv(
+        'repo create hosted {repo_format} {repo_name} --write={w_policy} '
+        '{strict}', **locals())
 
-    nexuscli.cli.main(argv=list(filter(None, argv)))
-
-    repositories = nexus_client.repo_list()
-
-    assert any(r['name'] == repo_name for r in repositories)
+    assert pytest.helpers.create_and_inspect(argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -55,20 +52,15 @@ def test_repo_create_hosted(repo_format, w_policy, strict, nexus_client):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted_maven(
-        v_policy, l_policy, w_policy, strict, nexus_client):
+def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
     strict_name = strict[2:8]
     repo_name = ('hosted-maven-{v_policy}-{l_policy}-{w_policy}'
                  '-{strict_name}').format(**locals())
-    argv = ('repo create hosted maven {repo_name} '
-            '--write={w_policy} --layout={l_policy} --version={v_policy} '
-            '{strict}'.format(**locals())).split(' ')
+    argv = pytest.helpers.create_argv(
+        'repo create hosted maven {repo_name} --write={w_policy} '
+        '--layout={l_policy} --version={v_policy} {strict}', **locals())
 
-    nexuscli.cli.main(argv=list(filter(None, argv)))
-
-    repositories = nexus_client.repo_list()
-
-    assert any(r['name'] == repo_name for r in repositories)
+    assert pytest.helpers.create_and_inspect(argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -78,14 +70,12 @@ def test_repo_create_hosted_maven(
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted_yum(w_policy, depth, strict, nexus_client):
+def test_repo_create_hosted_yum(w_policy, depth, strict):
     strict_name = strict[2:8]
-    repo_name = 'hosted-yum-{w_policy}-{depth}-{strict_name}'.format(**locals())
-    argv = ('repo create hosted yum {repo_name} --write={w_policy} '
-            '--depth={depth} {strict}'.format(**locals())).split(' ')
+    repo_name = 'hosted-yum-{w_policy}-{depth}-{strict_name}'.format(
+        **locals())
+    argv = pytest.helpers.create_argv(
+        'repo create hosted yum {repo_name} --write={w_policy} '
+        '--depth={depth} {strict}', **locals())
 
-    nexuscli.cli.main(argv=list(filter(None, argv)))
-
-    repositories = nexus_client.repo_list()
-
-    assert any(r['name'] == repo_name for r in repositories)
+    assert pytest.helpers.create_and_inspect(argv, repo_name)
