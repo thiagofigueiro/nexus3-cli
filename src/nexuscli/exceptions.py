@@ -1,0 +1,2 @@
+class NexusClientConfigurationNotFound(Exception):
+    pass
