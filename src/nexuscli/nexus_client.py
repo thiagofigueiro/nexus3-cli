@@ -7,46 +7,19 @@ try:
 except ImportError:
     from urlparse import urljoin      # Python 2
 
-from nexuscli.exceptions import NexusClientConfigurationNotFound
+from .exceptions import NexusClientConfigurationNotFound
 
 
 class NexusClient(object):
     # Relevant javadocs
     # Script API:
     # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/plugins/nexus-script-plugin/3.12.1-01/nexus-script-plugin-3.12.1-01-javadoc.jar
-    # LayoutPolicy, VersionPolicy
-    # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/plugins/nexus-repository-maven/3.12.1-01/nexus-repository-maven-3.12.1-01-javadoc.jar
-    # WritePolicy
-    # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/nexus-repository/3.0.2-02/nexus-repository-3.0.2-02-javadoc.jar
     # REST API doc:
     # https://help.sonatype.com/repomanager3/rest-and-integration-api
     CONFIG_PATH = '~/.nexus-cli'
     DEFAULT_URL = 'http://localhost:8081'
     DEFAULT_USER = 'admin'
     DEFAULT_PASS = 'admin123'
-
-    POLICY_IMPORTS = {
-        'layout': ['org.sonatype.nexus.repository.maven.LayoutPolicy'],
-        'version': ['org.sonatype.nexus.repository.maven.VersionPolicy'],
-        'write': ['org.sonatype.nexus.repository.storage.WritePolicy'],
-    }
-
-    POLICIES = {
-        'layout': {
-            'permissive': 'LayoutPolicy.PERMISSIVE',
-            'strict': 'LayoutPolicy.STRICT',
-        },
-        'version': {
-            'release': 'VersionPolicy.RELEASE',
-            'snapshot': 'VersionPolicy.SNAPSHOT',
-            'mixed': 'VersionPolicy.MIXED',
-        },
-        'write': {
-            'allow': 'WritePolicy.ALLOW',
-            'allow_once': 'WritePolicy.ALLOW_ONCE',
-            'deny': 'WritePolicy.DENY',
-        },
-    }
 
     def __init__(self, url=None, user=None, password=None, config=None):
         self.auth = None

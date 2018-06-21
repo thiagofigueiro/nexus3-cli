@@ -51,6 +51,7 @@ import sys
 from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
 
+from nexuscli import nexus_repository
 from nexuscli.exceptions import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
 
@@ -228,12 +229,12 @@ def script_proxy(parameters):
 
 def nexus_policy(policy_name, user_option):
     if user_option == '__imports':
-        return NexusClient.POLICY_IMPORTS[policy_name]
+        return nexus_repository.POLICY_IMPORTS[policy_name]
 
-    policy = NexusClient.POLICIES[policy_name].get(user_option)
+    policy = nexus_repository.POLICIES[policy_name].get(user_option)
     if policy is None:
         raise AttributeError('Valid options for --{} are: {}'.format(
-            policy_name, list(NexusClient.POLICIES[policy_name])))
+            policy_name, list(nexus_repository.POLICIES[policy_name])))
     return policy
 
 
@@ -355,6 +356,7 @@ def cmd_repo_do_create(
         nexus_client, repo_params, repo_type='hosted', repo_format=None):
     script_method = globals()[script_method_name(repo_type, repo_format)]
     script_content, script_name = script_method(repo_params)
+
     nexus_client.script_create(script_content)
     nexus_client.script_run(script_name)
     nexus_client.script_delete(script_name)
