@@ -1,6 +1,7 @@
 import itertools
 import pytest
 
+from nexuscli import nexus_repository
 import nexuscli
 
 
@@ -29,7 +30,7 @@ def test_repo_list(mocker):
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict', itertools.product(
         ['npm', 'pypi', 'raw', 'rubygems'],  # format
-        list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
+        list(nexus_repository.POLICIES['write']),  # w_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
@@ -46,9 +47,9 @@ def test_repo_create_hosted(repo_format, w_policy, strict):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, w_policy, strict', itertools.product(
-        list(nexuscli.cli.NexusClient.POLICIES['version']),  # v_policy
-        list(nexuscli.cli.NexusClient.POLICIES['layout']),  # l_policy
-        list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
+        list(nexus_repository.POLICIES['version']),  # v_policy
+        list(nexus_repository.POLICIES['layout']),  # l_policy
+        list(nexus_repository.POLICIES['write']),  # w_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
@@ -65,7 +66,7 @@ def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
 
 @pytest.mark.parametrize(
     'w_policy, depth, strict', itertools.product(
-        list(nexuscli.cli.NexusClient.POLICIES['write']),  # w_policy
+        list(nexus_repository.POLICIES['write']),  # w_policy
         list(range(6)),  # depth
         ['', '--strict-content'],  # strict
     ))
@@ -108,8 +109,8 @@ def test_repo_create_proxy(repo_format, strict, faker):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, strict', itertools.product(
-        list(nexuscli.cli.NexusClient.POLICIES['version']),  # v_policy
-        list(nexuscli.cli.NexusClient.POLICIES['layout']),  # l_policy
+        list(nexus_repository.POLICIES['version']),  # v_policy
+        list(nexus_repository.POLICIES['layout']),  # l_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration

@@ -45,159 +45,16 @@ Commands:
   script run    Run the existing <script_name>
 """
 import getpass
-import io
 import json
-import py
-import requests
 import sys
 
 from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
 
-try:
-    from urllib.parse import urljoin  # Python 3
-except ImportError:
-    from urlparse import urljoin      # Python 2
-
-
-class NexusClientConfigurationNotFound(Exception):
-    pass
-
-
-class NexusClient(object):
-    # Relevant javadocs
-    # Script API:
-    # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/plugins/nexus-script-plugin/3.12.1-01/nexus-script-plugin-3.12.1-01-javadoc.jar
-    # LayoutPolicy, VersionPolicy
-    # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/plugins/nexus-repository-maven/3.12.1-01/nexus-repository-maven-3.12.1-01-javadoc.jar
-    # WritePolicy
-    # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/nexus-repository/3.0.2-02/nexus-repository-3.0.2-02-javadoc.jar
-    # REST API doc:
-    # https://help.sonatype.com/repomanager3/rest-and-integration-api
-    CONFIG_PATH = '~/.nexus-cli'
-    DEFAULT_URL = 'http://localhost:8081'
-    DEFAULT_USER = 'admin'
-    DEFAULT_PASS = 'admin123'
-
-    POLICY_IMPORTS = {
-        'layout': ['org.sonatype.nexus.repository.maven.LayoutPolicy'],
-        'version': ['org.sonatype.nexus.repository.maven.VersionPolicy'],
-        'write': ['org.sonatype.nexus.repository.storage.WritePolicy'],
-    }
-
-    POLICIES = {
-        'layout': {
-            'permissive': 'LayoutPolicy.PERMISSIVE',
-            'strict': 'LayoutPolicy.STRICT',
-        },
-        'version': {
-            'release': 'VersionPolicy.RELEASE',
-            'snapshot': 'VersionPolicy.SNAPSHOT',
-            'mixed': 'VersionPolicy.MIXED',
-        },
-        'write': {
-            'allow': 'WritePolicy.ALLOW',
-            'allow_once': 'WritePolicy.ALLOW_ONCE',
-            'deny': 'WritePolicy.DENY',
-        },
-    }
-
-    def __init__(self, url=None, user=None, password=None, config=None):
-        self.auth = None
-        self.base_url = None
-        self._api_version = 'v1'
-        self.config = config or NexusClient.CONFIG_PATH
-
-        self.set_config(
-            user or NexusClient.DEFAULT_USER,
-            password or NexusClient.DEFAULT_PASS,
-            url or NexusClient.DEFAULT_URL)
-
-    def set_config(self, user, password, base_url):
-        self.auth = (user, password)
-        self.base_url = base_url
-
-    @property
-    def rest_url(self):
-        url = urljoin(self.base_url, '/service/rest/')
-        return urljoin(url, self._api_version + '/')
-
-    def write_config(self):
-        nexus_config = py.path.local(self.config, expanduser=True)
-        nexus_config.ensure()
-        nexus_config.chmod(0o600)
-        with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
-            # If this looks dumb it's because it needs to work with Python 2
-            fh.write(str(
-                json.dumps({
-                    'nexus_user': self.auth[0],
-                    'nexus_pass': self.auth[1],
-                    'nexus_url': self.base_url,
-                }, ensure_ascii=False)
-            ))
-
-    def read_config(self):
-        nexus_config = py.path.local(self.config, expanduser=True)
-        try:
-            with nexus_config.open(mode='r', encoding='utf-8') as fh:
-                config = json.load(fh)
-        except py.error.ENOENT:
-            raise NexusClientConfigurationNotFound
-
-        self.set_config(
-            config['nexus_user'], config['nexus_pass'], config['nexus_url'])
-
-    def _request(self, method, endpoint, **kwargs):
-        url = urljoin(self.rest_url, endpoint)
-        response = requests.request(
-            method=method, auth=self.auth, url=url, verify=False, **kwargs)
-
-        if response.status_code == 401:
-            raise AttributeError('Invalid credentials')
-
-        return response
-
-    def _get(self, endpoint):
-        return self._request('get', endpoint)
-
-    def _post(self, endpoint, **kwargs):
-        return self._request('post', endpoint, **kwargs)
-
-    def _delete(self, endpoint, **kwargs):
-        return self._request('delete', endpoint, **kwargs)
-
-    def script_list(self):
-        resp = self._get('script')
-        if resp.status_code != 200:
-            raise RuntimeError(resp.content)
-
-        return resp.json()
-
-    def script_create(self, script_content):
-        resp = self._post('script', json=script_content)
-        if resp.status_code != 204:
-            raise RuntimeError(resp.content)
-
-    def script_run(self, script_name):
-        headers = {'content-type': 'text/plain'}
-        endpoint = 'script/{}/run'.format(script_name)
-        resp = self._post(endpoint, headers=headers, data='')
-        if resp.status_code != 200:
-            raise RuntimeError(resp.content)
-
-    def script_delete(self, script_name):
-        endpoint = 'script/{}'.format(script_name)
-        resp = self._delete(endpoint)
-        if resp.status_code != 204:
-            raise RuntimeError(resp.reason)
-
-    def repo_list(self):
-        self._api_version = 'beta'
-        resp = self._get('repositories')
-        if resp.status_code == 200:
-            return resp.json()
-        else:
-            raise RuntimeError(resp.content)
+from nexuscli import nexus_repository
+from nexuscli.exception import NexusClientConfigurationNotFound
+from nexuscli.nexus_client import NexusClient
+from nexuscli.nexus_script import script_method_object
 
 
 def _input(prompt, default=None):
@@ -284,101 +141,14 @@ def cmd_repo_do_list(nexus_client):
             repo['name'], repo['format'], repo['type'], repo['url']))
 
 
-def script(script_name, imports, create_statement=None):
-    script_ = {
-        'type': 'groovy',
-        'name': script_name,
-        'content': '{imports}\n{create_statement}\n'.format(**locals()),
-    }
-    return script_, script_name
-
-
-def script_imports(import_list):
-    import_list = import_list or []
-    imports = ''
-    for import_ in import_list:
-        imports += 'import {};\n'.format(import_)
-    return imports
-
-
-def script_common(parameters):
-    script_name = 'create_{}'.format(parameters['name'])
-    imports = script_imports(parameters.get('__imports', []))
-    return script_name, imports
-
-
-def script_hosted_maven(maven_parameters):
-    create_statement = ("{__method}("
-                        "'{name}', "
-                        "'{blobStoreName}', "
-                        "{strictContentTypeValidation}, "
-                        "{versionPolicy}, "
-                        "{writePolicy}, "
-                        "{layoutPolicy});".format(**maven_parameters))
-
-    return script(
-        *script_common(maven_parameters), create_statement=create_statement)
-
-
-def script_proxy_maven(maven_parameters):
-    create_statement = ("{__method}("
-                        "'{name}', "
-                        "'{remoteUrl}', "
-                        "'{blobStoreName}', "
-                        "{strictContentTypeValidation}, "
-                        "{versionPolicy}, "
-                        "{layoutPolicy});".format(**maven_parameters))
-
-    return script(
-        *script_common(maven_parameters), create_statement=create_statement)
-
-
-def script_hosted_yum(parameters):
-    create_statement = ("{__method}("
-                        "'{name}', "
-                        "'{blobStoreName}', "
-                        "{strictContentTypeValidation}, "
-                        "{writePolicy}, "
-                        "{depth});".format(**parameters))
-
-    return script(
-        *script_common(parameters), create_statement=create_statement)
-
-
-def script_proxy_yum(parameters):
-    return script_proxy(parameters)
-
-
-def script_hosted(parameters):
-    create_statement = ("{__method}("
-                        "'{name}', "
-                        "'{blobStoreName}', "
-                        "{strictContentTypeValidation}, "
-                        "{writePolicy});".format(**parameters))
-
-    return script(
-        *script_common(parameters), create_statement=create_statement)
-
-
-def script_proxy(parameters):
-    create_statement = ("{__method}("
-                        "'{name}', "
-                        "'{remoteUrl}', "
-                        "'{blobStoreName}', "
-                        "{strictContentTypeValidation});".format(**parameters))
-
-    return script(
-        *script_common(parameters), create_statement=create_statement)
-
-
 def nexus_policy(policy_name, user_option):
     if user_option == '__imports':
-        return NexusClient.POLICY_IMPORTS[policy_name]
+        return nexus_repository.POLICY_IMPORTS[policy_name]
 
-    policy = NexusClient.POLICIES[policy_name].get(user_option)
+    policy = nexus_repository.POLICIES[policy_name].get(user_option)
     if policy is None:
         raise AttributeError('Valid options for --{} are: {}'.format(
-            policy_name, list(NexusClient.POLICIES[policy_name])))
+            policy_name, list(nexus_repository.POLICIES[policy_name])))
     return policy
 
 
@@ -489,17 +259,11 @@ def args_to_repo_params_proxy(args):
     return repo_params
 
 
-def script_method_name(repo_type, repo_format):
-    method_name_tokens = ['script', repo_type]
-    if repo_format is not None:
-        method_name_tokens.append(repo_format)
-    return '_'.join(method_name_tokens)
-
-
 def cmd_repo_do_create(
         nexus_client, repo_params, repo_type='hosted', repo_format=None):
-    script_method = globals()[script_method_name(repo_type, repo_format)]
+    script_method = script_method_object(repo_type, repo_format)
     script_content, script_name = script_method(repo_params)
+
     nexus_client.script_create(script_content)
     nexus_client.script_run(script_name)
     nexus_client.script_delete(script_name)
