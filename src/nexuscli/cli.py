@@ -52,7 +52,7 @@ from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
 
 from nexuscli import nexus_repository
-from nexuscli.exceptions import NexusClientConfigurationNotFound
+from nexuscli.exception import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_script import script_method_object
 

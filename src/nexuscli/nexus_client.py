@@ -7,7 +7,7 @@ try:
 except ImportError:
     from urlparse import urljoin      # Python 2
 
-from .exceptions import NexusClientConfigurationNotFound
+from . import exception
 
 
 class NexusClient(object):
@@ -61,7 +61,7 @@ class NexusClient(object):
             with nexus_config.open(mode='r', encoding='utf-8') as fh:
                 config = json.load(fh)
         except py.error.ENOENT:
-            raise NexusClientConfigurationNotFound
+            raise exception.NexusClientConfigurationNotFound
 
         self.set_config(
             config['nexus_user'], config['nexus_pass'], config['nexus_url'])
@@ -72,7 +72,8 @@ class NexusClient(object):
             method=method, auth=self.auth, url=url, verify=False, **kwargs)
 
         if response.status_code == 401:
-            raise AttributeError('Invalid credentials')
+            raise exception.NexusClientInvalidCredentials(
+                'Try running `nexus3 login`')
 
         return response
 
@@ -88,27 +89,27 @@ class NexusClient(object):
     def script_list(self):
         resp = self._get('script')
         if resp.status_code != 200:
-            raise RuntimeError(resp.content)
+            raise exception.NexusClientAPIError(resp.content)
 
         return resp.json()
 
     def script_create(self, script_content):
         resp = self._post('script', json=script_content)
         if resp.status_code != 204:
-            raise RuntimeError(resp.content)
+            raise exception.NexusClientAPIError(resp.content)
 
     def script_run(self, script_name):
         headers = {'content-type': 'text/plain'}
         endpoint = 'script/{}/run'.format(script_name)
         resp = self._post(endpoint, headers=headers, data='')
         if resp.status_code != 200:
-            raise RuntimeError(resp.content)
+            raise exception.NexusClientAPIError(resp.content)
 
     def script_delete(self, script_name):
         endpoint = 'script/{}'.format(script_name)
         resp = self._delete(endpoint)
         if resp.status_code != 204:
-            raise RuntimeError(resp.reason)
+            raise exception.NexusClientAPIError(resp.reason)
 
     def repo_list(self):
         self._api_version = 'beta'
@@ -116,4 +117,4 @@ class NexusClient(object):
         if resp.status_code == 200:
             return resp.json()
         else:
-            raise RuntimeError(resp.content)
+            raise exception.NexusClientAPIError(resp.content)
