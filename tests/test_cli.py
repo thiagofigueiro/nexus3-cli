@@ -1,8 +1,8 @@
 import itertools
 import pytest
 
-from nexuscli import nexus_repository
 import nexuscli
+from nexuscli import nexus_repository
 
 
 def test_login(mocker):
@@ -131,3 +131,14 @@ def test_repo_create_proxy_maven(v_policy, l_policy, strict, faker):
         '--layout={l_policy} --version={v_policy} {strict}', **locals())
 
     assert pytest.helpers.create_and_inspect(argv, repo_name)
+
+
+@pytest.mark.integration
+def test_list(faker):
+    repo_name = faker.pystr()
+    argv_create = pytest.helpers.create_argv(
+        'repo create hosted raw {repo_name}', **locals())
+    argv_list = pytest.helpers.create_argv('list {repo_name}', **locals())
+
+    assert pytest.helpers.create_and_inspect(argv_create, repo_name)
+    assert nexuscli.cli.main(argv=list(filter(None, argv_list))) is None

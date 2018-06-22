@@ -4,6 +4,7 @@
 Usage:
   nexus3 --help, -h
   nexus3 login
+  nexus3 (list|ls) <repository_path>
   nexus3 repo create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
@@ -36,6 +37,7 @@ Options:
 
 Commands:
   login         Test login and save credentials to ~/.nexus-cli
+  list          List all files within a path in the repository
   repo create   Create a repository using the format and options provided
   repo list     List all repositories available on the server
   repo rm       Not implemented; please use Nexus Web UI to remove <repo_name>
@@ -47,6 +49,7 @@ Commands:
 import getpass
 import json
 import sys
+import types
 
 from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
@@ -328,6 +331,25 @@ def cmd_repo(args):
         raise NotImplementedError
 
 
+def cmd_list(args):
+    """
+    Performs the `rekt ar search` command using the configured artefact
+    repository service.
+    """
+    nexus_client = get_client()
+    repository_path = args['<repository_path>']
+    artefact_list = nexus_client.list(repository_path)
+
+    # FIXME: is types.GeneratorType still used?
+    if isinstance(artefact_list, types.GeneratorType) \
+            or isinstance(artefact_list, list):
+        for artefact in iter(artefact_list):
+            print(artefact)
+        return 0
+    else:
+        return 1
+
+
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
@@ -337,5 +359,7 @@ def main(argv=None):
         cmd_script(arguments)
     elif arguments.get('repo'):
         cmd_repo(arguments)
+    elif arguments.get('list') or arguments.get('ls'):
+        cmd_list(arguments)
     else:
         raise NotImplementedError
