@@ -8,3 +8,11 @@ class NexusClientConfigurationNotFound(Exception):
 
 class NexusClientInvalidCredentials(Exception):
     pass
+
+
+class NexusClientInvalidRepositoryPath(Exception):
+    pass
+
+
+class NexusClientDownloadError(Exception):
+    pass
