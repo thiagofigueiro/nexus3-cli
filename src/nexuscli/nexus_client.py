@@ -29,6 +29,8 @@ class NexusClient(object):
     Attributes:
         base_url (str): as per url argument.
         config_path (str): as per arguments.
+        repositories (list): list of repositories on Nexus service. See
+            :py:meth:`refresh_repositories` for format.
     """
     CONFIG_PATH = '~/.nexus-cli'
     DEFAULT_URL = 'http://localhost:8081'
@@ -38,6 +40,7 @@ class NexusClient(object):
     def __init__(self, url=None, user=None, password=None, config_path=None):
         self.base_url = None
         self.config_path = config_path or NexusClient.CONFIG_PATH
+        self.repositories = None
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
@@ -47,6 +50,7 @@ class NexusClient(object):
             user or NexusClient.DEFAULT_USER,
             password or NexusClient.DEFAULT_PASS,
             url or NexusClient.DEFAULT_URL)
+        self.refresh_repositories()
 
     def set_config(self, user, password, base_url):
         self._auth = (user, password)
@@ -274,3 +278,25 @@ class NexusClient(object):
             directory = None
 
         return repository, directory, filename
+
+    def refresh_repositories(self):
+        """
+        Refresh local list of repositories with latest from service.
+
+        >>> [
+        >>>     {
+        >>>         'format': 'raw',
+        >>>         'name': 'myraw',
+        >>>         'type': 'hosted',
+        >>>         'url': 'http://localhost:8081/repository/myraw'
+        >>>     },
+        >>>     # (...)
+        >>> ]
+        """
+        self._api_version = 'beta'
+        response = self._get('repositories')
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(response.content)
+
+        self.repositories = response.json()
+        self._api_version = 'v1'

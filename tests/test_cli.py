@@ -7,12 +7,12 @@ from nexuscli import nexus_repository
 
 def test_login(mocker):
     mocker.patch('nexuscli.cli.do_login')
-    mocker.patch('nexuscli.cli.get_client')
+    mocker.patch('nexuscli.cli.NexusClient')
 
     nexuscli.cli.main(argv=['login'])
 
     nexuscli.cli.do_login.assert_called_once()
-    nexuscli.cli.get_client.assert_called_once()
+    nexuscli.cli.NexusClient.assert_called_once()
 
 
 def test_repo_list(mocker):

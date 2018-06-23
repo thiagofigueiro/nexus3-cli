@@ -2,7 +2,6 @@
 import pytest
 
 from nexuscli import exception
-from nexuscli.nexus_client import NexusClient
 
 
 @pytest.mark.parametrize(
@@ -20,10 +19,9 @@ from nexuscli.nexus_client import NexusClient
         ('repo/file', 'repo', None, 'file'),
     ]
 )
-def test_split_component_path(component_path, x_repo, x_dir, x_file):
-    nexus = NexusClient()
-
-    repository, directory, filename = nexus.split_component_path(
+def test_split_component_path(
+        component_path, x_repo, x_dir, x_file, nexus_mock_client):
+    repository, directory, filename = nexus_mock_client.split_component_path(
         component_path)
 
     assert repository == x_repo
@@ -38,10 +36,35 @@ def test_split_component_path(component_path, x_repo, x_dir, x_file):
         ('./', 'does not contain a repository'),
     ]
 )
-def test_split_component_path_errors(component_path, x_error):
-    nexus = NexusClient()
-
+def test_split_component_path_errors(
+        component_path, x_error, nexus_mock_client):
     with pytest.raises(exception.NexusClientInvalidRepositoryPath) as e:
-        nexus.split_component_path(component_path)
+        nexus_mock_client.split_component_path(component_path)
 
     assert x_error in str(e.value)
+
+
+def test_refresh_repositories(nexus_mock_client):
+    """
+    Ensure the method retrieves latest repositories and sets the class
+    attribute.
+    """
+    nexus_mock_client.refresh_repositories()
+    x_repositories = nexus_mock_client._request.return_value._json
+
+    nexus_mock_client._request.assert_called_with('get', 'repositories')
+    assert nexus_mock_client.repositories == x_repositories
+
+
+def test_refresh_repositories_error(nexus_mock_client):
+    """
+    Ensure the method retrieves latest repositories and sets the class
+    attribute.
+    """
+    nexus_mock_client._request.return_value.status_code = 400
+    nexus_mock_client.repositories = None
+
+    with pytest.raises(exception.NexusClientAPIError):
+        nexus_mock_client.refresh_repositories()
+
+    assert nexus_mock_client.repositories is None

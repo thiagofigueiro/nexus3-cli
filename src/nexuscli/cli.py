@@ -354,7 +354,7 @@ def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
         do_login()
-        get_client().repo_list()
+        NexusClient()
     elif arguments.get('script'):
         cmd_script(arguments)
     elif arguments.get('repo'):
