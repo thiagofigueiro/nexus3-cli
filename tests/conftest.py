@@ -100,3 +100,38 @@ def file_upload_args(faker):
     x_dst_dir = faker.uri_path()
 
     return x_src_file, x_repo_name, x_dst_dir, x_dst_file
+
+
+@pytest.helpers.register
+def nexus_repository(name, format_):
+    return {
+        'name': name,
+        'format': format_,
+    }
+
+
+@pytest.fixture
+def nexus_mock_client(mocker, faker):
+    """A nexus_client with the request method mocked"""
+    class ResponseMock:
+        def __init__(self):
+            self.status_code = 200
+            self.content = faker.sentence()
+            self.reason = faker.sentence()
+            # get ready for refresh_repositories
+            self._json = [
+                nexus_repository(
+                    name=faker.pystr(),
+                    format_=faker.random.choice(
+                        ['pypi', 'nuget', 'raw', 'yum', 'rubygems'])
+                )
+                for _ in range(faker.random_int(1, 10))
+            ]
+
+        def json(self):
+            return self._json
+
+    mocker.patch('nexuscli.nexus_client.NexusClient._request',
+                 return_value=ResponseMock())
+
+    return nexuscli.nexus_client.NexusClient()

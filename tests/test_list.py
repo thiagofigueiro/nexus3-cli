@@ -1,7 +1,6 @@
 import pytest
 
 import nexuscli
-from nexuscli.nexus_client import NexusClient
 
 
 @pytest.mark.parametrize(
@@ -20,27 +19,26 @@ from nexuscli.nexus_client import NexusClient
         ('repo/dir/sub/',  ['file', 'dir/file', 'dir/sub/file'],       1),
     ]
 )
-def test_list(
-        repository_path, response_artefacts, x_count, mocker):
+def test_list(repository_path, response_artefacts, x_count,
+              mocker, nexus_mock_client):
     """
     Given a repository_path and a response from the service, ensure that the
     method returns the expected number of files.
     """
     raw_response = pytest.helpers.nexus_raw_response(
         response_artefacts, repository_path)
-
-    nexus = NexusClient()
-    nexus._get_paginated = mocker.Mock(return_value=raw_response)
+    nexus_mock_client._get_paginated = mocker.Mock(return_value=raw_response)
 
     artefacts = []
-    for artefact in nexus.list(repository_path):
+    for artefact in nexus_mock_client.list(repository_path):
         artefacts.append(artefact)
 
     assert len(artefacts) == x_count
 
 
 @pytest.mark.parametrize('x_partial', [True, False])
-def test_list_args(x_partial, file_upload_args, mocker, faker):
+def test_list_args(x_partial,
+                   file_upload_args, mocker, faker, nexus_mock_client):
     """
     Ensure the method calls the correct upload methods with the right arguments
     and returns a generator that yields the expected results.
@@ -56,11 +54,10 @@ def test_list_args(x_partial, file_upload_args, mocker, faker):
         x_starts_with = '/'.join([x_dst_dir, x_dst_file])
         repository_path = '/'.join([x_repo_name, x_dst_dir, x_dst_file])
 
-    nexus = NexusClient()
-    nexus.split_component_path = mocker.Mock(
+    nexus_mock_client.split_component_path = mocker.Mock(
         return_value=(x_repo_name, x_dst_dir, x_dst_file))
 
-    nexus._get_paginated = mocker.Mock()
+    nexus_mock_client._get_paginated = mocker.Mock()
 
     mocker.patch(
         'nexuscli.nexus_util.filtered_list_gen',
@@ -68,13 +65,13 @@ def test_list_args(x_partial, file_upload_args, mocker, faker):
 
     # collect results into a list for easier comparison
     artefacts = []
-    for artefact in nexus.list(repository_path):
+    for artefact in nexus_mock_client.list(repository_path):
         artefacts.append({'path': artefact})
 
-    nexus.split_component_path.assert_called_with(repository_path)
-    nexus._get_paginated.assert_called()
+    nexus_mock_client.split_component_path.assert_called_with(repository_path)
+    nexus_mock_client._get_paginated.assert_called()
     nexuscli.nexus_util.filtered_list_gen.assert_called_with(
-        nexus._get_paginated.return_value,
+        nexus_mock_client._get_paginated.return_value,
         partial_match=x_partial,
         term=x_starts_with)
     assert artefacts == nexuscli.nexus_util.filtered_list_gen.return_value

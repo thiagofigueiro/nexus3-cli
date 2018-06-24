@@ -10,6 +10,8 @@ except ImportError:
 
 from . import exception, nexus_util
 
+SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
+
 
 class NexusClient(object):
     """
@@ -29,6 +31,8 @@ class NexusClient(object):
     Attributes:
         base_url (str): as per url argument.
         config_path (str): as per arguments.
+        repositories (list): list of repositories on Nexus service. See
+            :py:meth:`refresh_repositories` for format.
     """
     CONFIG_PATH = '~/.nexus-cli'
     DEFAULT_URL = 'http://localhost:8081'
@@ -38,6 +42,7 @@ class NexusClient(object):
     def __init__(self, url=None, user=None, password=None, config_path=None):
         self.base_url = None
         self.config_path = config_path or NexusClient.CONFIG_PATH
+        self.repositories = None
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
@@ -47,6 +52,7 @@ class NexusClient(object):
             user or NexusClient.DEFAULT_USER,
             password or NexusClient.DEFAULT_PASS,
             url or NexusClient.DEFAULT_URL)
+        self.refresh_repositories()
 
     def set_config(self, user, password, base_url):
         self._auth = (user, password)
@@ -83,7 +89,22 @@ class NexusClient(object):
             config['nexus_user'], config['nexus_pass'], config['nexus_url'])
 
     def _request(self, method, endpoint, **kwargs):
-        url = urljoin(self.rest_url, endpoint)
+        """
+        Performs a request to the Nexus service URL.
+
+        :param method: one of ``get``, ``put``, ``post``, ``delete``.
+        :param endpoint: URI path to be appended to the service URL.
+        :param kwargs: if ``service_url`` is not provided,
+            :py:property:`self.rest_url` is used by default. All other kwargs
+            are passed-through to ``requests.method``.
+        :return: requests response object
+        """
+        try:
+            service_url = kwargs.pop('service_url')
+        except KeyError:
+            service_url = self.rest_url
+
+        url = urljoin(service_url, endpoint)
         response = requests.request(
             method=method, auth=self._auth, url=url, verify=False, **kwargs)
 
@@ -112,11 +133,11 @@ class NexusClient(object):
             for the argument needed to paginate requests.
         :return: a generator that yields on response item at a time.
         """
-        r = self._request('get', endpoint, **request_kwargs)
-        if r.status_code == 404:
-            raise exception.NexusClientAPIError(r.reason)
+        response = self._request('get', endpoint, **request_kwargs)
+        if response.status_code == 404:
+            raise exception.NexusClientAPIError(response.reason)
 
-        content = r.json()
+        content = response.json()
         while True:
             for item in content.get('items'):
                 yield item
@@ -127,11 +148,14 @@ class NexusClient(object):
 
             request_kwargs['params'].update(
                 {'continuationToken': continuation_token})
-            r = self._request('get', endpoint, **request_kwargs)
-            content = r.json()
+            response = self._request('get', endpoint, **request_kwargs)
+            content = response.json()
 
     def _post(self, endpoint, **kwargs):
         return self._request('post', endpoint, **kwargs)
+
+    def _put(self, endpoint, **kwargs):
+        return self._request('put', endpoint, **kwargs)
 
     def _delete(self, endpoint, **kwargs):
         return self._request('delete', endpoint, **kwargs)
@@ -163,11 +187,11 @@ class NexusClient(object):
 
     def repo_list(self):
         self._api_version = 'beta'
-        resp = self._get('repositories')
-        if resp.status_code == 200:
-            return resp.json()
+        response = self._get('repositories')
+        if response.status_code == 200:
+            return response.json()
         else:
-            raise exception.NexusClientAPIError(resp.content)
+            raise exception.NexusClientAPIError(response.content)
 
     def list(self, repository_path):
         """
@@ -274,3 +298,141 @@ class NexusClient(object):
             directory = None
 
         return repository, directory, filename
+
+    def refresh_repositories(self):
+        """
+        Refresh local list of repositories with latest from service.
+
+        >>> [
+        >>>     {
+        >>>         'format': 'raw',
+        >>>         'name': 'myraw',
+        >>>         'type': 'hosted',
+        >>>         'url': 'http://localhost:8081/repository/myraw'
+        >>>     },
+        >>>     # (...)
+        >>> ]
+        """
+        self._api_version = 'beta'
+        response = self._get('repositories')
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(response.content)
+
+        self.repositories = response.json()
+        self._api_version = 'v1'
+
+    def get_repository_by_name(self, name):
+        """ Search self.repositories for the entry named `name`"""
+        for r in self.repositories:
+            if r['name'] == name:
+                return r
+
+        raise IndexError
+
+    def _upload_file_raw(self, src_file, dst_repo, dst_dir, dst_file):
+        """Process upload_file() for raw repositories"""
+        if dst_dir is None or dst_dir.startswith(self._remote_sep):
+            raise exception.NexusClientInvalidRepositoryPath(
+                'Destination path does not contain a directory, which is '
+                'required by raw repositories')
+
+        params = {'repository': dst_repo}
+        files = {'raw.asset1': open(src_file, 'rb').read()}
+        data = {
+            'raw.directory': dst_dir,
+            'raw.asset1.filename': dst_file,
+        }
+
+        self._api_version = 'beta'
+        response = self._post(
+            'components', files=files, data=data, params=params)
+        if response.status_code != 204:
+            raise exception.NexusClientAPIError(
+                'Uploading to {dst_repo}. '
+                'Reason: {response.reason}'.format(**locals()))
+
+    def _upload_file_yum(self, src_file, dst_repo, dst_dir, dst_file):
+        """Process upload_file() for yum repositories"""
+        dst_dir = dst_dir or self._remote_sep
+        repository_path = self._remote_sep.join(
+            ['repository', dst_repo, dst_dir, dst_file])
+
+        with open(src_file, 'rb') as fh:
+            response = self._put(
+                repository_path, data=fh, service_url=self.base_url)
+
+        print('HELLO', response.__dict__)
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(
+                'Uploading to {repository_path}. '
+                'Reason: {response.reason}'.format(**locals()))
+
+    def upload_file(self, src_file, dst_repo, dst_dir, dst_file=None):
+        """
+        Uploads a singe file to a Nexus repository under the directory and
+        file name specified. If the destination file name isn't given, the
+        source file name is used.
+
+        :param src_file: path to the local file to be uploaded.
+        :param dst_repo: name of the Nexus repository.
+        :param dst_dir: directory under dst_repo to place file in.
+        :param dst_file: destination file name.
+        """
+        try:
+            repository = self.get_repository_by_name(dst_repo)
+        except IndexError:
+            raise exception.NexusClientInvalidRepository(dst_repo)
+
+        # TODO: support all repository formats
+        repo_format = repository['format']
+        if repo_format not in SUPPORTED_FORMATS_FOR_UPLOAD:
+            raise NotImplementedError(
+                'Upload to {} repository not supported'.format(repo_format))
+
+        if dst_file is None:
+            dst_file = os.path.basename(src_file)
+
+        _upload = getattr(self, '_upload_file_' + repo_format)
+        _upload(src_file, dst_repo, dst_dir, dst_file)
+
+    def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file):
+        """
+        Helper for self.upload() to call the correct upload method according to
+        the source given by the user.
+
+        :param file_or_dir: location or file or directory to be uploaded.
+        :param dst_repo: destination repository in Nexus.
+        :param dst_dir: destination directory in dst_repo.
+        :param dst_file: destination file name.
+        :return: number of files uploaded.
+        """
+        if os.path.isdir(file_or_dir):
+            if dst_file is None:
+                raise NotImplementedError('Source must be a file')
+            else:
+                raise exception.NexusClientInvalidRepositoryPath(
+                    'Not allowed to upload a directory to a file')
+
+        self.upload_file(file_or_dir, dst_repo, dst_dir, dst_file)
+        return 1
+
+    def upload(self, source, destination):
+        """
+        Process an upload. The source must be either a local file name or
+        directory. The flatten and recurse class attributes are honoured for
+        directory uploads.
+
+        The destination must be a valid Nexus 3 repository path, including the
+        repository name as the first component of the path.
+
+        :param source: location of file or directory to be uploaded.
+        :param destination: destination path in Nexus, including repository
+            name and, if required, directory name (e.g. raw repos require a
+            directory).
+        :return: number of files uploaded.
+        """
+        repo, directory, filename = self.split_component_path(destination)
+        upload_count = self._upload_dir_or_file(
+            source, repo, directory, filename)
+
+        return upload_count

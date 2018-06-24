@@ -2,7 +2,6 @@
 A python-based CLI for Sonatype's Nexus OSS 3
 
 [![Build Status](https://travis-ci.org/thiagofigueiro/nexus3-cli.svg?branch=master)](https://travis-ci.org/thiagofigueiro/nexus3-cli)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e76864ccc6f244cfbc1c735f6d3d6944)](https://www.codacy.com/app/thiagocsf/nexus3-cli?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=thiagofigueiro/nexus3-cli&amp;utm_campaign=Badge_Grade)
 [![CodeFactor](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli/badge)](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli)
 [![codecov](https://codecov.io/gh/thiagofigueiro/nexus3-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/thiagofigueiro/nexus3-cli)
 
