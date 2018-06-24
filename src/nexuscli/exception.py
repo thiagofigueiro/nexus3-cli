@@ -14,5 +14,9 @@ class NexusClientInvalidRepositoryPath(Exception):
     pass
 
 
+class NexusClientInvalidRepository(Exception):
+    pass
+
+
 class NexusClientDownloadError(Exception):
     pass

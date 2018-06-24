@@ -5,6 +5,7 @@ Usage:
   nexus3 --help, -h
   nexus3 login
   nexus3 (list|ls) <repository_path>
+  nexus3 (upload|up) <from_src> <to_repository>
   nexus3 repo create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
@@ -47,6 +48,7 @@ Commands:
   script run    Run the existing <script_name>
 """
 import getpass
+import inflect
 import json
 import sys
 import types
@@ -58,6 +60,8 @@ from nexuscli import nexus_repository
 from nexuscli.exception import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_script import script_method_object
+
+PLURAL = inflect.engine().plural
 
 
 def _input(prompt, default=None):
@@ -341,13 +345,46 @@ def cmd_list(args):
     artefact_list = nexus_client.list(repository_path)
 
     # FIXME: is types.GeneratorType still used?
-    if isinstance(artefact_list, types.GeneratorType) \
-            or isinstance(artefact_list, list):
+    if isinstance(artefact_list, (list, types.GeneratorType)):
         for artefact in iter(artefact_list):
-            print(artefact)
+            sys.stdout.write('{}\n'.format(artefact))
         return 0
     else:
         return 1
+
+
+def _cmd_up_down_errors(count, action):
+    """Print and exit with error if upload/download didn't succeed"""
+    if count == 0:
+        # FIXME: inflex the action verb to past participle
+        sys.stderr.write('WARNING: no files were {}\'ed.'.format(action))
+        sys.exit(1)
+
+    if count == -1:
+        sys.stderr.write('ERROR during {} operation.'.format(action))
+        sys.exit(2)
+
+
+def cmd_upload(args):
+    """
+    Performs the `rekt ar upload` command using the configured artefact
+    repository service.
+    """
+    nexus_client = get_client()
+    source = args['<from_src>']
+    destination = args['<to_repository>']
+
+    sys.stderr.write(
+        'Uploading {source} to {destination}\n'.format(**locals()))
+
+    upload_count = nexus_client.upload(source, destination)
+
+    _cmd_up_down_errors(upload_count, 'upload')
+
+    file = PLURAL('file', upload_count)
+    sys.stderr.write(
+        'Uploaded {upload_count} {file} to {destination}\n'.format(**locals()))
+    return 0
 
 
 def main(argv=None):
@@ -361,5 +398,7 @@ def main(argv=None):
         cmd_repo(arguments)
     elif arguments.get('list') or arguments.get('ls'):
         cmd_list(arguments)
+    elif arguments.get('upload') or arguments.get('up'):
+        cmd_upload(arguments)
     else:
         raise NotImplementedError

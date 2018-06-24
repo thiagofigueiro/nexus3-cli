@@ -7,6 +7,7 @@ package_version = '0.2.0'
 
 requires = [
     'docopt',
+    'inflect',
     'py',
     'future',
     'requests[security]>=2.14.2',

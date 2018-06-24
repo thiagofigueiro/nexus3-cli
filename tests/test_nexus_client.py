@@ -68,3 +68,28 @@ def test_refresh_repositories_error(nexus_mock_client):
         nexus_mock_client.refresh_repositories()
 
     assert nexus_mock_client.repositories is None
+
+
+@pytest.mark.parametrize('x_found', [True, False])
+def test_get_repository_by_name(
+        x_found, nexus_mock_client, faker):
+    """Ensure the method returns a repo found by name or raises an exception"""
+    nexus = nexus_mock_client
+    x_name = faker.pystr()
+    x_format = faker.pystr()
+    x_repo = None
+    x_values = nexus_mock_client._request.return_value._json
+
+    if x_found:
+        x_repo = pytest.helpers.nexus_repository(x_name, x_format)
+        x_values.append(x_repo)
+
+    nexus.refresh_repositories()
+
+    if x_found:
+        assert nexus.get_repository_by_name(x_name) == x_repo
+        assert nexus.get_repository_by_name(x_name)['name'] == x_name
+        assert nexus.get_repository_by_name(x_name)['format'] == x_format
+    else:
+        with pytest.raises(IndexError):
+            nexus.get_repository_by_name(x_name)
