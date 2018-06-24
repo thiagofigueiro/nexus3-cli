@@ -35,6 +35,5 @@ my-yum-repository                        yum     hosted  http://localhost:8081/r
 For all commands and options, run `nexus3 -h`.
 
 ## To do
-1. Finish writing unit tests
-1. Refactor so this can be used as a library
-1. Support for upload/download
+1. Support for download
+1. Support for upload to repositories other than raw, yum.
