@@ -6,6 +6,7 @@ package_name = 'nexus3-cli'
 package_version = '0.3.0'
 
 requires = [
+    'clint',
     'docopt',
     'inflect',
     'py',

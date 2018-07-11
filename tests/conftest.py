@@ -134,4 +134,24 @@ def nexus_mock_client(mocker, faker):
     mocker.patch('nexuscli.nexus_client.NexusClient._request',
                  return_value=ResponseMock())
 
-    return nexuscli.nexus_client.NexusClient()
+    client = nexuscli.nexus_client.NexusClient()
+    client.refresh_repositories()
+    return client
+
+
+@pytest.fixture
+def deep_file_tree(faker, tmpdir):
+    """
+    Yields a tuple(str, list). The str is the current working directory. The
+    list contains deep file paths, relative to the current working dir, where
+    all files exist in the filesystem.
+    """
+    fixture = []
+    with tmpdir.as_cwd():
+        for _ in range(faker.random_int(1, 100)):
+            relative_path = faker.file_path(
+                depth=faker.random_number(1, 10))[1:]
+            fixture.append(relative_path)
+            tmpdir.join(relative_path).ensure()
+
+    yield str(tmpdir), fixture
