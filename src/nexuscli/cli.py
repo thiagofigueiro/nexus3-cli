@@ -304,6 +304,7 @@ def args_to_repo_type(args):
 
 
 def cmd_repo_create(nexus_client, args):
+    """Performs ``rekt repo create *`` commands"""
     repo_type = args_to_repo_type(args)
     repo_format = args_to_repo_format(args).lower()
 
@@ -325,6 +326,7 @@ def cmd_repo_create(nexus_client, args):
 
 
 def cmd_repo(args):
+    """Performs ``nexus3 repo *`` commands"""
     nexus_client = get_client()
 
     if args.get('list'):
@@ -336,10 +338,7 @@ def cmd_repo(args):
 
 
 def cmd_list(args):
-    """
-    Performs the `rekt ar search` command using the configured artefact
-    repository service.
-    """
+    """Performs ``nexus3 list``"""
     nexus_client = get_client()
     repository_path = args['<repository_path>']
     artefact_list = nexus_client.list(repository_path)
@@ -366,10 +365,7 @@ def _cmd_up_down_errors(count, action):
 
 
 def cmd_upload(args):
-    """
-    Performs the `rekt ar upload` command using the configured artefact
-    repository service.
-    """
+    """Performs ``nexus3 upload``"""
     nexus_client = get_client()
     source = args['<from_src>']
     destination = args['<to_repository>']

@@ -241,9 +241,73 @@ class NexusClient(object):
         for artefact in list_gen:
             yield artefact
 
+    def _pop_repository(self, component_path):
+        """
+        Helper for split_component_path. Returns the repository and the
+        remainder of the component_path as a path_fragments list.
+
+        :param component_path: the component path, as given to
+            split_component_path.
+        :return: tuple of (repository, path_fragments)
+        :rtype: tuple(str, list)
+        """
+        path_fragments = component_path.split(self._remote_sep)
+        try:
+            repository = path_fragments.pop(0)
+            # no cheating!
+            if not repository or repository == '.':
+                raise IndexError
+        except IndexError:
+            raise exception.NexusClientInvalidRepositoryPath(
+                'The given path does not contain a repository: {}'.format(
+                    component_path))
+
+        return repository, path_fragments
+
+    def _pop_filename(self, component_path, path_fragments):
+        """
+        Helper for split_component_path. Returns the filename.
+
+        :param component_path: the component path, as given to
+            split_component_path.
+        :param path_fragments: as returned by _pop_repository.
+        :return: filename or None, if not available.
+        :rtype: str
+        """
+        filename = None
+        try:
+            if not component_path.endswith(self._remote_sep):
+                filename = path_fragments.pop()
+                if not filename or filename == '.':
+                    raise IndexError
+        except IndexError:
+            return None
+
+        return filename
+
+    def _pop_directory(self, path_fragments):
+        """
+        Helper for split_component_path. Returns the directory.
+
+        :param path_fragments: as returned by _pop_repository.
+        :return: directory or None, if not available.
+        :rtype: str
+        """
+        directory = self._remote_sep.join(path_fragments)
+        # for consistency
+        if directory.endswith(self._remote_sep):
+            directory = directory[:-1]
+        # nice try, user but no cigar
+        if not directory or directory == '.':
+            directory = None
+
+        return directory
+
     def split_component_path(self, component_path):
         """
-        A Nexus path for a raw directory must have this format:
+        Splits a given component path into repository, directory, filename.
+
+        A Nexus component path for a raw directory must have this format:
 
         repository_name/directory[(/subdir1)...][/|filename]
 
@@ -269,33 +333,9 @@ class NexusClient(object):
             component_path doesn't represent a file, filename is set to None.
         :rtype: tuple
         """
-        filename = None
-        path_fragments = component_path.split(self._remote_sep)
-        try:
-            repository = path_fragments.pop(0)
-            # no cheating!
-            if not repository or repository == '.':
-                raise IndexError
-        except IndexError:
-            raise exception.NexusClientInvalidRepositoryPath(
-                'The given path does not contain a repository: {}'.format(
-                    component_path))
-
-        try:
-            if not component_path.endswith(self._remote_sep):
-                filename = path_fragments.pop()
-                if not filename or filename == '.':
-                    raise IndexError
-        except IndexError:
-            return repository, None, None
-
-        directory = self._remote_sep.join(path_fragments)
-        # for consistency
-        if directory.endswith(self._remote_sep):
-            directory = directory[:-1]
-        # nice try, user but no cigar
-        if not directory or directory == '.':
-            directory = None
+        repository, path_fragments = self._pop_repository(component_path)
+        filename = self._pop_filename(component_path, path_fragments)
+        directory = self._pop_directory(path_fragments)
 
         return repository, directory, filename
 
