@@ -1,6 +1,5 @@
 import os
 import pytest
-import time
 
 from nexuscli import exception, nexus_client
 
@@ -138,22 +137,15 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     resulting list of files in nexus corresponds to the uploaded list of files.
     """
     src_dir, x_file_set = deep_file_tree
-    repo_name = faker.word()
+    repo = faker.word()
     dst_dir = faker.uri_path() + '/'
-    repo_path = dst_dir[:-1] + src_dir
+    path = dst_dir[:-1] + src_dir
 
-    argv = ('repo create hosted raw {}'.format(repo_name)).split()
-    pytest.helpers.create_and_inspect(argv, repo_name)
+    argv = ('repo create hosted raw {}'.format(repo)).split()
+    pytest.helpers.create_and_inspect(argv, repo)
     nexus_client.refresh_repositories()
 
-    upload_count = nexus_client.upload_directory(src_dir, repo_name, dst_dir)
-    # is looks like nexus needs time to index uploaded files :-/
-    time.sleep(1)
-    file_set = nexus_client.list(repo_name)
+    count = nexus_client.upload_directory(src_dir, repo, dst_dir)
+    file_set = pytest.helpers.repo_list(nexus_client, repo, count, path)
 
-    my_upload_count = 0
-    for f in iter(file_set):
-        my_upload_count += 1
-        assert f[len(repo_path)+1:] in x_file_set
-    assert upload_count == my_upload_count
-    assert upload_count == len(x_file_set)
+    assert file_set == x_file_set

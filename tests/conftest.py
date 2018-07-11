@@ -1,5 +1,6 @@
 import os
 import pytest
+import time
 from faker import Faker
 
 import nexuscli
@@ -142,7 +143,7 @@ def nexus_mock_client(mocker, faker):
 @pytest.fixture
 def deep_file_tree(faker, tmpdir):
     """
-    Yields a tuple(str, list). The str is the current working directory. The
+    Yields a tuple(str, set). The str is the current working directory. The
     list contains deep file paths, relative to the current working dir, where
     all files exist in the filesystem.
     """
@@ -154,4 +155,30 @@ def deep_file_tree(faker, tmpdir):
             fixture.append(relative_path)
             tmpdir.join(relative_path).ensure()
 
-    yield str(tmpdir), fixture
+    yield str(tmpdir), set(fixture)
+
+
+@pytest.helpers.register
+def repo_list(client, repo_name, expected_count, repo_path):
+    """
+    Nexus doesn't show uploaded files when you list the contents immediately
+    after an upload. This helper retries it 3 times with increasing back-off.
+    """
+    def _list():
+        file_list = client.list(repo_name)
+
+        files = []
+        for f in iter(file_list):
+            files.append(f[len(repo_path)+1:])
+
+        return files
+
+    attempt = 1
+    file_set = set(_list())
+    while len(file_set) != expected_count and attempt < 4:
+        attempt += 1
+        time.sleep(2 * attempt)
+        file_set = set(_list())
+
+    # let it fail if we run out of attempts
+    return file_set
