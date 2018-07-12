@@ -3,6 +3,7 @@ import json
 import os.path
 import py
 import requests
+from clint.textui import progress
 try:
     from urllib.parse import urljoin  # Python 3
 except ImportError:
@@ -435,6 +436,58 @@ class NexusClient(object):
         _upload = getattr(self, '_upload_file_' + repo_format)
         _upload(src_file, dst_repo, dst_dir, dst_file)
 
+    def _get_upload_fileset(self, src_dir):
+        """
+        Walks the given directory and collects files to be uploaded. If
+        self.recurse is False, only the files on the root of the directory will
+        be returned.
+
+        :param src_dir: location of files
+        :return: file set to be used with upload_directory
+        :rtype: set
+        """
+        source_files = set()
+        for dirname, _, filenames in os.walk(src_dir):
+            source_files.update(
+                os.path.relpath(os.path.join(dirname, f), src_dir)
+                for f in filenames)
+
+        return source_files
+
+    def _get_upload_subdirectory(self, dst_dir, file_path):
+        # empty dst_dir because most repo formats, aside from raw, allow it
+        sub_directory = dst_dir or ''
+        sep = self._remote_sep
+        dirname = os.path.dirname(file_path)
+        if sub_directory.endswith(sep) or dirname.startswith(sep):
+            sep = ''
+        sub_directory += '{sep}{dirname}'.format(**locals())
+
+        return sub_directory
+
+    def upload_directory(self, src_dir, dst_repo, dst_dir):
+        """
+        Uploads all files in a directory, honouring self.flatten and
+        self.recurse. If self.display_progress is True, a progress bar will be
+        displayed to track progress of uploads.
+
+        :param src_dir: path to local directory to be uploaded
+        :param dst_repo: destination repository
+        :param dst_dir: destination directory in dst_repo
+        :return: number of files uploaded
+        :rtype: int
+        """
+        file_set = self._get_upload_fileset(src_dir)
+        file_count = len(file_set)
+        file_set = progress.bar(file_set, expected_size=file_count)
+
+        for relative_filepath in file_set:
+            file_path = os.path.join(src_dir, relative_filepath)
+            sub_directory = self._get_upload_subdirectory(dst_dir, file_path)
+            self.upload_file(file_path, dst_repo, sub_directory)
+
+        return file_count
+
     def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file):
         """
         Helper for self.upload() to call the correct upload method according to
@@ -448,7 +501,7 @@ class NexusClient(object):
         """
         if os.path.isdir(file_or_dir):
             if dst_file is None:
-                raise NotImplementedError('Source must be a file')
+                return self.upload_directory(file_or_dir, dst_repo, dst_dir)
             else:
                 raise exception.NexusClientInvalidRepositoryPath(
                     'Not allowed to upload a directory to a file')

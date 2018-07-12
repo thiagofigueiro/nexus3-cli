@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from six import string_types
 
 
 def filtered_list_gen(raw_response, term=None, partial_match=True):
@@ -49,7 +50,7 @@ def filtered_list_gen(raw_response, term=None, partial_match=True):
         artefact_path = artefact.get('path')
         if artefact_path is None:
             continue
-        if not isinstance(artefact_path, str):
+        if not isinstance(artefact_path, string_types):
             continue
         if term is None or is_match(artefact_path, term):
             yield artefact
