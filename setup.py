@@ -8,10 +8,12 @@ package_version = '0.3.0'
 requires = [
     'clint',
     'docopt',
+    'future',
     'inflect',
     'py',
     'future',
     'requests[security]>=2.14.2',
+    'six',
 ]
 
 test_requires = [
