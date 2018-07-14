@@ -93,4 +93,21 @@ def script_method_name(repo_type, repo_format):
 
 
 def script_method_object(repo_type, repo_format):
+    """
+    Returns the appropriate method to create a repository with the given type
+    and format.
+
+    The name standard for script method names is
+
+    script_TYPE[_FORMAT]
+
+    where:
+
+    - ``TYPE``: ``repo_type`` argument
+    - ``FORMAT``: ``repo_format`` argument
+
+    :param repo_type: 'hosted' or 'proxy'.
+    :param repo_format: None, 'maven' or 'yum'
+    :return: one of the ``script_*`` methods.
+    """
     return globals()[script_method_name(repo_type, repo_format)]
