@@ -32,8 +32,6 @@ class NexusClient(object):
     Attributes:
         base_url (str): as per url argument.
         config_path (str): as per arguments.
-        repositories (list): list of repositories on Nexus service. See
-            :py:meth:`refresh_repositories` for format.
     """
     CONFIG_PATH = '~/.nexus-cli'
     DEFAULT_URL = 'http://localhost:8081'
@@ -43,10 +41,10 @@ class NexusClient(object):
     def __init__(self, url=None, user=None, password=None, config_path=None):
         self.base_url = None
         self.config_path = config_path or NexusClient.CONFIG_PATH
-        self.repositories = None
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
+        self._repositories_json = None
         self._remote_sep = '/'
 
         self.set_config(
@@ -186,13 +184,10 @@ class NexusClient(object):
         if resp.status_code != 204:
             raise exception.NexusClientAPIError(resp.reason)
 
+    # TODO: move to nexus_repositories
     def repo_list(self):
-        self._api_version = 'beta'
-        response = self._get('repositories')
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise exception.NexusClientAPIError(response.content)
+        self.refresh_repositories()
+        return self._repositories_json
 
     def list(self, repository_path):
         """
@@ -354,17 +349,18 @@ class NexusClient(object):
         >>>     # (...)
         >>> ]
         """
+        previous_api_version = self._api_version
         self._api_version = 'beta'
         response = self._get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
 
-        self.repositories = response.json()
-        self._api_version = 'v1'
+        self._repositories_json = response.json()
+        self._api_version = previous_api_version
 
     def get_repository_by_name(self, name):
         """ Search self.repositories for the entry named `name`"""
-        for r in self.repositories:
+        for r in self._repositories_json:
             if r['name'] == name:
                 return r
 
