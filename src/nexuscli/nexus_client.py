@@ -159,6 +159,15 @@ class NexusClient(object):
     def _delete(self, endpoint, **kwargs):
         return self._request('delete', endpoint, **kwargs)
 
+    def script_get(self, name):
+        resp = self._get('script/{}'.format(name))
+        if resp.status_code == 200:
+            return resp.json()
+        elif resp.status_code == 404:
+            return None
+        else:
+            raise exception.NexusClientAPIError(resp.content)
+
     def script_list(self):
         resp = self._get('script')
         if resp.status_code != 200:
@@ -166,17 +175,27 @@ class NexusClient(object):
 
         return resp.json()
 
-    def script_create(self, script_content):
-        resp = self._post('script', json=script_content)
+    def script_create_if_missing(self, script_dict):
+        name = script_dict.get('name')
+        if name is None:
+            raise ValueError('script_dict must have a name')
+        script = self.script_get(name)
+        if script is None:
+            self.script_create(script_dict)
+
+    def script_create(self, script_dict):
+        resp = self._post('script', json=script_dict)
         if resp.status_code != 204:
             raise exception.NexusClientAPIError(resp.content)
 
-    def script_run(self, script_name):
+    def script_run(self, script_name, data=''):
         headers = {'content-type': 'text/plain'}
         endpoint = 'script/{}/run'.format(script_name)
-        resp = self._post(endpoint, headers=headers, data='')
+        resp = self._post(endpoint, headers=headers, data=data)
         if resp.status_code != 200:
             raise exception.NexusClientAPIError(resp.content)
+
+        return resp.content
 
     def script_delete(self, script_name):
         endpoint = 'script/{}'.format(script_name)
