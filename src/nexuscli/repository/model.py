@@ -26,8 +26,8 @@ class RepositoryCollection(object):
             repository.repositoryManager.delete(args)
             """,
         }
-        self.client.script_create_if_missing(script)
-        self.client.script_run(script['name'], data=name)
+        self.client.scripts.create_if_missing(script)
+        self.client.scripts.run(script['name'], data=name)
 
     def create(self, repo_type, **kwargs):
         """

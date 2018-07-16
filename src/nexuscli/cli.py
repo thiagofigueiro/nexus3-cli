@@ -110,7 +110,7 @@ def get_client():
 
 
 def cmd_script_do_list(nexus_client):
-    json_response = nexus_client.script_list()
+    json_response = nexus_client.scripts.list()
 
     sys.stderr.write('Name (type)\n')
     for script in json_response:
@@ -120,7 +120,7 @@ def cmd_script_do_list(nexus_client):
 
 def cmd_script_do_create(nexus_client, script_path):
     script_content = json.load(open(script_path), strict=False)
-    nexus_client.script_create(script_content)
+    nexus_client.scripts.create(script_content)
 
 
 def cmd_script(args):
@@ -129,9 +129,9 @@ def cmd_script(args):
     if args.get('list'):
         cmd_script_do_list(nexus_client)
     elif args.get('rm'):
-        nexus_client.script_delete(args.get('<script_name>'))
+        nexus_client.scripts.delete(args.get('<script_name>'))
     elif args.get('run'):
-        nexus_client.script_run(args.get('<script_name>'))
+        nexus_client.scripts.run(args.get('<script_name>'))
     elif args.get('create'):
         cmd_script_do_create(nexus_client, args.get('<script.json>'))
     else:
@@ -273,9 +273,9 @@ def cmd_repo_do_create(
     script_method = script_method_object(repo_type, repo_format)
     script_content, script_name = script_method(repo_params)
 
-    nexus_client.script_create(script_content)
-    nexus_client.script_run(script_name)
-    nexus_client.script_delete(script_name)
+    nexus_client.scripts.create(script_content)
+    nexus_client.scripts.run(script_name)
+    nexus_client.scripts.delete(script_name)
     sys.stderr.write('Created repository: {}\n'.format(repo_params['name']))
 
 
