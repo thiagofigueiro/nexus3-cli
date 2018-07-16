@@ -22,7 +22,7 @@ Usage:
           <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content]
   nexus3 repo list
-  nexus3 repo rm <repo_name>
+  nexus3 repo rm <repo_name> [--force]
   nexus3 script create <script.json>
   nexus3 script list
   nexus3 script (rm|run) <script_name>
@@ -31,6 +31,7 @@ Options:
   -h --help             This screen
   --blob=<store_name>   Use this blob with new repository  [default: default]
   --depth=<repo_depth>  Depth (0-5) where repodata folder(s) exist [default: 0]
+  --force, -f           Execute action without confirmation
   --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
   --layout=<l_policy>   Accepted: strict, permissive [default: strict]
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
@@ -56,7 +57,7 @@ import types
 from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
 
-from nexuscli import nexus_repository
+import nexuscli.repository.groovy
 from nexuscli.exception import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_script import script_method_object
@@ -150,12 +151,13 @@ def cmd_repo_do_list(nexus_client):
 
 def nexus_policy(policy_name, user_option):
     if user_option == '__imports':
-        return nexus_repository.POLICY_IMPORTS[policy_name]
+        return nexuscli.repository.groovy.POLICY_IMPORTS[policy_name]
 
-    policy = nexus_repository.POLICIES[policy_name].get(user_option)
+    policy = nexuscli.repository.groovy.POLICIES[policy_name].get(user_option)
     if policy is None:
+        policies = nexuscli.repository.groovy.POLICIES[policy_name]
         raise AttributeError('Valid options for --{} are: {}'.format(
-            policy_name, list(nexus_repository.POLICIES[policy_name])))
+            policy_name, list(policies)))
     return policy
 
 
@@ -333,6 +335,10 @@ def cmd_repo(args):
         cmd_repo_do_list(nexus_client)
     elif args.get('create'):
         cmd_repo_create(nexus_client, args)
+    elif args.get('rm'):
+        if not args.get('--force'):
+            _input('Press ENTER to confirm deletion', 'ctrl+c to cancel')
+        nexus_client.repositories.delete(args.get('<repo_name>'))
     else:
         raise NotImplementedError
 

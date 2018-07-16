@@ -10,6 +10,7 @@ except ImportError:
     from urlparse import urljoin      # Python 2
 
 from . import exception, nexus_util
+from nexuscli.repository import nexus_repository
 
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
@@ -44,7 +45,7 @@ class NexusClient(object):
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
-        self._repositories_json = None
+        self._repositories_json = None  # TODO: move to nexus_repositories
         self._remote_sep = '/'
 
         self.set_config(
@@ -56,6 +57,10 @@ class NexusClient(object):
     def set_config(self, user, password, base_url):
         self._auth = (user, password)
         self.base_url = base_url
+
+    @property
+    def repositories(self):
+        return nexus_repository.RepositoryCollection(client=self)
 
     @property
     def rest_url(self):

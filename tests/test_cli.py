@@ -2,7 +2,6 @@ import itertools
 import pytest
 
 import nexuscli
-from nexuscli import nexus_repository
 
 
 def test_login(mocker):
@@ -30,7 +29,7 @@ def test_repo_list(mocker):
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict', itertools.product(
         ['npm', 'pypi', 'raw', 'rubygems'],  # format
-        list(nexus_repository.POLICIES['write']),  # w_policy
+        list(nexuscli.repository.groovy.POLICIES['write']),  # w_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
@@ -47,9 +46,9 @@ def test_repo_create_hosted(repo_format, w_policy, strict):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, w_policy, strict', itertools.product(
-        list(nexus_repository.POLICIES['version']),  # v_policy
-        list(nexus_repository.POLICIES['layout']),  # l_policy
-        list(nexus_repository.POLICIES['write']),  # w_policy
+        list(nexuscli.repository.groovy.POLICIES['version']),  # v_policy
+        list(nexuscli.repository.groovy.POLICIES['layout']),  # l_policy
+        list(nexuscli.repository.groovy.POLICIES['write']),  # w_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
@@ -66,7 +65,7 @@ def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
 
 @pytest.mark.parametrize(
     'w_policy, depth, strict', itertools.product(
-        list(nexus_repository.POLICIES['write']),  # w_policy
+        list(nexuscli.repository.groovy.POLICIES['write']),  # w_policy
         list(range(6)),  # depth
         ['', '--strict-content'],  # strict
     ))
@@ -109,8 +108,8 @@ def test_repo_create_proxy(repo_format, strict, faker):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, strict', itertools.product(
-        list(nexus_repository.POLICIES['version']),  # v_policy
-        list(nexus_repository.POLICIES['layout']),  # l_policy
+        list(nexuscli.repository.groovy.POLICIES['version']),  # v_policy
+        list(nexuscli.repository.groovy.POLICIES['layout']),  # l_policy
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
@@ -142,3 +141,15 @@ def test_list(faker):
 
     assert pytest.helpers.create_and_inspect(argv_create, repo_name)
     assert nexuscli.cli.main(argv=list(filter(None, argv_list))) is None
+
+
+@pytest.mark.integration
+def test_repo_rm(nexus_client):
+    """Test that `repo rm` will remove an existing repository"""
+    # TODO: create random repo
+    argv_rm = pytest.helpers.create_argv(
+        'repo rm -f maven-public', **locals())
+    nexuscli.cli.main(argv=list(filter(None, argv_rm)))
+    repositories = nexus_client.repo_list()
+
+    assert not any(r['name'] == 'maven-public' for r in repositories)

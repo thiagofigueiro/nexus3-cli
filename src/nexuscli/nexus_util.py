@@ -2,6 +2,14 @@
 from six import string_types
 
 
+def validate_strings(*args):
+    for arg in args:
+        if not isinstance(arg, string_types):
+            return False
+
+    return True
+
+
 def filtered_list_gen(raw_response, term=None, partial_match=True):
     """
     Iterates over items yielded by raw_response_gen, validating that:
@@ -50,7 +58,7 @@ def filtered_list_gen(raw_response, term=None, partial_match=True):
         artefact_path = artefact.get('path')
         if artefact_path is None:
             continue
-        if not isinstance(artefact_path, string_types):
+        if not validate_strings(artefact_path):
             continue
         if term is None or is_match(artefact_path, term):
             yield artefact

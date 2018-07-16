@@ -9,7 +9,6 @@ POLICY_IMPORTS = {
     'version': ['org.sonatype.nexus.repository.maven.VersionPolicy'],
     'write': ['org.sonatype.nexus.repository.storage.WritePolicy'],
 }
-
 POLICIES = {
     'layout': {
         'permissive': 'LayoutPolicy.PERMISSIVE',
@@ -26,3 +25,34 @@ POLICIES = {
         'deny': 'WritePolicy.DENY',
     },
 }
+
+
+def recipe_to_groovy_name(recipe_name):
+    if recipe_name == 'pypi':
+        return 'PyPi'
+
+    return recipe_name.title()
+
+
+def _method_name_create(repo_format, repo_type):
+    """
+    Returns the groovy method name as per
+    org.sonatype.nexus.repository.Repository. The methods use this
+    format: createFormatType. Format is the recipe and Type is Group, Hosted
+    or Proxy.
+    """
+    groovy_name = 'repository.create{}{}'.format(
+        recipe_to_groovy_name(repo_format), repo_type.title())
+    return groovy_name
+
+
+# def method_name(action, repo_type, **kwargs):
+#     if action == 'create':
+#         return _method_name_create(kwargs['format'], repo_type)
+#
+#     raise ValueError('action={} unknown'.format(action))
+
+
+def script_create_repository(repo_type, **kwargs):
+    # groovy_method = _method_name_create(kwargs['format'], repo_type)
+    raise NotImplementedError
