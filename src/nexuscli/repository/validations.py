@@ -13,6 +13,9 @@ KNOWN_FORMATS = [
     'rubygems', 'yum']
 SUPPORTED_FORMATS = ['npm', 'maven', 'pypi', 'raw', 'rubygem', 'yum']
 SUPPORTED_TYPES = ['hosted', 'proxy']
+LAYOUT_POLICIES = ['PERMISSIVE', 'STRICT']
+VERSION_POLICIES = ['RELEASE', 'SNAPSHOT', 'MIXED']
+WRITE_POLICIES = ['ALLOW', 'ALLOW_ONCE', 'DENY']
 
 
 def is_target_supported(target, value, known, supported):
@@ -97,6 +100,17 @@ def check_format_args(repo_format, **kwargs):
     return check_specific(**kwargs)
 
 
+def check_format_args_maven(**kwargs):
+    version_policy = kwargs.pop('version_policy')
+    layout_policy = kwargs.pop('layout_policy')
+    is_target_supported(
+        'version_policy', version_policy, VERSION_POLICIES, VERSION_POLICIES)
+    is_target_supported(
+        'layout_policy', layout_policy, LAYOUT_POLICIES, LAYOUT_POLICIES)
+
+    return kwargs
+
+
 def check_format_args_yum(**kwargs):
     depth = kwargs.pop('depth')
     if depth < 0 or depth > 5:
@@ -111,6 +125,10 @@ def check_type_args(repo_type, **kwargs):
 
 
 def check_type_args_hosted(**kwargs):
+    write_policy = kwargs.pop('write_policy')
+    is_target_supported(
+        'write_policy', write_policy, WRITE_POLICIES, WRITE_POLICIES)
+
     return kwargs
 
 
