@@ -4,47 +4,6 @@
 # WritePolicy
 # http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/nexus-repository/3.0.2-02/nexus-repository-3.0.2-02-javadoc.jar
 
-POLICY_IMPORTS = {
-    'layout': ['org.sonatype.nexus.repository.maven.LayoutPolicy'],
-    'version': ['org.sonatype.nexus.repository.maven.VersionPolicy'],
-    'write': ['org.sonatype.nexus.repository.storage.WritePolicy'],
-}
-POLICIES = {
-    'layout': {
-        'permissive': 'LayoutPolicy.PERMISSIVE',
-        'strict': 'LayoutPolicy.STRICT',
-    },
-    'version': {
-        'release': 'VersionPolicy.RELEASE',
-        'snapshot': 'VersionPolicy.SNAPSHOT',
-        'mixed': 'VersionPolicy.MIXED',
-    },
-    'write': {
-        'allow': 'WritePolicy.ALLOW',
-        'allow_once': 'WritePolicy.ALLOW_ONCE',
-        'deny': 'WritePolicy.DENY',
-    },
-}
-
-
-def recipe_to_groovy_name(recipe_name):
-    if recipe_name == 'pypi':
-        return 'PyPi'
-
-    return recipe_name.title()
-
-
-def _method_name_create(repo_format, repo_type):
-    """
-    Returns the groovy method name as per
-    org.sonatype.nexus.repository.Repository. The methods use this
-    format: createFormatType. Format is the recipe and Type is Group, Hosted
-    or Proxy.
-    """
-    groovy_name = 'repository.create{}{}'.format(
-        recipe_to_groovy_name(repo_format), repo_type.title())
-    return groovy_name
-
 
 # github.com/cloudogu/nexus-claim/blob/develop/scripts/create-Repository.groovy
 # TODO: package and read from external .groovy file
