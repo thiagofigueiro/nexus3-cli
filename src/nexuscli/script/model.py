@@ -49,7 +49,7 @@ class ScriptCollection(object):
         if resp.status_code != 200:
             raise exception.NexusClientAPIError(resp.content)
 
-        return resp.content
+        return resp.json()
 
     def delete(self, script_name):
         endpoint = 'script/{}'.format(script_name)

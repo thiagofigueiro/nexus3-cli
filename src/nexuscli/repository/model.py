@@ -1,4 +1,7 @@
-from nexuscli.repository import validations
+import json
+
+from nexuscli import exception
+from nexuscli.repository import validations, groovy
 
 
 class RepositoryCollection(object):
@@ -37,8 +40,19 @@ class RepositoryCollection(object):
         :type repository: Repository
         :return: None
         """
-        # script = groovy.script_create_repository(repo_type, **kwargs)
-        raise NotImplementedError
+        script = {
+            'type': 'groovy',
+            'name': 'nexus3-cli-repository-create',
+            'content': groovy.script_create_repo(),
+        }
+        self.client.scripts.create_if_missing(script)
+
+        script_args = json.dumps(repository.configuration)
+        resp = self.client.scripts.run(script['name'], data=script_args)
+
+        result = resp.get('result')
+        if result != 'null':
+            raise exception.NexusClientCreateRepositoryError(resp)
 
 
 class Repository(object):
@@ -61,7 +75,9 @@ class Repository(object):
             strict_content_type_validation (bool):
             version_policy (str):
             write_policy (str): One of :py:data:
-            layout_policy
+            layout_policy (str): One of
+            ignore_extra_kwargs (bool): if True, raise an exception for
+                unnecessary/extra/invalid kwargs.
 
         :param repo_type: type for the new repository. Must be one of
             :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
@@ -69,9 +85,8 @@ class Repository(object):
         :return: the created repository
         :rtype: Repository
         """
-        validations.check_create_args(repo_type, **kwargs)
         self._repo_type = repo_type
-        self._raw = dict(kwargs)
+        self._raw = validations.args_to_raw_repo(kwargs)
 
     def __repr__(self):
         return 'Repository({self._repo_type}, {self._raw})'.format(self=self)
@@ -84,12 +99,13 @@ class Repository(object):
 
     @property
     def configuration(self):
+        validations.check_create_args(self._repo_type, **self._raw)
         if self._repo_type == 'hosted':
             return self._configuration_hosted()
         elif self._repo_type == 'proxy':
-            pass
+            return self._configuration_proxy()
         elif self._repo_type == 'group':
-            pass
+            return self._configuration_group()
 
         raise RuntimeError(
             'Unexpected repository type: {}'.format(self._repo_type))
@@ -145,10 +161,10 @@ class Repository(object):
               'enabled': True,
               'timeToLive': 1440,
             },
-            'storage': {
-                'strictContentTypeValidation': self._raw[
-                    'strict_content_type_validation'],
-            }
+        })
+        repo_config['attributes']['storage'].update({
+            'strictContentTypeValidation': self._raw[
+                'strict_content_type_validation'],
         })
 
         self._configuration_add_maven_attr(repo_config)

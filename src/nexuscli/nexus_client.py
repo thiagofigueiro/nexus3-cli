@@ -383,7 +383,6 @@ class NexusClient(object):
             response = self._put(
                 repository_path, data=fh, service_url=self.base_url)
 
-        print('HELLO', response.__dict__)
         if response.status_code != 200:
             raise exception.NexusClientAPIError(
                 'Uploading to {repository_path}. '

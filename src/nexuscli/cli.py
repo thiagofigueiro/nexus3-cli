@@ -54,13 +54,11 @@ import json
 import sys
 import types
 
-from builtins import str  # unfuck Python 2's unicode
 from docopt import docopt
 
-import nexuscli.repository.groovy
 from nexuscli.exception import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
-from nexuscli.nexus_script import script_method_object
+from nexuscli import repository
 
 PLURAL = inflect.engine().plural
 
@@ -149,182 +147,36 @@ def cmd_repo_do_list(nexus_client):
             repo['name'], repo['format'], repo['type'], repo['url']))
 
 
-def nexus_policy(policy_name, user_option):
-    if user_option == '__imports':
-        return nexuscli.repository.groovy.POLICY_IMPORTS[policy_name]
-
-    policy = nexuscli.repository.groovy.POLICIES[policy_name].get(user_option)
-    if policy is None:
-        policies = nexuscli.repository.groovy.POLICIES[policy_name]
-        raise AttributeError('Valid options for --{} are: {}'.format(
-            policy_name, list(policies)))
-    return policy
-
-
-def args_to_repo_params_hosted_maven(args):
-    #   Repository createMavenHosted(final String name,
-    #                            final String blobStoreName,
-    #                            final boolean strictContentTypeValidation,
-    #                            final VersionPolicy versionPolicy,
-    #                            final WritePolicy writePolicy,
-    #                            final LayoutPolicy layoutPolicy);
-    repo_params = args_to_repo_params_hosted(args)
-    repo_params.update({
-        'versionPolicy': nexus_policy('version', args['--version']),
-        'layoutPolicy': nexus_policy('layout', args['--layout']),
-        '__imports': [
-            item for policy_name in ['version', 'write', 'layout']
-            for item in nexus_policy(policy_name, '__imports')],
-    })
-
-    return repo_params
-
-
-def args_to_repo_params_proxy_maven(args):
-    # createMavenProxy(
-    #     String name,
-    #     String remoteUrl,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation,
-    #     org.sonatype.nexus.repository.maven.VersionPolicy versionPolicy,
-    #     org.sonatype.nexus.repository.maven.LayoutPolicy layoutPolicy)
-
-    # the unused 'write' import doesn't hurt and the extra writePolicy param
-    # will be ignored as the format string for the statement doesn't use it
-    repo_params = args_to_repo_params_hosted_maven(args)
-    repo_params.update(args_to_repo_params_proxy(args))
-
-    return repo_params
-
-
-def args_to_repo_params_hosted_yum(args):
-    # createYumHosted(
-    #     String name,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation,
-    #     org.sonatype.nexus.repository.storage.WritePolicy writePolicy,
-    #     int depth)
-    repo_params = args_to_repo_params_hosted(args)
-    repo_params.update({'depth': args['--depth']})
-
-    return repo_params
-
-
-def args_to_repo_params_proxy_yum(args):
-    # createYumProxy(
-    #     String name,
-    #     String remoteUrl,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation)
-    return args_to_repo_params_proxy(args)
-
-
-def args_to_repo_params(args):
-    # Parameters common to createFormatHosted and createFormatProxy
-    # create(Npm|PyPi|Raw|Rubygems)Hosted(
-    #     String name,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation,
-    #     org.sonatype.nexus.repository.storage.WritePolicy writePolicy)
-    repo_params = {
-        'name': args['<repo_name>'],
-        'blobStoreName': args['--blob'],
-        'strictContentTypeValidation': str(args['--strict-content']).lower(),
-    }
-
-    return repo_params
-
-
-def args_to_repo_params_hosted(args):
-    # create(Npm|PyPi|Raw|Rubygems)Hosted(
-    #     String name,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation,
-    #     org.sonatype.nexus.repository.storage.WritePolicy writePolicy)
-    method_name = 'repository.create{}Hosted'.format(args_to_repo_format(args))
-    repo_params = args_to_repo_params(args)
-    repo_params.update({
-        'writePolicy': nexus_policy('write', args['--write']),
-        '__method': method_name,
-        '__imports': nexus_policy('write', '__imports'),
-    })
-
-    return repo_params
-
-
-def args_to_repo_params_proxy(args):
-    # create(Npm|PyPi|Raw|Rubygems)Proxy(
-    #     String name,
-    #     String remoteUrl,
-    #     String blobStoreName,
-    #     boolean strictContentTypeValidation)
-    method_name = 'repository.create{}Proxy'.format(args_to_repo_format(args))
-    repo_params = args_to_repo_params(args)
-    repo_params.update({
-        'remoteUrl': args['<remote_url>'],
-        '__method': method_name,
-    })
-
-    return repo_params
-
-
-def cmd_repo_do_create(
-        nexus_client, repo_params, repo_type='hosted', repo_format=None):
-    script_method = script_method_object(repo_type, repo_format)
-    script_content, script_name = script_method(repo_params)
-
-    nexus_client.scripts.create(script_content)
-    nexus_client.scripts.run(script_name)
-    nexus_client.scripts.delete(script_name)
-    sys.stderr.write('Created repository: {}\n'.format(repo_params['name']))
-
-
 def args_to_repo_format(args):
-    accepted_formats = ['maven', 'npm', 'pypi', 'raw', 'rubygems', 'yum']
     # docopt guarantees only one is True
-    for format_name in accepted_formats:
+    for format_name in repository.validations.KNOWN_FORMATS:
         if args.get(format_name) is True:
-            if format_name == 'pypi':
-                return 'PyPi'  # bloody bastards 🤬
-            return format_name.title()
-    # Just in case:
-    raise AttributeError(
-        'User arguments did not match a recognised format: {}'.format(
-            accepted_formats))
+            return format_name
 
 
 def args_to_repo_type(args):
-    accepted_types = ['hosted', 'proxy']
     # docopt guarantees only one is True
-    for type_name in accepted_types:
+    for type_name in repository.validations.KNOWN_TYPES:
         if args.get(type_name) is True:
             return type_name
-    # Just in case:
-    raise AttributeError(
-        'User arguments did not match a recognised type: {}'.format(
-            accepted_types))
 
 
 def cmd_repo_create(nexus_client, args):
     """Performs ``rekt repo create *`` commands"""
-    repo_type = args_to_repo_type(args)
-    repo_format = args_to_repo_format(args).lower()
-
-    # these special snowflakes have their own groovy method signatures
-    snowflake_repo_formats = ['maven', 'yum']
-    if repo_format in snowflake_repo_formats:
-        # ie: args_to_repo_params_maven, args_to_repo_params_yum
-        method_name = 'args_to_repo_params_{repo_type}_{repo_format}'.format(
-            **locals())
-        args_to_repo_params_method = globals()[method_name]
-    else:
-        method_name = 'args_to_repo_params_{repo_type}'.format(**locals())
-        args_to_repo_params_method = globals()[method_name]
-        repo_format = None
-
-    repo_params = args_to_repo_params_method(args)
-    cmd_repo_do_create(nexus_client, repo_params,
-                       repo_type=repo_type, repo_format=repo_format)
+    r = repository.Repository(
+        args_to_repo_type(args),
+        ignore_extra_kwargs=True,
+        name=args.get('<repo_name>'),
+        format=args_to_repo_format(args),
+        blob_store_name=args.get('--blob'),
+        depth=int(args.get('--depth')),
+        remote_url=args.get('<remote_url>'),
+        strict_content_type_validation=args.get('--strict-content'),
+        version_policy=args.get('--version'),
+        write_policy=args.get('--write'),
+        layout_policy=args.get('--layout'),
+    )
+    nexus_client.repositories.create(r)
 
 
 def cmd_repo(args):

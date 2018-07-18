@@ -11,7 +11,7 @@ KNOWN_TYPES = ['group', 'hosted', 'proxy']
 KNOWN_FORMATS = [
     'bower', 'docker', 'gitlfs', 'maven', 'npm', 'nuget', 'pypi', 'raw',
     'rubygems', 'yum']
-SUPPORTED_FORMATS = ['npm', 'maven', 'pypi', 'raw', 'rubygem', 'yum']
+SUPPORTED_FORMATS = ['npm', 'maven', 'pypi', 'raw', 'rubygems', 'yum']
 SUPPORTED_TYPES = ['hosted', 'proxy']
 LAYOUT_POLICIES = ['PERMISSIVE', 'STRICT']
 VERSION_POLICIES = ['RELEASE', 'SNAPSHOT', 'MIXED']
@@ -29,6 +29,19 @@ def is_target_supported(target, value, known, supported):
         raise NotImplementedError(
             '{target}={value}; supported {target}s: {supported}'.format(
                 **locals()))
+
+
+def _upcase_values(raw_repo, targets=[]):
+    for key in targets:
+        value = raw_repo.get(key)
+        if value is not None:
+            raw_repo[key] = value.upper()
+
+
+def args_to_raw_repo(args):
+    raw = dict(args)
+    _upcase_values(raw, ['layout_policy', 'write_policy', 'version_policy'])
+    return raw
 
 
 def check_create_args(repo_type, **kwargs):
@@ -57,12 +70,12 @@ def check_create_args(repo_type, **kwargs):
 
     try:
         remaining_args = check_common_args(**kwargs)
-        # remaining_args = check_format_args(**remaining_args)
         remaining_args = check_type_args(repo_type, **remaining_args)
     except KeyError as e:
         raise KeyError('Missing required keyword argument: {}'.format(e))
 
-    if remaining_args:
+    ignore_extra = remaining_args.pop('ignore_extra_kwargs', False)
+    if remaining_args and not ignore_extra:
         raise ValueError('Unrecognised keyword arguments: {}'.format(
             remaining_args.keys()))
 
