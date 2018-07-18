@@ -29,7 +29,7 @@ def test_repo_list(mocker):
 
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict', itertools.product(
-        ['npm', 'pypi', 'raw', 'rubygems'],  # format
+        repository.validations.SUPPORTED_FORMATS,  # format
         repository.validations.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
     ))
@@ -84,7 +84,7 @@ def test_repo_create_hosted_yum(w_policy, depth, strict):
 
 @pytest.mark.parametrize(
     'repo_format, strict', itertools.product(
-        ['npm', 'pypi', 'raw', 'rubygems', 'yum'],  # format
+        repository.validations.SUPPORTED_FORMATS,  # format
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration

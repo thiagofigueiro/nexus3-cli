@@ -10,7 +10,7 @@ Usage:
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
          [--write=<w_policy>]
-  nexus3 repo create hosted (npm|pypi|raw|rubygems) <repo_name>
+  nexus3 repo create hosted (bower|npm|nuget|pypi|raw|rubygems) <repo_name>
          [--blob=<store_name>] [--write=<w_policy>] [--strict-content]
   nexus3 repo create hosted yum <repo_name>
          [--blob=<store_name>] [--write=<w_policy>]
@@ -18,7 +18,7 @@ Usage:
   nexus3 repo create proxy maven <repo_name> <remote_url>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
-  nexus3 repo create proxy (npm|pypi|raw|rubygems|yum)
+  nexus3 repo create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
           <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content]
   nexus3 repo list

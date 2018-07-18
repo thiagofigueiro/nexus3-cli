@@ -11,7 +11,8 @@ KNOWN_TYPES = ['group', 'hosted', 'proxy']
 KNOWN_FORMATS = [
     'bower', 'docker', 'gitlfs', 'maven', 'npm', 'nuget', 'pypi', 'raw',
     'rubygems', 'yum']
-SUPPORTED_FORMATS = ['npm', 'maven', 'pypi', 'raw', 'rubygems', 'yum']
+SUPPORTED_FORMATS = [
+    'bower', 'maven', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'yum']
 SUPPORTED_TYPES = ['hosted', 'proxy']
 LAYOUT_POLICIES = ['PERMISSIVE', 'STRICT']
 VERSION_POLICIES = ['RELEASE', 'SNAPSHOT', 'MIXED']
