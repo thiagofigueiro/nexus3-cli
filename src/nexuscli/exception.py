@@ -20,3 +20,7 @@ class NexusClientInvalidRepository(Exception):
 
 class NexusClientDownloadError(Exception):
     pass
+
+
+class NexusClientCreateRepositoryError(Exception):
+    pass

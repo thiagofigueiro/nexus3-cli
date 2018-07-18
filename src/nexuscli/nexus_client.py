@@ -10,6 +10,8 @@ except ImportError:
     from urlparse import urljoin      # Python 2
 
 from . import exception, nexus_util
+from nexuscli.repository.model import RepositoryCollection
+from nexuscli.script.model import ScriptCollection
 
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
@@ -32,8 +34,6 @@ class NexusClient(object):
     Attributes:
         base_url (str): as per url argument.
         config_path (str): as per arguments.
-        repositories (list): list of repositories on Nexus service. See
-            :py:meth:`refresh_repositories` for format.
     """
     CONFIG_PATH = '~/.nexus-cli'
     DEFAULT_URL = 'http://localhost:8081'
@@ -43,10 +43,10 @@ class NexusClient(object):
     def __init__(self, url=None, user=None, password=None, config_path=None):
         self.base_url = None
         self.config_path = config_path or NexusClient.CONFIG_PATH
-        self.repositories = None
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
+        self._repositories_json = None  # TODO: move to nexus_repositories
         self._remote_sep = '/'
 
         self.set_config(
@@ -58,6 +58,14 @@ class NexusClient(object):
     def set_config(self, user, password, base_url):
         self._auth = (user, password)
         self.base_url = base_url
+
+    @property
+    def repositories(self):
+        return RepositoryCollection(client=self)
+
+    @property
+    def scripts(self):
+        return ScriptCollection(client=self)
 
     @property
     def rest_url(self):
@@ -161,38 +169,10 @@ class NexusClient(object):
     def _delete(self, endpoint, **kwargs):
         return self._request('delete', endpoint, **kwargs)
 
-    def script_list(self):
-        resp = self._get('script')
-        if resp.status_code != 200:
-            raise exception.NexusClientAPIError(resp.content)
-
-        return resp.json()
-
-    def script_create(self, script_content):
-        resp = self._post('script', json=script_content)
-        if resp.status_code != 204:
-            raise exception.NexusClientAPIError(resp.content)
-
-    def script_run(self, script_name):
-        headers = {'content-type': 'text/plain'}
-        endpoint = 'script/{}/run'.format(script_name)
-        resp = self._post(endpoint, headers=headers, data='')
-        if resp.status_code != 200:
-            raise exception.NexusClientAPIError(resp.content)
-
-    def script_delete(self, script_name):
-        endpoint = 'script/{}'.format(script_name)
-        resp = self._delete(endpoint)
-        if resp.status_code != 204:
-            raise exception.NexusClientAPIError(resp.reason)
-
+    # TODO: move to nexus_repositories
     def repo_list(self):
-        self._api_version = 'beta'
-        response = self._get('repositories')
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise exception.NexusClientAPIError(response.content)
+        self.refresh_repositories()
+        return self._repositories_json
 
     def list(self, repository_path):
         """
@@ -354,17 +334,18 @@ class NexusClient(object):
         >>>     # (...)
         >>> ]
         """
+        previous_api_version = self._api_version
         self._api_version = 'beta'
         response = self._get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
 
-        self.repositories = response.json()
-        self._api_version = 'v1'
+        self._repositories_json = response.json()
+        self._api_version = previous_api_version
 
     def get_repository_by_name(self, name):
         """ Search self.repositories for the entry named `name`"""
-        for r in self.repositories:
+        for r in self._repositories_json:
             if r['name'] == name:
                 return r
 
@@ -402,7 +383,6 @@ class NexusClient(object):
             response = self._put(
                 repository_path, data=fh, service_url=self.base_url)
 
-        print('HELLO', response.__dict__)
         if response.status_code != 200:
             raise exception.NexusClientAPIError(
                 'Uploading to {repository_path}. '

@@ -49,25 +49,25 @@ def test_refresh_repositories(nexus_mock_client):
     Ensure the method retrieves latest repositories and sets the class
     attribute.
     """
-    nexus_mock_client.refresh_repositories()
+    repositories = nexus_mock_client.repo_list()
     x_repositories = nexus_mock_client._request.return_value._json
 
     nexus_mock_client._request.assert_called_with('get', 'repositories')
-    assert nexus_mock_client.repositories == x_repositories
+    assert repositories == x_repositories
 
 
 def test_refresh_repositories_error(nexus_mock_client):
     """
-    Ensure the method retrieves latest repositories and sets the class
-    attribute.
+    Ensure the method does't modify the existing repositories attribute when
+    the client request fails.
     """
     nexus_mock_client._request.return_value.status_code = 400
-    nexus_mock_client.repositories = None
+    nexus_mock_client._repositories_json = None
 
     with pytest.raises(exception.NexusClientAPIError):
         nexus_mock_client.refresh_repositories()
 
-    assert nexus_mock_client.repositories is None
+    assert nexus_mock_client._repositories_json is None
 
 
 @pytest.mark.parametrize('x_found', [True, False])

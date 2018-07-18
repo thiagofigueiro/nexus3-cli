@@ -76,8 +76,8 @@ def test_upload_file_yum_error(
     x_values = nexus_mock_client._request.return_value
     x_values.status_code = 999
     # force name match on the first repo from the mocked object
-    nexus_mock_client.repositories[0]['name'] = x_repo_name
-    nexus_mock_client.repositories[0]['format'] = 'yum'
+    nexus_mock_client._repositories_json[0]['name'] = x_repo_name
+    nexus_mock_client._repositories_json[0]['format'] = 'yum'
 
     with tmpdir.as_cwd():
         tmpdir.join(x_src_file).write(bytes(x_content), mode='wb', ensure=True)
@@ -104,7 +104,7 @@ def test_upload_directory(faker, mocker, nexus_mock_client, deep_file_tree):
 
     x_src_dir, x_file_set = deep_file_tree
     # ensure the repo exists
-    x_dst_repo = nexus_mock_client.repositories[0]['name']
+    x_dst_repo = nexus_mock_client._repositories_json[0]['name']
     x_dst_dir = faker.uri_path()
 
     # these are used to verify all the calls made to upload_file
