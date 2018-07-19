@@ -40,6 +40,11 @@ class RepositoryCollection(object):
         :type repository: Repository
         :return: None
         """
+        if not isinstance(repository, Repository):
+            raise TypeError('repository ({}) must be a Repository'.format(
+                type(repository)
+            ))
+
         script = {
             'type': 'groovy',
             'name': 'nexus3-cli-repository-create',
