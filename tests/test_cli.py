@@ -154,3 +154,26 @@ def test_repo_rm(nexus_client):
     repositories = nexus_client.repo_list()
 
     assert not any(r['name'] == 'maven-public' for r in repositories)
+
+
+@pytest.mark.integration
+def test_script(nexus_client):
+    """Test that the `repo script` commands for create, run and rm work"""
+    x_name = 'test_script_run'
+    argv = 'script create tests/fixtures/script.json'.split(' ')
+    nexuscli.cli.main(argv=argv)
+
+    scripts = nexus_client.scripts.list()
+    script_names = [s.get('name') for s in scripts]
+
+    argv = 'script run {}'.format(x_name).split(' ')
+    nexuscli.cli.main(argv=argv)
+
+    argv = 'script rm {}'.format(x_name).split(' ')
+    nexuscli.cli.main(argv=argv)
+
+    scripts = nexus_client.scripts.list()
+    rm_script_names = [s.get('name') for s in scripts]
+
+    assert x_name in script_names
+    assert x_name not in rm_script_names
