@@ -1,0 +1,5 @@
+{
+  "name": "test_script_run",
+  "type": "groovy",
+  "content": "log.info('Hello from the test suite')"
+}
