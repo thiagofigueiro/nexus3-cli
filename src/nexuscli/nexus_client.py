@@ -35,7 +35,7 @@ class NexusClient(object):
         base_url (str): as per url argument.
         config_path (str): as per arguments.
     """
-    CONFIG_PATH = '~/.nexus-cli'
+    CONFIG_PATH = os.path.expanduser('~/.nexus-cli')
     DEFAULT_URL = 'http://localhost:8081'
     DEFAULT_USER = 'admin'
     DEFAULT_PASS = 'admin123'
@@ -49,10 +49,11 @@ class NexusClient(object):
         self._repositories_json = None  # TODO: move to nexus_repositories
         self._remote_sep = '/'
 
-        self.set_config(
-            user or NexusClient.DEFAULT_USER,
-            password or NexusClient.DEFAULT_PASS,
-            url or NexusClient.DEFAULT_URL)
+        if url and user and password:
+            self.set_config(user, password, url)
+        else:
+            self.read_config()
+
         self.refresh_repositories()
 
     def set_config(self, user, password, base_url):
@@ -91,11 +92,17 @@ class NexusClient(object):
         try:
             with nexus_config.open(mode='r', encoding='utf-8') as fh:
                 config = json.load(fh)
+                config_attrs = (
+                    config['nexus_user'],
+                    config['nexus_pass'],
+                    config['nexus_url'])
         except py.error.ENOENT:
-            raise exception.NexusClientConfigurationNotFound
+            config_attrs = (
+                NexusClient.DEFAULT_USER,
+                NexusClient.DEFAULT_PASS,
+                NexusClient.DEFAULT_URL)
 
-        self.set_config(
-            config['nexus_user'], config['nexus_pass'], config['nexus_url'])
+        self.set_config(*config_attrs)
 
     def _request(self, method, endpoint, **kwargs):
         """

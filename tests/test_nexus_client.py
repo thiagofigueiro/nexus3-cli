@@ -1,7 +1,41 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from nexuscli import exception
+from nexuscli import exception, nexus_client
+
+
+def test_login_config(mocker):
+    """
+    Ensure that the class tries to read the configuration and fetch
+    repositories on instantiation
+    """
+    mocker.patch.object(nexus_client.NexusClient, 'refresh_repositories')
+    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+
+    client = nexus_client.NexusClient()
+
+    client.refresh_repositories.assert_called_once()
+    client.read_config.assert_called_once()
+
+
+def test_login_params(faker, mocker):
+    """
+    Ensure that the class doesn't try to read the configuration and, instead,
+    uses the provided connection parameters on instantiation.
+    """
+    mocker.patch.object(nexus_client.NexusClient, 'refresh_repositories')
+    mocker.patch.object(nexus_client.NexusClient, 'set_config')
+    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+
+    x_user = faker.user_name()
+    x_pass = faker.password()
+    x_url = faker.url()
+
+    client = nexus_client.NexusClient(user=x_user, password=x_pass, url=x_url)
+
+    client.refresh_repositories.assert_called_once()
+    client.read_config.assert_not_called()
+    client.set_config.assert_called_with(x_user, x_pass, x_url)
 
 
 @pytest.mark.parametrize(

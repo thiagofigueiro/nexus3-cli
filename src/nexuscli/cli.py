@@ -51,12 +51,12 @@ Commands:
 import getpass
 import inflect
 import json
+import os
 import sys
 import types
 
 from docopt import docopt
 
-from nexuscli.exception import NexusClientConfigurationNotFound
 from nexuscli.nexus_client import NexusClient
 from nexuscli import repository
 
@@ -97,14 +97,11 @@ def do_login():
 
 
 def get_client():
-    client = NexusClient()
-    try:
-        client.read_config()
-        return client
-    except NexusClientConfigurationNotFound:
+    if not os.path.isfile(NexusClient.CONFIG_PATH):
         sys.stderr.write(
-            'Configuration not found; please run nexus-cli.py login\n')
-        sys.exit(1)
+            'Warning: configuration not found; proceeding with defaults.\n'
+            'To remove this warning, please run nexus-cli.py login\n')
+    return NexusClient()
 
 
 def cmd_script_do_list(nexus_client):
