@@ -151,7 +151,7 @@ def test_repo_rm(nexus_client):
     argv_rm = pytest.helpers.create_argv(
         'repo rm -f maven-public', **locals())
     nexuscli.cli.main(argv=list(filter(None, argv_rm)))
-    repositories = nexus_client.repo_list()
+    repositories = nexus_client.repositories.raw_list()
 
     assert not any(r['name'] == 'maven-public' for r in repositories)
 

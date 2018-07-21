@@ -14,6 +14,53 @@ class RepositoryCollection(object):
         :type client:  nexuscli.nexus_client.NexusClient
         """
         self.client = client
+        self._repositories_json = None
+
+    def get_raw_by_name(self, name):
+        """
+        Return the raw dict for the repository called ``name``. Remember to
+        :meth:`refresh` to get the latest from the server.
+
+        Args:
+            name (str): name of wanted repository
+
+        Returns:
+            dict: the repository, if found.
+
+        Raises:
+            :class:`IndexError`: if no repository named ``name`` is found.
+
+        """
+        for r in self._repositories_json:
+            if r['name'] == name:
+                return r
+
+        raise IndexError
+
+    def refresh(self):
+        """
+        Refresh local list of repositories with latest from service. A raw
+        representation of repositories can be fetched using :meth:`raw_list`.
+        """
+        previous_api_version = self.client._api_version
+        self.client._api_version = 'beta'
+        response = self.client._get('repositories')
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(response.content)
+
+        self._repositories_json = response.json()
+        self.client._api_version = previous_api_version
+
+    def raw_list(self):
+        """
+        A raw representation of the Nexus repositories.
+
+        Returns:
+            dict: for the format, see `List Repositories
+            <https://help.sonatype.com/repomanager3/rest-and-integration-api/repositories-api#RepositoriesAPI-ListRepositories>`_.
+        """
+        self.refresh()
+        return self._repositories_json
 
     def delete(self, name):
         """
@@ -62,36 +109,33 @@ class RepositoryCollection(object):
 
 class Repository(object):
     """
-    A class representing a Nexus 3 repository.
+    Creates an object representing a Nexus repository with the given
+    format, type and attributes.
+
+    Args:
+        name (str): name of the new repository.
+        format (str): format (recipe) of the new repository. Must be one
+            of data:`nexuscli.repository.validations.KNOWN_FORMATS`.
+        blob_store_name (str):
+        depth (int): only valid when ``repo_format=yum``. The repodata
+            depth.
+        remote_url (str):
+        strict_content_type_validation (bool):
+        version_policy (str):
+        write_policy (str): One of :py:data:
+        layout_policy (str): One of
+        ignore_extra_kwargs (bool): if True, raise an exception for
+            unnecessary/extra/invalid kwargs.
+
+    :param repo_type: type for the new repository. Must be one of
+        :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
+    :param kwargs: attributes for the new repository.
+    :return: the created repository
+    :rtype: Repository
     """
     def __init__(self, repo_type, **kwargs):
-        """
-        Creates an object representing a Nexus repository with the given
-        format, type and attributes.
-
-        Args:
-            name (str): name of the new repository.
-            format (str): format (recipe) of the new repository. Must be one
-                of :py:data:`nexuscli.repository.validations.KNOWN_FORMATS`.
-            blob_store_name (str):
-            depth (int): only valid when ``repo_format=yum``. The repodata
-                depth.
-            remote_url (str):
-            strict_content_type_validation (bool):
-            version_policy (str):
-            write_policy (str): One of :py:data:
-            layout_policy (str): One of
-            ignore_extra_kwargs (bool): if True, raise an exception for
-                unnecessary/extra/invalid kwargs.
-
-        :param repo_type: type for the new repository. Must be one of
-            :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
-        :param kwargs: attributes for the new repository.
-        :return: the created repository
-        :rtype: Repository
-        """
         self._repo_type = repo_type
-        self._raw = validations.args_to_raw_repo(kwargs)
+        self._raw = validations.upcase_policy_args(kwargs)
 
     def __repr__(self):
         return 'Repository({self._repo_type}, {self._raw})'.format(self=self)
@@ -104,7 +148,7 @@ class Repository(object):
 
     @property
     def configuration(self):
-        validations.check_create_args(self._repo_type, **self._raw)
+        validations.repository_args(self._repo_type, **self._raw)
         if self._repo_type == 'hosted':
             return self._configuration_hosted()
         elif self._repo_type == 'proxy':

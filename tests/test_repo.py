@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.integration
 def test_repo_list(nexus_client):
-    repositories = nexus_client.repo_list()
+    repositories = nexus_client.repositories.raw_list()
 
     assert isinstance(repositories, list)
     assert all(r.get('name') for r in repositories)

@@ -54,7 +54,7 @@ def test_upload_file_raw_no_directory(
     Ensure the method raises an error when the target directory isn't provided
     or starts with /.
     """
-    nexus_mock_client.get_repository_by_name = mocker.Mock(
+    nexus_mock_client.repositories.get_raw_by_name = mocker.Mock(
         return_value=pytest.helpers.nexus_repository(
             name=faker.uri_page(), format_='raw'))
 
@@ -76,8 +76,8 @@ def test_upload_file_yum_error(
     x_values = nexus_mock_client._request.return_value
     x_values.status_code = 999
     # force name match on the first repo from the mocked object
-    nexus_mock_client._repositories_json[0]['name'] = x_repo_name
-    nexus_mock_client._repositories_json[0]['format'] = 'yum'
+    nexus_mock_client.repositories._repositories_json[0]['name'] = x_repo_name
+    nexus_mock_client.repositories._repositories_json[0]['format'] = 'yum'
 
     with tmpdir.as_cwd():
         tmpdir.join(x_src_file).write(bytes(x_content), mode='wb', ensure=True)
@@ -104,7 +104,7 @@ def test_upload_directory(faker, mocker, nexus_mock_client, deep_file_tree):
 
     x_src_dir, x_file_set = deep_file_tree
     # ensure the repo exists
-    x_dst_repo = nexus_mock_client._repositories_json[0]['name']
+    x_dst_repo = nexus_mock_client.repositories._repositories_json[0]['name']
     x_dst_dir = faker.uri_path()
 
     # these are used to verify all the calls made to upload_file
@@ -143,7 +143,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
 
     argv = ('repo create hosted raw {}'.format(repo)).split()
     pytest.helpers.create_and_inspect(argv, repo)
-    nexus_client.refresh_repositories()
+    nexus_client.repositories.refresh()
 
     count = nexus_client.upload_directory(src_dir, repo, dst_dir)
     file_set = pytest.helpers.repo_list(nexus_client, repo, count, path)

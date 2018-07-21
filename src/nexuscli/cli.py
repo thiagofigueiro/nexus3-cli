@@ -134,7 +134,7 @@ def cmd_script(args):
 
 
 def cmd_repo_do_list(nexus_client):
-    json_response = nexus_client.repo_list()
+    json_response = nexus_client.repositories.raw_list()
 
     output_format = '{0:40} {1:7} {2:7} {3}\n'
     sys.stderr.write(output_format.format('Name', 'Format', 'Type', 'URL'))
