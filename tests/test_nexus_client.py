@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
+import nexuscli
 from nexuscli import exception, nexus_client
 
 
@@ -9,12 +10,13 @@ def test_login_config(mocker):
     Ensure that the class tries to read the configuration and fetch
     repositories on instantiation
     """
-    mocker.patch.object(nexus_client.NexusClient, 'refresh_repositories')
+    mocker.patch('nexuscli.nexus_client.RepositoryCollection')
     mocker.patch.object(nexus_client.NexusClient, 'read_config')
 
     client = nexus_client.NexusClient()
 
-    client.refresh_repositories.assert_called_once()
+    nexuscli.nexus_client.RepositoryCollection.assert_called()
+    client.repositories.refresh.assert_called_once()
     client.read_config.assert_called_once()
 
 
@@ -23,7 +25,7 @@ def test_login_params(faker, mocker):
     Ensure that the class doesn't try to read the configuration and, instead,
     uses the provided connection parameters on instantiation.
     """
-    mocker.patch.object(nexus_client.NexusClient, 'refresh_repositories')
+    mocker.patch('nexuscli.nexus_client.RepositoryCollection')
     mocker.patch.object(nexus_client.NexusClient, 'set_config')
     mocker.patch.object(nexus_client.NexusClient, 'read_config')
 
@@ -33,7 +35,8 @@ def test_login_params(faker, mocker):
 
     client = nexus_client.NexusClient(user=x_user, password=x_pass, url=x_url)
 
-    client.refresh_repositories.assert_called_once()
+    nexuscli.nexus_client.RepositoryCollection.assert_called()
+    client.repositories.refresh.assert_called_once()
     client.read_config.assert_not_called()
     client.set_config.assert_called_with(x_user, x_pass, x_url)
 
@@ -76,54 +79,3 @@ def test_split_component_path_errors(
         nexus_mock_client.split_component_path(component_path)
 
     assert x_error in str(e.value)
-
-
-def test_refresh_repositories(nexus_mock_client):
-    """
-    Ensure the method retrieves latest repositories and sets the class
-    attribute.
-    """
-    repositories = nexus_mock_client.repo_list()
-    x_repositories = nexus_mock_client._request.return_value._json
-
-    nexus_mock_client._request.assert_called_with('get', 'repositories')
-    assert repositories == x_repositories
-
-
-def test_refresh_repositories_error(nexus_mock_client):
-    """
-    Ensure the method does't modify the existing repositories attribute when
-    the client request fails.
-    """
-    nexus_mock_client._request.return_value.status_code = 400
-    nexus_mock_client._repositories_json = None
-
-    with pytest.raises(exception.NexusClientAPIError):
-        nexus_mock_client.refresh_repositories()
-
-    assert nexus_mock_client._repositories_json is None
-
-
-@pytest.mark.parametrize('x_found', [True, False])
-def test_get_repository_by_name(
-        x_found, nexus_mock_client, faker):
-    """Ensure the method returns a repo found by name or raises an exception"""
-    nexus = nexus_mock_client
-    x_name = faker.pystr()
-    x_format = faker.pystr()
-    x_repo = None
-    x_values = nexus_mock_client._request.return_value._json
-
-    if x_found:
-        x_repo = pytest.helpers.nexus_repository(x_name, x_format)
-        x_values.append(x_repo)
-
-    nexus.refresh_repositories()
-
-    if x_found:
-        assert nexus.get_repository_by_name(x_name) == x_repo
-        assert nexus.get_repository_by_name(x_name)['name'] == x_name
-        assert nexus.get_repository_by_name(x_name)['format'] == x_format
-    else:
-        with pytest.raises(IndexError):
-            nexus.get_repository_by_name(x_name)

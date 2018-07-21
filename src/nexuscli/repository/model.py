@@ -14,6 +14,53 @@ class RepositoryCollection(object):
         :type client:  nexuscli.nexus_client.NexusClient
         """
         self.client = client
+        self._repositories_json = None
+
+    def get_raw_by_name(self, name):
+        """
+        Return the raw dict for the repository called ``name``. Remember to
+        :meth:`refresh` to get the latest from the server.
+
+        Args:
+            name (str): name of wanted repository
+
+        Returns:
+            dict: the repository, if found.
+
+        Raises:
+            :class:`IndexError`: if no repository named ``name`` is found.
+
+        """
+        for r in self._repositories_json:
+            if r['name'] == name:
+                return r
+
+        raise IndexError
+
+    def refresh(self):
+        """
+        Refresh local list of repositories with latest from service. A raw
+        representation of repositories can be fetched using :meth:`raw_list`.
+        """
+        previous_api_version = self.client._api_version
+        self.client._api_version = 'beta'
+        response = self.client._get('repositories')
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(response.content)
+
+        self._repositories_json = response.json()
+        self.client._api_version = previous_api_version
+
+    def raw_list(self):
+        """
+        A raw representation of the Nexus repositories.
+
+        Returns:
+            dict: for the format, see `List Repositories
+            <https://help.sonatype.com/repomanager3/rest-and-integration-api/repositories-api#RepositoriesAPI-ListRepositories>`_.
+        """
+        self.refresh()
+        return self._repositories_json
 
     def delete(self, name):
         """

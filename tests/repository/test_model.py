@@ -69,3 +69,54 @@ def test_create_repository(
     json.dumps.assert_called_with(repo.configuration)
     repository_collection.client.scripts.run.assert_called_with(
         'nexus3-cli-repository-create', data=json.dumps.return_value)
+
+
+def test_refresh_repositories(nexus_mock_client):
+    """
+    Ensure the method retrieves latest repositories and sets the class
+    attribute.
+    """
+    repositories = nexus_mock_client.repositories.raw_list()
+    x_repositories = nexus_mock_client._request.return_value._json
+
+    nexus_mock_client._request.assert_called_with('get', 'repositories')
+    assert repositories == x_repositories
+
+
+def test_refresh_repositories_error(nexus_mock_client):
+    """
+    Ensure the method does't modify the existing repositories attribute when
+    the client request fails.
+    """
+    nexus_mock_client._request.return_value.status_code = 400
+    nexus_mock_client.repositories._repositories_json = None
+
+    with pytest.raises(exception.NexusClientAPIError):
+        nexus_mock_client.repositories.refresh()
+
+    assert nexus_mock_client.repositories._repositories_json is None
+
+
+@pytest.mark.parametrize('x_found', [True, False])
+def test_get_repository_by_name(
+        x_found, nexus_mock_client, faker):
+    """Ensure the method returns a repo found by name or raises an exception"""
+    nexus = nexus_mock_client
+    x_name = faker.pystr()
+    x_format = faker.pystr()
+    x_repo = None
+    x_values = nexus_mock_client._request.return_value._json
+
+    if x_found:
+        x_repo = pytest.helpers.nexus_repository(x_name, x_format)
+        x_values.append(x_repo)
+
+    nexus.repositories.refresh()
+
+    if x_found:
+        assert nexus.repositories.get_raw_by_name(x_name) == x_repo
+        assert nexus.repositories.get_raw_by_name(x_name)['name'] == x_name
+        assert nexus.repositories.get_raw_by_name(x_name)['format'] == x_format
+    else:
+        with pytest.raises(IndexError):
+            nexus.repositories.get_raw_by_name(x_name)

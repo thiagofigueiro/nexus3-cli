@@ -43,15 +43,16 @@ class NexusClient(object):
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
-        self._repositories_json = None  # TODO: move to nexus_repositories
         self._remote_sep = '/'
+        self._repositories = None
+        self._scripts = None
 
         if url and user and password:
             self.set_config(user, password, url)
         else:
             self.read_config()
 
-        self.refresh_repositories()
+        self.repositories.refresh()
 
     def set_config(self, user, password, base_url):
         self._auth = (user, password)
@@ -60,11 +61,15 @@ class NexusClient(object):
     @property
     def repositories(self):
         """RepositoryCollection: instance"""
-        return RepositoryCollection(client=self)
+        if self._repositories is None:
+            self._repositories = RepositoryCollection(client=self)
+        return self._repositories
 
     @property
     def scripts(self):
-        return ScriptCollection(client=self)
+        if self._scripts is None:
+            self._scripts = ScriptCollection(client=self)
+        return self._scripts
 
     @property
     def rest_url(self):
@@ -173,11 +178,6 @@ class NexusClient(object):
 
     def _delete(self, endpoint, **kwargs):
         return self._request('delete', endpoint, **kwargs)
-
-    # TODO: move to nexus_repositories
-    def repo_list(self):
-        self.refresh_repositories()
-        return self._repositories_json
 
     def list(self, repository_path):
         """
@@ -325,37 +325,6 @@ class NexusClient(object):
 
         return repository, directory, filename
 
-    def refresh_repositories(self):
-        """
-        Refresh local list of repositories with latest from service.
-
-        >>> [
-        >>>     {
-        >>>         'format': 'raw',
-        >>>         'name': 'myraw',
-        >>>         'type': 'hosted',
-        >>>         'url': 'http://localhost:8081/repository/myraw'
-        >>>     },
-        >>>     # (...)
-        >>> ]
-        """
-        previous_api_version = self._api_version
-        self._api_version = 'beta'
-        response = self._get('repositories')
-        if response.status_code != 200:
-            raise exception.NexusClientAPIError(response.content)
-
-        self._repositories_json = response.json()
-        self._api_version = previous_api_version
-
-    def get_repository_by_name(self, name):
-        """ Search self.repositories for the entry named `name`"""
-        for r in self._repositories_json:
-            if r['name'] == name:
-                return r
-
-        raise IndexError
-
     def _upload_file_raw(self, src_file, dst_repo, dst_dir, dst_file):
         """Process upload_file() for raw repositories"""
         if dst_dir is None or dst_dir.startswith(self._remote_sep):
@@ -405,7 +374,7 @@ class NexusClient(object):
         :param dst_file: destination file name.
         """
         try:
-            repository = self.get_repository_by_name(dst_repo)
+            repository = self.repositories.get_raw_by_name(dst_repo)
         except IndexError:
             raise exception.NexusClientInvalidRepository(dst_repo)
 

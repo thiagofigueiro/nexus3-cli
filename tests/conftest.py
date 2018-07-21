@@ -47,7 +47,7 @@ def nexus_client():
 @pytest.helpers.register
 def create_and_inspect(argv, expected_repo_name):
     nexuscli.cli.main(argv=list(filter(None, argv)))
-    repositories = nexus_client().repo_list()
+    repositories = nexus_client().repositories.raw_list()
 
     return any(r['name'] == expected_repo_name for r in repositories)
 
@@ -119,7 +119,7 @@ def nexus_mock_client(mocker, faker):
             self.status_code = 200
             self.content = faker.sentence()
             self.reason = faker.sentence()
-            # get ready for refresh_repositories
+            # prepare content for repositories.refresh()
             self._json = [
                 nexus_repository(
                     name=faker.pystr(),
@@ -136,7 +136,7 @@ def nexus_mock_client(mocker, faker):
                  return_value=ResponseMock())
 
     client = nexuscli.nexus_client.NexusClient()
-    client.refresh_repositories()
+    client.repositories.refresh()
     return client
 
 
