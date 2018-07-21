@@ -18,18 +18,15 @@ SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
 class NexusClient(object):
     """
-    Relevant javadocs
-    Script API:
-    http://search.maven.org/remotecontent?filepath=org/sonatype/nexus/plugins/nexus-script-plugin/3.12.1-01/nexus-script-plugin-3.12.1-01-javadoc.jar
-    REST API doc:
-    https://help.sonatype.com/repomanager3/rest-and-integration-api
+    Interact with Nexus 3's API.
 
     Args:
         url (str): URL to Nexus 3 OSS service.
         user (str): login for Nexus service at given url.
         password (str): password for given login.
         config_path (str): local file containing configuration above in JSON
-            format as ``nexus_url``, ``nexus_user`` and ``nexus_pass``.
+            format with these keys: ``nexus_url``, ``nexus_user`` and
+            ``nexus_pass``.
 
     Attributes:
         base_url (str): as per url argument.
@@ -62,6 +59,7 @@ class NexusClient(object):
 
     @property
     def repositories(self):
+        """RepositoryCollection: instance"""
         return RepositoryCollection(client=self)
 
     @property
@@ -297,9 +295,9 @@ class NexusClient(object):
 
         A Nexus component path for a raw directory must have this format:
 
-        repository_name/directory[(/subdir1)...][/|filename]
+        ``repository_name/directory[(/subdir1)...][/|filename]``
 
-        A path ending in / means it represents a directory; otherwise it
+        A path ending in ``/`` means it represents a directory; otherwise it
         represents a filename.
 
             >>> dst0 = 'myrepo0/dir/'

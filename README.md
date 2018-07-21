@@ -4,6 +4,8 @@ A python-based CLI for Sonatype's Nexus OSS 3
 [![Build Status](https://travis-ci.org/thiagofigueiro/nexus3-cli.svg?branch=master)](https://travis-ci.org/thiagofigueiro/nexus3-cli)
 [![CodeFactor](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli/badge)](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli)
 [![codecov](https://codecov.io/gh/thiagofigueiro/nexus3-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/thiagofigueiro/nexus3-cli)
+[![Documentation Status](https://readthedocs.org/projects/nexus3-cli/badge/?version=latest)](https://nexus3-cli.readthedocs.io/en/latest/?badge=latest)
+
 
 ## Usage
 
@@ -37,4 +39,4 @@ For all commands and options, run `nexus3 -h`.
 ## To do
 1. Support for download
 1. Support for upload to repositories other than raw, yum.
-1. API documentation
+1. Blobstore management

@@ -62,36 +62,33 @@ class RepositoryCollection(object):
 
 class Repository(object):
     """
-    A class representing a Nexus 3 repository.
+    Creates an object representing a Nexus repository with the given
+    format, type and attributes.
+
+    Args:
+        name (str): name of the new repository.
+        format (str): format (recipe) of the new repository. Must be one
+            of data:`nexuscli.repository.validations.KNOWN_FORMATS`.
+        blob_store_name (str):
+        depth (int): only valid when ``repo_format=yum``. The repodata
+            depth.
+        remote_url (str):
+        strict_content_type_validation (bool):
+        version_policy (str):
+        write_policy (str): One of :py:data:
+        layout_policy (str): One of
+        ignore_extra_kwargs (bool): if True, raise an exception for
+            unnecessary/extra/invalid kwargs.
+
+    :param repo_type: type for the new repository. Must be one of
+        :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
+    :param kwargs: attributes for the new repository.
+    :return: the created repository
+    :rtype: Repository
     """
     def __init__(self, repo_type, **kwargs):
-        """
-        Creates an object representing a Nexus repository with the given
-        format, type and attributes.
-
-        Args:
-            name (str): name of the new repository.
-            format (str): format (recipe) of the new repository. Must be one
-                of :py:data:`nexuscli.repository.validations.KNOWN_FORMATS`.
-            blob_store_name (str):
-            depth (int): only valid when ``repo_format=yum``. The repodata
-                depth.
-            remote_url (str):
-            strict_content_type_validation (bool):
-            version_policy (str):
-            write_policy (str): One of :py:data:
-            layout_policy (str): One of
-            ignore_extra_kwargs (bool): if True, raise an exception for
-                unnecessary/extra/invalid kwargs.
-
-        :param repo_type: type for the new repository. Must be one of
-            :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
-        :param kwargs: attributes for the new repository.
-        :return: the created repository
-        :rtype: Repository
-        """
         self._repo_type = repo_type
-        self._raw = validations.args_to_raw_repo(kwargs)
+        self._raw = validations.upcase_policy_args(kwargs)
 
     def __repr__(self):
         return 'Repository({self._repo_type}, {self._raw})'.format(self=self)
@@ -104,7 +101,7 @@ class Repository(object):
 
     @property
     def configuration(self):
-        validations.check_create_args(self._repo_type, **self._raw)
+        validations.repository_args(self._repo_type, **self._raw)
         if self._repo_type == 'hosted':
             return self._configuration_hosted()
         elif self._repo_type == 'proxy':

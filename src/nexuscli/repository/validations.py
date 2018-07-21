@@ -20,7 +20,21 @@ WRITE_POLICIES = ['ALLOW', 'ALLOW_ONCE', 'DENY']
 
 
 def is_target_supported(target, value, known, supported):
-    """Validate whether the a target argument is known and supported"""
+    """
+    Validate whether the a target argument is known and supported. The
+    ``target`` is only used to provide a friendlier message to the user.
+    The given ``value`` is checked against ``known`` and ``supported``.
+
+    Args:
+        target (str): name of the target, as known to the end-user.
+        value (str): value of the target key.
+        known (list): known possible values for the target.
+        supported (list): values for the target supported by us.
+
+    Raises:
+          :class:`ValueError`: if given value is not in ``known``.
+          :class:`NotImplementedError`: if given value is not in ``supported``.
+    """
     if value not in known:
         raise ValueError(
             '{target}={value} must be one of {known}'.format(
@@ -39,24 +53,33 @@ def _upcase_values(raw_repo, targets=[]):
             raw_repo[key] = value.upper()
 
 
-def args_to_raw_repo(args):
+def upcase_policy_args(args):
+    """
+    Forces upper-case on the value of the ``layout_policy``, ``write_policy``
+    and ``version_policy`` keys of a kwargs dict.
+
+    :param args: kwargs given to caller
+    :type args: dict
+    :return: a copy of the original dict with the updated values.
+    :rtype: dict
+    """
     raw = dict(args)
     _upcase_values(raw, ['layout_policy', 'write_policy', 'version_policy'])
     return raw
 
 
-def check_create_args(repo_type, **kwargs):
+def repository_args(repo_type, **kwargs):
     """
-    Validate arguments for
-    :py:meth:`nexuscli.nexus_repository.Repository.create()
+    Validate that the combination of arguments for a
+    :class:`nexuscli.repository.model.Repository` is valid.
 
     Raises:
-        :py:class:`ValueError`
+        :class:`ValueError`
             If the value of a given argument is invalid or unsupported, or if
             unrecognised keyword arguments are given.
-        :py:class:`TypeError`
+        :class:`TypeError`
             If the type of a given argument has the wrong object type.
-        :py:class:`NotImplementedError`
+        :class:`NotImplementedError`
             If the combination of arguments isn't yet supported.
 
     :param repo_type: as given to
@@ -70,8 +93,8 @@ def check_create_args(repo_type, **kwargs):
     is_target_supported('repo_type', repo_type, KNOWN_TYPES, SUPPORTED_TYPES)
 
     try:
-        remaining_args = check_common_args(**kwargs)
-        remaining_args = check_type_args(repo_type, **remaining_args)
+        remaining_args = _check_common_args(**kwargs)
+        remaining_args = _check_type_args(repo_type, **remaining_args)
     except KeyError as e:
         raise KeyError('Missing required keyword argument: {}'.format(e))
 
@@ -81,7 +104,7 @@ def check_create_args(repo_type, **kwargs):
             remaining_args.keys()))
 
 
-def check_common_args(**kwargs):
+def _check_common_args(**kwargs):
     name = kwargs.pop('name')
     format_ = kwargs.pop('format')
     if not validate_strings(name, format_):
@@ -100,13 +123,13 @@ def check_common_args(**kwargs):
             'strict_content_type_validation ({}) must be bool'.format(
                 type(strict_content_type_v)))
 
-    remaining_args = check_format_args(format_, **kwargs)
+    remaining_args = _check_format_args(format_, **kwargs)
     return remaining_args
 
 
-def check_format_args(repo_format, **kwargs):
+def _check_format_args(repo_format, **kwargs):
     try:
-        check_specific = globals()['check_format_args_' + repo_format]
+        check_specific = globals()['_check_format_args_' + repo_format]
     except KeyError:
         # nothing specific to check on this repository format
         return kwargs
@@ -114,7 +137,7 @@ def check_format_args(repo_format, **kwargs):
     return check_specific(**kwargs)
 
 
-def check_format_args_maven(**kwargs):
+def _check_format_args_maven(**kwargs):
     version_policy = kwargs.pop('version_policy')
     layout_policy = kwargs.pop('layout_policy')
     is_target_supported(
@@ -125,7 +148,7 @@ def check_format_args_maven(**kwargs):
     return kwargs
 
 
-def check_format_args_yum(**kwargs):
+def _check_format_args_yum(**kwargs):
     depth = kwargs.pop('depth')
     if depth < 0 or depth > 5:
         raise ValueError('depth={}; must be between 0-5'.format(depth))
@@ -133,12 +156,16 @@ def check_format_args_yum(**kwargs):
     return kwargs
 
 
-def check_type_args(repo_type, **kwargs):
-    check_specific = globals()['check_type_args_' + repo_type]
+def _check_type_args(repo_type, **kwargs):
+    try:
+        check_specific = globals()['_check_type_args_' + repo_type]
+    except KeyError:
+        # nothing specific to check on this repository format
+        return kwargs
     return check_specific(**kwargs)
 
 
-def check_type_args_hosted(**kwargs):
+def _check_type_args_hosted(**kwargs):
     write_policy = kwargs.pop('write_policy')
     is_target_supported(
         'write_policy', write_policy, WRITE_POLICIES, WRITE_POLICIES)
@@ -146,7 +173,7 @@ def check_type_args_hosted(**kwargs):
     return kwargs
 
 
-def check_type_args_proxy(**kwargs):
+def _check_type_args_proxy(**kwargs):
     remote_url = kwargs.pop('remote_url')
     parsed_url = urlparse(remote_url)
     if not (parsed_url.scheme and parsed_url.netloc):

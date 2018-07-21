@@ -3,6 +3,16 @@ from six import string_types
 
 
 def validate_strings(*args):
+    """
+    Checks that all given arguments have a string type (e.g. str, basestring,
+    unicode etc)
+
+    Args:
+        *args: values to be validated.
+
+    Returns:
+        bool: True if all arguments are of a string type. False otherwise.
+    """
     for arg in args:
         if not isinstance(arg, string_types):
             return False
@@ -36,18 +46,18 @@ def filtered_list_gen(raw_response, term=None, partial_match=True):
     >>>     print(i['path'])
     # (nothing printed)
 
-    :param raw_response: an iterable that yields one element of a nexus
-        search response at a time, such as the one returned by
-        _paginate_get().
-    :type raw_response: iterable
-    :param term: if defined, only items with an attribute `path`
-        that starts with the given parameter are returned.
-    :param partial_match: if True, include items whose artefact path starts
-        with the given term.
-    :return: a generator that yields items that matched the filter.
-    :rtype: iterable
-    """
+    Args:
+        raw_response (iterable): an iterable that yields one element of a nexus
+            search response at a time, such as the one returned by
+            _paginate_get().
+        term (str): if defined, only items with an attribute `path` that starts
+            with the given parameter are returned.
+        partial_match (bool): if True, include items whose artefact path starts
+            with the given term.
 
+    Yields:
+        dict: items that matched the filter.
+    """
     def is_match(path_, term_):
         if partial_match:
             return path_.startswith(term_)
