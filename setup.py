@@ -19,6 +19,7 @@ requires = [
 test_requires = [
     'codecov',
     'flake8',
+    'pytest',
     'pytest-cov',
     'pytest-helpers-namespace',
     'pytest-mock',
@@ -36,6 +37,7 @@ setup(
     url='https://github.com/thiagofigueiro/nexus3-cli',
     long_description=readme,
     long_description_content_type="text/markdown",
+    setup_requires=["pytest-runner"],
     install_requires=requires,
     tests_require=test_requires,
     license='MIT',
