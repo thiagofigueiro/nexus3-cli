@@ -6,6 +6,8 @@ Usage:
   nexus3 login
   nexus3 (list|ls) <repository_path>
   nexus3 (upload|up) <from_src> <to_repository>
+  nexus3 (download|dl) <from_repository> <to_dst> [--flatten] [--nocache]
+         [--log_lvl=<log_lvl>]
   nexus3 repo create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
@@ -31,11 +33,13 @@ Options:
   -h --help             This screen
   --blob=<store_name>   Use this blob with new repository  [default: default]
   --depth=<repo_depth>  Depth (0-5) where repodata folder(s) exist [default: 0]
+  --flatten             Flatten directory structure on `rekt ar` transfers.
   --force, -f           Execute action without confirmation
   --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
   --layout=<l_policy>   Accepted: strict, permissive [default: strict]
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
   --strict-content      Enable strict content type validation
+  --log_lvl=<log_lvl>   Logging level [default: WARNING].
 
 Commands:
   login         Test login and save credentials to ~/.nexus-cli
@@ -238,6 +242,31 @@ def cmd_upload(args):
     return 0
 
 
+def cmd_download(args):
+    """Performs ``nexus3 download``"""
+    nexus_client = get_client()
+    source = args['<from_repository>']
+    destination = args['<to_dst>']
+
+    sys.stderr.write(
+        'Downloading {source} to {destination}\n'.format(**locals()))
+
+    FLATTEN = args.get('--flatten')
+    NOCACHE = args.get('--nocache')
+    LOG_LVL = args.get('--log_lvl')
+
+    download_count = nexus_client.download(
+        source, destination, flatten=FLATTEN, nocache=NOCACHE, log_lvl=LOG_LVL)
+
+    _cmd_up_down_errors(download_count, 'download')
+
+    file_word = PLURAL('file', download_count)
+    sys.stderr.write(
+        'Downloaded {download_count} {file_word} to '
+        '{destination}\n'.format(**locals()))
+    return 0
+
+
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
@@ -251,5 +280,7 @@ def main(argv=None):
         cmd_list(arguments)
     elif arguments.get('upload') or arguments.get('up'):
         cmd_upload(arguments)
+    elif arguments.get('download') or arguments.get('dl'):
+        cmd_download(arguments)
     else:
         raise NotImplementedError

@@ -1,5 +1,6 @@
 import itertools
 import pytest
+from subprocess import check_call
 
 import nexuscli
 from nexuscli import repository
@@ -177,3 +178,44 @@ def test_script(nexus_client):
 
     assert x_name in script_names
     assert x_name not in rm_script_names
+
+
+@pytest.mark.integration
+def test_upload(hosted_raw_repo_empty, deep_file_tree, faker):
+    src_dir, x_file_set = deep_file_tree
+    dst_dir = faker.uri_path() + '/'
+    path = dst_dir[:-1] + src_dir
+
+    repo_name = hosted_raw_repo_empty
+
+    dest_repo_path = '{}/{}'.format(repo_name, dst_dir)
+
+    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
+                        **locals())
+
+    retcode = check_call(upload_command.split())
+    assert retcode == 0
+
+
+@pytest.mark.integration
+def test_download(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
+    src_dir, x_file_set = deep_file_tree
+    dst_dir = faker.uri_path() + '/'
+    path = dst_dir[:-1] + src_dir
+
+    repo_name = hosted_raw_repo_empty
+
+    dest_repo_path = '{}/{}'.format(repo_name, dst_dir)
+
+    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
+                        **locals())
+
+    retcode = check_call(upload_command.split())
+    assert retcode == 0
+
+    download_dest = str(tmpdir)
+    download_command = 'nexus3 download {dest_repo_path} \
+                        {download_dest}'.format(**locals())
+
+    retcode = check_call(download_command.split())
+    assert retcode == 0

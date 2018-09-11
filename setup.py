@@ -9,6 +9,7 @@ requires = [
     'clint',
     'docopt',
     'future',
+    'faker',
     'inflect',
     'py',
     'future',
