@@ -23,6 +23,8 @@ except NameError:
 
 logging.basicConfig()
 LOG = logging.getLogger(__name__)
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+LOG.setLevel(LOG_LEVEL)
 
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
@@ -605,8 +607,7 @@ class NexusClient(object):
             for chunk in response.iter_content():
                 fd.write(chunk)
 
-    def download(self, source, destination, log_lvl='WARNING',
-                 flatten=False, nocache=False):
+    def download(self, source, destination, **kwargs):
         """Process a download. The source must be a valid Nexus 3
         repository path, including the repository name as the first component
         of the path.
@@ -626,8 +627,6 @@ class NexusClient(object):
                         available on Nexus.
         :return: number of downloaded files.
         """
-        # FIXME: Enable logging at application level rather than in this method
-        LOG.setLevel(level=log_lvl)
 
         download_count = 0
         if source.endswith(self._remote_sep) and \
@@ -643,10 +642,11 @@ class NexusClient(object):
             download_url = artefact['downloadUrl']
             artefact_path = artefact['path']
             download_path = self._remote_path_to_local(
-                artefact_path, destination, flatten)
+                artefact_path, destination, kwargs.get('flatten'))
 
             if self._should_skip_download(
-                    download_url, download_path, artefact, nocache):
+                    download_url, download_path,
+                    artefact, kwargs.get('nocache')):
                 download_count += 1
                 continue
 

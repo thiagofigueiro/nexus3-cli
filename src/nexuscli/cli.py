@@ -7,7 +7,6 @@ Usage:
   nexus3 (list|ls) <repository_path>
   nexus3 (upload|up) <from_src> <to_repository>
   nexus3 (download|dl) <from_repository> <to_dst> [--flatten] [--nocache]
-         [--log_lvl=<log_lvl>]
   nexus3 repo create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
@@ -33,15 +32,18 @@ Options:
   -h --help             This screen
   --blob=<store_name>   Use this blob with new repository  [default: default]
   --depth=<repo_depth>  Depth (0-5) where repodata folder(s) exist [default: 0]
-  --flatten             Flatten directory structure on `rekt ar` transfers.
+  --flatten             Flatten directory structure on `nexus3` transfers
+                        [default: False]
   --force, -f           Execute action without confirmation
-  --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
   --layout=<l_policy>   Accepted: strict, permissive [default: strict]
-  --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
+  --nocache             Force download even if local copy is up-to-date
+                        [default: False]
   --strict-content      Enable strict content type validation
-  --log_lvl=<log_lvl>   Logging level [default: WARNING].
+  --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
+  --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
 
 Commands:
+  download      Download an artefact or a directory to local file system
   login         Test login and save credentials to ~/.nexus-cli
   list          List all files within a path in the repository
   repo create   Create a repository using the format and options provided
@@ -251,12 +253,10 @@ def cmd_download(args):
     sys.stderr.write(
         'Downloading {source} to {destination}\n'.format(**locals()))
 
-    FLATTEN = args.get('--flatten')
-    NOCACHE = args.get('--nocache')
-    LOG_LVL = args.get('--log_lvl')
-
     download_count = nexus_client.download(
-        source, destination, flatten=FLATTEN, nocache=NOCACHE, log_lvl=LOG_LVL)
+                        source, destination,
+                        flatten=args.get('--flatten'),
+                        nocache=args.get('--nocache'))
 
     _cmd_up_down_errors(download_count, 'download')
 

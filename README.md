@@ -34,9 +34,12 @@ Name                                     Format  Type    URL
 my-yum-repository                        yum     hosted  http://localhost:8081/repository/my-yum-repository
 ```
 
+Logging level can be configured by setting an environment variable named `LOG_LEVEL`.
+Valid values for `LOG_LEVEL` are `DEBUG, INFO, WARNING, ERROR, CRITICAL`.
+By default logging level is set to `WARNING`.
+
 For all commands and options, run `nexus3 -h`.
 
 ## To do
-1. Support for download
 1. Support for upload to repositories other than raw, yum.
 1. Blobstore management
