@@ -2,6 +2,7 @@ import os
 import pytest
 import time
 from faker import Faker
+from subprocess import check_call
 
 import nexuscli
 
@@ -182,3 +183,21 @@ def repo_list(client, repo_name, expected_count, repo_path):
 
     # let it fail if we run out of attempts
     return file_set
+
+
+@pytest.helpers.register
+def find_file_count(dir_name):
+    """Find the number of files in a directory"""
+    file_list = [
+        f for f in os.listdir(dir_name)
+        if os.path.isfile(os.path.join(dir_name, f))
+    ]
+    return len(file_list)
+
+
+@pytest.fixture
+def hosted_raw_repo_empty(tmpdir, faker):
+    repo_name = faker.word()
+    command = 'nexus3 repo create hosted raw {}'.format(repo_name)
+    check_call(command.split())
+    return repo_name

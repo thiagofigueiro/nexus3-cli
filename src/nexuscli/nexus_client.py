@@ -1,8 +1,10 @@
 import io
 import json
+import logging
 import os.path
 import py
 import requests
+import sys
 from clint.textui import progress
 try:
     from urllib.parse import urljoin  # Python 3
@@ -13,7 +15,22 @@ from . import exception, nexus_util
 from nexuscli.repository.model import RepositoryCollection
 from nexuscli.script.model import ScriptCollection
 
+# Python 2 compatibility
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError  # Python 2
+
+logging.basicConfig()
+LOG = logging.getLogger(__name__)
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+LOG.setLevel(LOG_LEVEL)
+
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
+
+
+class DownloadError(Exception):
+    pass
 
 
 class NexusClient(object):
@@ -483,3 +500,161 @@ class NexusClient(object):
             source, repo, directory, filename)
 
         return upload_count
+
+    def _remote_path_to_local(
+            self, remote_src, local_dst, flatten, create=True):
+        """
+        Takes the remote path of an asset (without the repository name), the
+        desired destination in the local file system, and creates the fully
+        qualified path according to the instance settings.
+
+        If self.flatten is True, the remote_path isn't reproduced locally.
+
+        If the remote is a directory, we'll always assume the destination is
+        also a directory, even if it doesn't end with a /.
+
+        :param remote_src: path to the artefact as reported by the artefact
+            service (i.e.: the `path` attribute of an asset object).
+        :param local_dst: desired location in the local filesystem for the
+            remote_path.
+        :param create: whether or not to create the local destination file or
+            directory.
+        :return: the local path to be used.
+        """
+        # FIXME: use of multiple .. in the local_dst isn't resolved correctly
+        remote_isdir = remote_src.endswith(self._remote_sep)
+        # force destination to be a directory if the remote is a directory
+        destination_isdir = (remote_isdir or
+                             local_dst.endswith('.') or
+                             local_dst.endswith('..') or
+                             local_dst.endswith(self._local_sep))
+        local_relative = remote_src.replace(self._remote_sep, self._local_sep)
+        if flatten:
+            local_relative = os.path.basename(local_relative)
+        # remote=file, destination=file
+        if not (remote_isdir or destination_isdir):
+            # if files are given, rename the source to match destination
+            local_relative_dir = os.path.dirname(local_relative)
+            dst_file_name = os.path.basename(local_dst)
+            local_dst = os.path.dirname(local_dst)
+            if flatten:
+                local_relative = dst_file_name
+            else:
+                local_relative = os.path.join(
+                    local_relative_dir, dst_file_name)
+
+        destination_path = py.path.local(local_dst)
+        local_absolute_path = destination_path.join(local_relative)
+
+        if create:
+            local_absolute_path.ensure(dir=remote_isdir)
+        return str(local_absolute_path)
+
+    def _local_hash_matches_remote(
+            self, file_path, remote_hash, hash_name='sha1'):
+        """
+        True if the hash for file_path matches remote_hash for the given
+        algorithm
+        """
+        local_hash = nexus_util.calculate_hash(hash_name, file_path)
+        return local_hash == remote_hash
+
+    def _should_skip_download(
+            self, download_url, download_path, artefact, nocache):
+        """False when nocache is set or local file is out-of-date"""
+        if nocache:
+            try:
+                LOG.debug('Removing {} because nocache is set\n'.format(
+                    download_path))
+                os.remove(download_path)
+            except FileNotFoundError:
+                pass
+            return False
+
+        for hash_name in ['sha1', 'md5']:
+            h = artefact.get('checksum', {}).get(hash_name)
+            if h is None:
+                continue
+
+            if self._local_hash_matches_remote(download_path, h, hash_name):
+                LOG.debug('Skipping {download_url} because local copy '
+                          '{download_path} is up-to-date\n'.format(**locals()))
+                return True
+
+        return False
+
+    def download_file(self, download_url, destination):
+        """Download an asset from Nexus artefact repository to local
+        file system.
+
+        :param download_url: fully-qualified URL to asset being downloaded.
+        :param destination: file or directory location to save downloaded
+            asset. Must be an existing directory; any exiting file in this
+            location will be overwritten.
+        :return:
+        """
+        response = self._get(download_url)
+
+        if response.status_code != 200:
+            sys.stderr.write(response.__dict__)
+            raise DownloadError(
+                'Downloading from {download_url}. '
+                'Reason: {response.reason}'.format(**locals()))
+
+        with open(destination, 'wb') as fd:
+            LOG.debug('Writing {download_url} to {destination}\n'.format(
+                **locals()))
+            for chunk in response.iter_content():
+                fd.write(chunk)
+
+    def download(self, source, destination, **kwargs):
+        """Process a download. The source must be a valid Nexus 3
+        repository path, including the repository name as the first component
+        of the path.
+
+        The destination must be a local file name or directory.
+
+        If a file name is given as destination, the asset may be renamed. The
+        final destination will depend on self.flatten: when True, the remote
+        path isn't reproduced locally.
+
+        :param source: location of artefact or directory on the repository
+            service.
+        :param destination: path to the local file or directory.
+        :param flatten: when True, the remote path isn't reproduced locally.
+        :param nocache: Force download of a directory or artefact even if local
+                        copy is available and is up-to-date with the version
+                        available on Nexus.
+        :return: number of downloaded files.
+        """
+
+        download_count = 0
+        if source.endswith(self._remote_sep) and \
+                not (destination.endswith('.') or destination.endswith('..')):
+            destination += self._local_sep
+
+        artefacts = self.list_raw(source)
+
+        artefacts = progress.bar(
+                [a for a in artefacts], label='Downloading')
+
+        for artefact in artefacts:
+            download_url = artefact['downloadUrl']
+            artefact_path = artefact['path']
+            download_path = self._remote_path_to_local(
+                artefact_path, destination, kwargs.get('flatten'))
+
+            if self._should_skip_download(
+                    download_url, download_path,
+                    artefact, kwargs.get('nocache')):
+                download_count += 1
+                continue
+
+            try:
+                self.download_file(download_url, download_path)
+                download_count += 1
+            except DownloadError:
+                LOG.warning('Error downloading {}\n'.format(download_url))
+                continue
+
+        return download_count
