@@ -125,7 +125,7 @@ def test_download_tree(
     different formats.
     """
     src_dir, x_file_set = deep_file_tree
-    repo = faker.word()
+    repo = faker.pystr()
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
 
