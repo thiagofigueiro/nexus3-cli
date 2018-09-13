@@ -197,7 +197,7 @@ def find_file_count(dir_name):
 
 @pytest.fixture
 def hosted_raw_repo_empty(tmpdir, faker):
-    repo_name = faker.word()
+    repo_name = faker.pystr()
     command = 'nexus3 repo create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name

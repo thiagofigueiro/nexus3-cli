@@ -137,7 +137,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     resulting list of files in nexus corresponds to the uploaded list of files.
     """
     src_dir, x_file_set = deep_file_tree
-    repo = faker.word()
+    repo = faker.pystr()
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
 
