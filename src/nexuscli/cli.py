@@ -5,8 +5,9 @@ Usage:
   nexus3 --help, -h
   nexus3 login
   nexus3 (list|ls) <repository_path>
-  nexus3 (upload|up) <from_src> <to_repository>
+  nexus3 (upload|up) <from_src> <to_repository> [--flatten] [--norecurse]
   nexus3 (download|dl) <from_repository> <to_dst> [--flatten] [--nocache]
+  nexus3 (delete|del) <repository_path>
   nexus3 repo create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
@@ -37,6 +38,8 @@ Options:
   --force, -f           Execute action without confirmation
   --layout=<l_policy>   Accepted: strict, permissive [default: strict]
   --nocache             Force download even if local copy is up-to-date
+                        [default: False]
+  --norecurse           Don't process subdirectories on `nexus3 up` transfers.
                         [default: False]
   --strict-content      Enable strict content type validation
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
@@ -214,7 +217,7 @@ def cmd_list(args):
 
 
 def _cmd_up_down_errors(count, action):
-    """Print and exit with error if upload/download didn't succeed"""
+    """Print and exit with error if upload/download/delete didn't succeed"""
     if count == 0:
         # FIXME: inflex the action verb to past participle
         sys.stderr.write('WARNING: no files were {}\'ed.'.format(action))
@@ -234,7 +237,10 @@ def cmd_upload(args):
     sys.stderr.write(
         'Uploading {source} to {destination}\n'.format(**locals()))
 
-    upload_count = nexus_client.upload(source, destination)
+    upload_count = nexus_client.upload(
+                    source, destination,
+                    flatten=args.get('--flatten'),
+                    recurse=(not args.get('--norecurse')))
 
     _cmd_up_down_errors(upload_count, 'upload')
 
@@ -267,6 +273,21 @@ def cmd_download(args):
     return 0
 
 
+def cmd_delete(options):
+    """
+    Performs `nexus3 delete`"""
+    nexus_client = get_client()
+    repository_path = options['<repository_path>']
+    delete_count = nexus_client.delete(repository_path)
+
+    _cmd_up_down_errors(delete_count, 'delete')
+
+    file_word = PLURAL('file', delete_count)
+    sys.stderr.write(
+        'Deleted {delete_count} {file_word}\n'.format(**locals()))
+    return 0
+
+
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
@@ -282,5 +303,7 @@ def main(argv=None):
         cmd_upload(arguments)
     elif arguments.get('download') or arguments.get('dl'):
         cmd_download(arguments)
+    elif arguments.get('delete') or arguments.get('del'):
+        cmd_delete(arguments)
     else:
         raise NotImplementedError
