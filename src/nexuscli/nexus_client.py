@@ -502,6 +502,9 @@ class NexusClient(object):
         :param destination: destination path in Nexus, including repository
             name and, if required, directory name (e.g. raw repos require a
             directory).
+        :param recurse: do not process sub directories for uploads to remote
+        :param flatten: Flatten directory structure by not reproducing local
+                        directory structure remotely
         :return: number of files uploaded.
         """
         repo, directory, filename = self.split_component_path(destination)

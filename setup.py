@@ -43,7 +43,7 @@ setup(
     tests_require=test_requires,
     license='MIT',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Topic :: System :: Systems Administration',
