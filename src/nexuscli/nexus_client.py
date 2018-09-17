@@ -407,40 +407,45 @@ class NexusClient(object):
         _upload = getattr(self, '_upload_file_' + repo_format)
         _upload(src_file, dst_repo, dst_dir, dst_file)
 
-    def _get_upload_fileset(self, src_dir):
+    def _get_upload_fileset(self, src_dir, recurse=True):
         """
         Walks the given directory and collects files to be uploaded. If
-        self.recurse is False, only the files on the root of the directory will
-        be returned.
+        recurse option is False, only the files on the root of the directory
+        will be returned.
 
         :param src_dir: location of files
+        :param recurse: If false, only the files on the root of src_dir
+                        are returned
         :return: file set to be used with upload_directory
         :rtype: set
         """
         source_files = set()
-        for dirname, _, filenames in os.walk(src_dir):
+        for dirname, dirnames, filenames in os.walk(src_dir):
+            if not recurse:
+                del dirnames[:]
+
             source_files.update(
                 os.path.relpath(os.path.join(dirname, f), src_dir)
                 for f in filenames)
 
         return source_files
 
-    def _get_upload_subdirectory(self, dst_dir, file_path):
+    def _get_upload_subdirectory(self, dst_dir, file_path, flatten=False):
         # empty dst_dir because most repo formats, aside from raw, allow it
         sub_directory = dst_dir or ''
         sep = self._remote_sep
-        dirname = os.path.dirname(file_path)
-        if sub_directory.endswith(sep) or dirname.startswith(sep):
-            sep = ''
-        sub_directory += '{sep}{dirname}'.format(**locals())
+        if not flatten:
+            dirname = os.path.dirname(file_path)
+            if sub_directory.endswith(sep) or dirname.startswith(sep):
+                sep = ''
+            sub_directory += '{sep}{dirname}'.format(**locals())
 
         return sub_directory
 
-    def upload_directory(self, src_dir, dst_repo, dst_dir):
+    def upload_directory(self, src_dir, dst_repo, dst_dir, **kwargs):
         """
-        Uploads all files in a directory, honouring self.flatten and
-        self.recurse. If self.display_progress is True, a progress bar will be
-        displayed to track progress of uploads.
+        Uploads all files in a directory, honouring options flatten and
+        recurse.
 
         :param src_dir: path to local directory to be uploaded
         :param dst_repo: destination repository
@@ -448,18 +453,21 @@ class NexusClient(object):
         :return: number of files uploaded
         :rtype: int
         """
-        file_set = self._get_upload_fileset(src_dir)
+        file_set = self._get_upload_fileset(
+                            src_dir, kwargs.get('recurse', True))
         file_count = len(file_set)
         file_set = progress.bar(file_set, expected_size=file_count)
 
         for relative_filepath in file_set:
             file_path = os.path.join(src_dir, relative_filepath)
-            sub_directory = self._get_upload_subdirectory(dst_dir, file_path)
+            sub_directory = self._get_upload_subdirectory(
+                            dst_dir, file_path, kwargs.get('flatten', False))
             self.upload_file(file_path, dst_repo, sub_directory)
 
         return file_count
 
-    def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file):
+    def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file,
+                            **kwargs):
         """
         Helper for self.upload() to call the correct upload method according to
         the source given by the user.
@@ -472,7 +480,8 @@ class NexusClient(object):
         """
         if os.path.isdir(file_or_dir):
             if dst_file is None:
-                return self.upload_directory(file_or_dir, dst_repo, dst_dir)
+                return self.upload_directory(file_or_dir, dst_repo, dst_dir,
+                                             **kwargs)
             else:
                 raise exception.NexusClientInvalidRepositoryPath(
                     'Not allowed to upload a directory to a file')
@@ -480,10 +489,10 @@ class NexusClient(object):
         self.upload_file(file_or_dir, dst_repo, dst_dir, dst_file)
         return 1
 
-    def upload(self, source, destination):
+    def upload(self, source, destination, **kwargs):
         """
         Process an upload. The source must be either a local file name or
-        directory. The flatten and recurse class attributes are honoured for
+        directory. The flatten and recurse options are honoured for
         directory uploads.
 
         The destination must be a valid Nexus 3 repository path, including the
@@ -493,11 +502,14 @@ class NexusClient(object):
         :param destination: destination path in Nexus, including repository
             name and, if required, directory name (e.g. raw repos require a
             directory).
+        :param recurse: do not process sub directories for uploads to remote
+        :param flatten: Flatten directory structure by not reproducing local
+                        directory structure remotely
         :return: number of files uploaded.
         """
         repo, directory, filename = self.split_component_path(destination)
         upload_count = self._upload_dir_or_file(
-            source, repo, directory, filename)
+            source, repo, directory, filename, **kwargs)
 
         return upload_count
 
@@ -658,3 +670,35 @@ class NexusClient(object):
                 continue
 
         return download_count
+
+    def delete(self, repository_path, **kwargs):
+        """
+        Delete artefacts, recursively if repository_path is a directory.
+
+        :param repository_path: location on the repository service.
+        :param kwargs: implementation-specific arguments.
+        :return: number of deleted files. Negative number for errors.
+        :rtype: int
+        """
+
+        delete_count = 0
+        death_row = self.list_raw(repository_path, **kwargs)
+
+        death_row = progress.bar([a for a in death_row], label='Deleting')
+
+        for artefact in death_row:
+            id_ = artefact['id']
+            artefact_path = artefact['path']
+
+            response = self._delete('assets/{id_}'.format(**locals()))
+            LOG.info(
+                'Deleted: {artefact_path} ({id_})'.format(**locals()))
+            delete_count += 1
+            if response.status_code == 404:
+                LOG.warning('File disappeared while deleting')
+                LOG.debug(response.reason)
+            elif response.status_code != 204:
+                LOG.error(response.reason)
+                return -1
+
+        return delete_count

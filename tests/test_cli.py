@@ -182,6 +182,7 @@ def test_script(nexus_client):
 
 @pytest.mark.integration
 def test_upload(hosted_raw_repo_empty, deep_file_tree, faker):
+    """Ensure that `nexus3 upload` command works"""
     src_dir, x_file_set = deep_file_tree
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
@@ -199,6 +200,7 @@ def test_upload(hosted_raw_repo_empty, deep_file_tree, faker):
 
 @pytest.mark.integration
 def test_download(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
+    """Ensure that `nexus3 download` command works"""
     src_dir, x_file_set = deep_file_tree
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
@@ -218,4 +220,27 @@ def test_download(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
                         {download_dest}'.format(**locals())
 
     retcode = check_call(download_command.split())
+    assert retcode == 0
+
+
+@pytest.mark.integration
+def test_delete(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
+    """Ensure that `nexus3 delete` command works"""
+    src_dir, x_file_set = deep_file_tree
+    dst_dir = faker.uri_path() + '/'
+    path = dst_dir[:-1] + src_dir
+
+    repo_name = hosted_raw_repo_empty
+
+    dest_repo_path = '{}/{}/'.format(repo_name, dst_dir)
+
+    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
+                        **locals())
+
+    retcode = check_call(upload_command.split())
+    assert retcode == 0
+
+    delete_command = 'nexus3 delete {dest_repo_path}'.format(**locals())
+
+    retcode = check_call(delete_command.split())
     assert retcode == 0

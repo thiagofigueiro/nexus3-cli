@@ -197,7 +197,19 @@ def find_file_count(dir_name):
 
 @pytest.fixture
 def hosted_raw_repo_empty(tmpdir, faker):
+    """Create an empty hosted raw repository"""
     repo_name = faker.pystr()
     command = 'nexus3 repo create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name
+
+
+@pytest.helpers.register
+def get_ResponseMock():
+    """Generate mock return value for request"""
+    class ResponseMock:
+        def __init__(self, status_code, reason):
+            self.status_code = status_code
+            self.reason = reason
+
+    return ResponseMock
