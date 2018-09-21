@@ -79,3 +79,19 @@ def test_split_component_path_errors(
         nexus_mock_client.split_component_path(component_path)
 
     assert x_error in str(e.value)
+
+
+def test_write_config(client_args, mocker):
+    """Ensure values written in config file can be read back"""
+    mocker.patch('nexuscli.nexus_client.RepositoryCollection')
+    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+
+    client = nexus_client.NexusClient(**client_args)
+    client.write_config()
+
+    mocker.patch.object(nexus_client.NexusClient, 'set_config')
+    client_with_config = nexus_client.NexusClient(
+        config_path=client_args['config_path'])
+
+    x_args = (client_args['user'], client_args['password'], client_args['url'])
+    assert client_with_config.set_config.called_with(*x_args)

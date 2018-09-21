@@ -1,3 +1,4 @@
+from builtins import str as text  # Python 2
 import io
 import json
 import logging
@@ -99,7 +100,7 @@ class NexusClient(object):
         nexus_config.chmod(0o600)
         with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
             # If this looks dumb it's because it needs to work with Python 2
-            fh.write(str(
+            fh.write(text(
                 json.dumps({
                     'nexus_user': self._auth[0],
                     'nexus_pass': self._auth[1],

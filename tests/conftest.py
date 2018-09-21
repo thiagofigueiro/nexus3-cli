@@ -213,3 +213,15 @@ def get_ResponseMock():
             self.reason = reason
 
     return ResponseMock
+
+
+@pytest.fixture
+def client_args(faker, tmpdir):
+    """Parameters suitable for use with NexusClient()"""
+    fixture = {
+        'url': faker.url(),
+        'user': faker.user_name(),
+        'password': faker.password(),
+        'config_path': tmpdir.join(faker.file_name()),
+    }
+    return fixture
