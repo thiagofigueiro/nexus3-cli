@@ -6,6 +6,8 @@ import os.path
 import py
 import requests
 import sys
+
+
 from clint.textui import progress
 try:
     from urllib.parse import urljoin  # Python 3
@@ -142,8 +144,13 @@ class NexusClient(object):
             service_url = self.rest_url
 
         url = urljoin(service_url, endpoint)
-        response = requests.request(
-            method=method, auth=self._auth, url=url, verify=False, **kwargs)
+        try:
+            response = requests.request(
+                method=method, auth=self._auth, url=url, verify=False,
+                **kwargs)
+        except requests.exceptions.ConnectionError as e:
+            print(e)
+            sys.exit(1)
 
         if response.status_code == 401:
             raise exception.NexusClientInvalidCredentials(
