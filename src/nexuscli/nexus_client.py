@@ -1,3 +1,4 @@
+from builtins import str as text  # Python 2
 import io
 import json
 import logging
@@ -5,6 +6,8 @@ import os.path
 import py
 import requests
 import sys
+
+
 from clint.textui import progress
 try:
     from urllib.parse import urljoin  # Python 3
@@ -99,7 +102,7 @@ class NexusClient(object):
         nexus_config.chmod(0o600)
         with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
             # If this looks dumb it's because it needs to work with Python 2
-            fh.write(str(
+            fh.write(text(
                 json.dumps({
                     'nexus_user': self._auth[0],
                     'nexus_pass': self._auth[1],
@@ -141,8 +144,13 @@ class NexusClient(object):
             service_url = self.rest_url
 
         url = urljoin(service_url, endpoint)
-        response = requests.request(
-            method=method, auth=self._auth, url=url, verify=False, **kwargs)
+        try:
+            response = requests.request(
+                method=method, auth=self._auth, url=url, verify=False,
+                **kwargs)
+        except requests.exceptions.ConnectionError as e:
+            print(e)
+            sys.exit(1)
 
         if response.status_code == 401:
             raise exception.NexusClientInvalidCredentials(

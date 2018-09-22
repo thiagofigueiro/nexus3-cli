@@ -3,7 +3,7 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '0.7.0'
+package_version = '0.7.1'
 
 requires = [
     'clint',
@@ -49,6 +49,7 @@ setup(
         'Topic :: System :: Systems Administration',
         'Topic :: Utilities',
         'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 2.7',
     ],
