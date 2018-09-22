@@ -24,6 +24,8 @@ deploy:
   password:
     secure: Stv4knSaSR6q/81MACxW89F2sKtbJdFJ5CgloYG6y2uFkeDF3xkNTWk61FAdRwRrRcCSsTmd23wVSN1szZ0JxPRLcL3uxg0ItWBWOcKrAKuVi7zG1y96K+4R9fuaaebyW2hBXBNm7fzdFXq5reTCTdb8XVvMbn+IURBsb0GqQeOyGwUEhfdswY+oXccVBJ69i6oOqvJxXAqDzENkv15fmpUEzAkmFSxt7MnLwdjeG4eJk1d5JeCwji9f92CkAJZQmOHUUXjOaHEvI80SE/5ux+pzVm3Dd9A/jHpbEIyNricCiNaUiqbphQNHRW5HrrLrQPtLI5sF9+WXZhLthh8vmW5C1hEbZjG6g5D9W70TG79DIBosbeoQNlLNrP+QiLMAdbjsvQ8zvRnWJ6nLRv3AGkrUvZiFfX2bvUgf82N/mwBEBmhE0nwMXw7RVIhJxZptKaphAv+XZCwgT8nhKvUHDgxZQp0RM3Den+y3bjHAiP9YChVSk/c9ezhavAgyGK+o75+Ndmj6GeCXY7V/SqgfcXBlpd5iuiKuTfYYEk/ARK0L0SWQB4uPeWU6nE3OhU3OHPYk2HNnwTOvETZuq8KgSKgdtXkGiDs+7Ja+HIXWu1YIQyHkor07O+8SoeR7/7dCs7IFGhGCoTXkSUnSoMikppmvBnnRWR40cFfCI0336t8=
   on:
+    branch: master
+    repo: thiagofigueiro/nexus3-cli
     tags: true
   distributions: "sdist bdist_wheel"
-  condition: "$TRAVIS_PYTHON_VERSION = 3.6"
+  python: 3.6
