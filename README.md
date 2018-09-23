@@ -67,7 +67,9 @@ nuget-hosted                             nuget   hosted  http://localhost:8081/r
 maven-public                             maven2  group   http://localhost:8081/repository/maven-public
 ```
 
-If you need to login:
+The `login` command will store the service URL and your credentials in 
+`~/.nexus-cli` (warning: restrictive file permissions are set but the contents
+are saved in plain-text).
 
 ```bash
 $ nexus3 login
