@@ -10,7 +10,6 @@ nexus3-cli: a Sonatype Nexus 3 client
    :maxdepth: 2
    :caption: Contents:
 
-   quick-start
    cli
    api
 
