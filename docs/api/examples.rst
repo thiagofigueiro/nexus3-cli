@@ -1,7 +1,10 @@
 Examples
 --------
 
-For all examples, you will need to instantiate a client:
+Here are some basic operations to get you started. The CLI implementation in
+``src/nexuscli/cli.py`` is another good source of examples.
+
+In all examples below you will need to instantiate a client:
 
 >>> import nexuscli
 >>> nexus_client = nexuscli.nexus_client.NexusClient()
@@ -15,6 +18,8 @@ For all examples, you will need to instantiate a client:
  'type': 'hosted',
  'url': 'http://localhost:8081/repository/maven-snapshots'}
 
+Whenever you see ``nexus_client`` being used, remember to copy the first two
+lines of code above as well.
 
 Create a repository
 ^^^^^^^^^^^^^^^^^^^
@@ -40,3 +45,11 @@ Delete a repository
 
 >>> nexus_client.repositories.delete('my-repository')
 
+
+Upload a file
+^^^^^^^^^^^^^
+
+>>> upload_count = nexus_client.upload(
+>>>     '/etc/passwd', 'my-repository/etc/passwd')
+>>> print(upload_count)
+1
