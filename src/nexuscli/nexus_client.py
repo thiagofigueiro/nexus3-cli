@@ -36,19 +36,26 @@ SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
 class NexusClient(object):
     """
-    Interact with Nexus 3's API.
+    A class to interact with Nexus 3's API.
+
+    Unless all keyword arguments ``url``, ``user`` and ``password`` are
+    supplied, the class will attempt to read the configuration file and,
+    if unsuccessful, use defaults.
 
     Args:
-        url (str): URL to Nexus 3 OSS service.
-        user (str): login for Nexus service at given url.
-        password (str): password for given login.
+        url (str): URL to Nexus 3 OSS service. Default: :attr:`DEFAULT_URL`.
+        user (str): login for Nexus service at given url. Default:
+            :attr:`DEFAULT_USER`.
+        password (str): password for given login. Default:
+            :attr:`DEFAULT_PASS`.
         config_path (str): local file containing configuration above in JSON
             format with these keys: ``nexus_url``, ``nexus_user`` and
-            ``nexus_pass``.
+            ``nexus_pass``. Default: :attr:`CONFIG_PATH`.
 
     Attributes:
-        base_url (str): as per url argument.
-        config_path (str): as per arguments.
+        base_url (str): as per ``url`` argument of :class:`NexusClient`.
+        config_path (str): as per ``config_path`` argument of
+            :class:`NexusClient`.
     """
     CONFIG_PATH = os.path.expanduser('~/.nexus-cli')
     DEFAULT_URL = 'http://localhost:8081'
@@ -73,33 +80,68 @@ class NexusClient(object):
         self.repositories.refresh()
 
     def set_config(self, user, password, base_url):
+        """
+        Configures the Nexus service credentials and base URL. The credentials
+        are stored in a private class attribute and the base URL in
+        :attr:`base_url`.
+
+        Every subsequent operation that requires a request to the Nexus service
+        will use this configuration.
+
+        :param user: as per ``user`` argument of :class:`NexusClient`.
+        :param password: as per ``password`` argument of :class:`NexusClient`.
+        :param base_url: as per ``url`` argument of :class:`NexusClient`.
+        """
         self._auth = (user, password)
         self.base_url = base_url
 
     @property
     def repositories(self):
-        """RepositoryCollection: instance"""
+        """
+        Instance of
+        :class:`nexuscli.repository.model.RepositoryCollection`. This will
+        automatically use the existing instance of :class:`NexusClient` to
+        communicate with the Nexus service.
+        """
         if self._repositories is None:
             self._repositories = RepositoryCollection(client=self)
         return self._repositories
 
     @property
     def scripts(self):
+        """
+        Instance of
+        :class:`nexuscli.script.model.ScriptCollection`. This will
+        automatically use the existing instance of :class:`NexusClient` to
+        communicate with the Nexus service.
+        """
         if self._scripts is None:
             self._scripts = ScriptCollection(client=self)
         return self._scripts
 
     @property
     def rest_url(self):
+        """
+        Full URL to the Nexus REST API, based on :attr:`base_url`.
+
+        :return: the URL.
+        """
         url = urljoin(self.base_url, '/service/rest/')
         return urljoin(url, self._api_version + '/')
 
     def write_config(self):
+        """
+        Writes the latest configuration set using :meth:`set_config` to disk
+        under :attr:`config_path`.
+
+        If a file already exists, it will be overwritten. The permission will
+        be set to read/write to the owner only.
+        """
         nexus_config = py.path.local(self.config_path, expanduser=True)
         nexus_config.ensure()
         nexus_config.chmod(0o600)
         with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
-            # If this looks dumb it's because it needs to work with Python 2
+            # If this looks dumb, it's because it needs to work with Python 2
             fh.write(text(
                 json.dumps({
                     'nexus_user': self._auth[0],
@@ -109,6 +151,17 @@ class NexusClient(object):
             ))
 
     def read_config(self):
+        """
+        Read the configuration settings from the file specified by
+        :attr:`config_path` and activates them via :meth:`set_config`.
+
+        The configuration file is in JSON format and expects these keys:
+        ``nexus_user``, ``nexus_pass``, ``nexus_url``.
+
+        If the configuration file is not found, the default settings will be
+        used instead.
+
+        """
         nexus_config = py.path.local(self.config_path, expanduser=True)
         try:
             with nexus_config.open(mode='r', encoding='utf-8') as fh:
