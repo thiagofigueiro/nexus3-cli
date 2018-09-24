@@ -6,4 +6,4 @@
 #
 pockets==0.6.2            # via sphinxcontrib-napoleon
 six==1.11.0               # via pockets, sphinxcontrib-napoleon
-sphinxcontrib-napoleon==0.6.1
+sphinxcontrib-napoleon==0.7
