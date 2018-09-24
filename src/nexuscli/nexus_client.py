@@ -9,6 +9,8 @@ import sys
 
 
 from clint.textui import progress
+from nexuscli.exception import DownloadError
+
 try:
     from urllib.parse import urljoin  # Python 3
 except ImportError:
@@ -30,10 +32,6 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
 LOG.setLevel(LOG_LEVEL)
 
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
-
-
-class DownloadError(Exception):
-    pass
 
 
 class NexusClient(object):
