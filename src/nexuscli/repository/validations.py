@@ -71,7 +71,7 @@ def upcase_policy_args(args):
 def repository_args(repo_type, **kwargs):
     """
     Validate that the combination of arguments for a
-    :class:`nexuscli.repository.model.Repository` is valid.
+    :class:`nexuscli.repository.Repository` is valid.
 
     Raises:
         :class:`ValueError`
