@@ -7,12 +7,18 @@ from nexuscli.repository import validations, groovy
 class RepositoryCollection(object):
     """
     A class to manage Nexus 3 repositories.
+
+    Args:
+        client(nexuscli.nexus_client.NexusClient): the client instance that
+            will be used to perform operations against the Nexus 3 service. You
+            must provide this at instantiation or set it before calling any
+            methods that require connectivity to Nexus.
+
+    Attributes:
+        client(nexuscli.nexus_client.NexusClient): as per ``client``
+            argument of :class:`RepositoryCollection`.
     """
     def __init__(self, client=None):
-        """
-        :param client: client instance
-        :type client:  nexuscli.nexus_client.NexusClient
-        """
         self.client = client
         self._repositories_json = None
 
