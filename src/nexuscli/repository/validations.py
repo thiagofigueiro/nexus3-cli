@@ -75,17 +75,17 @@ def repository_args(repo_type, **kwargs):
 
     Raises:
         :class:`ValueError`
-            If the value of a given argument is invalid or unsupported, or if
-            unrecognised keyword arguments are given.
+            If the value of a given argument is invalid or
+            unsupported, or if unrecognised keyword arguments are given.
         :class:`TypeError`
             If the type of a given argument has the wrong object type.
         :class:`NotImplementedError`
             If the combination of arguments isn't yet supported.
 
     :param repo_type: as given to
-        :py:meth:`nexuscli.nexus_repository.Repository.create()
+        :py:meth:`nexuscli.nexus_repository.Repository.create`
     :param kwargs: as given to
-        :py:meth:`nexuscli.nexus_repository.Repository.create()
+        :py:meth:`nexuscli.nexus_repository.Repository.create`
     """
     if not validate_strings(repo_type):
         raise TypeError('repo_type ({}) must be of string type'.format(
