@@ -8,6 +8,12 @@
 # github.com/cloudogu/nexus-claim/blob/develop/scripts/create-Repository.groovy
 # TODO: package and read from external .groovy file
 def script_create_repo():
+    """
+    A groovy script that can be used to create repositories in Nexus 3.
+
+    :return: the groovy script
+    :rtype: str
+    """
     script = """
     import groovy.json.JsonSlurper
     import org.sonatype.nexus.blobstore.api.BlobStoreManager

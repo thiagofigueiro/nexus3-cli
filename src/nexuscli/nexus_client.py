@@ -17,8 +17,8 @@ except ImportError:
     from urlparse import urljoin      # Python 2
 
 from . import exception, nexus_util
-from nexuscli.repository.model import RepositoryCollection
-from nexuscli.script.model import ScriptCollection
+from nexuscli.repository import RepositoryCollection
+from nexuscli.script import ScriptCollection
 
 # Python 2 compatibility
 try:

@@ -7,12 +7,18 @@ from nexuscli.repository import validations, groovy
 class RepositoryCollection(object):
     """
     A class to manage Nexus 3 repositories.
+
+    Args:
+        client(nexuscli.nexus_client.NexusClient): the client instance that
+            will be used to perform operations against the Nexus 3 service. You
+            must provide this at instantiation or set it before calling any
+            methods that require connectivity to Nexus.
+
+    Attributes:
+        client(nexuscli.nexus_client.NexusClient): as per ``client``
+            argument of :class:`RepositoryCollection`.
     """
     def __init__(self, client=None):
-        """
-        :param client: client instance
-        :type client:  nexuscli.nexus_client.NexusClient
-        """
         self.client = client
         self._repositories_json = None
 
@@ -115,22 +121,32 @@ class Repository(object):
     Args:
         name (str): name of the new repository.
         format (str): format (recipe) of the new repository. Must be one
-            of data:`nexuscli.repository.validations.KNOWN_FORMATS`.
-        blob_store_name (str):
-        depth (int): only valid when ``repo_format=yum``. The repodata
-            depth.
-        remote_url (str):
-        strict_content_type_validation (bool):
-        version_policy (str):
-        write_policy (str): One of :py:data:
-        layout_policy (str): One of
-        ignore_extra_kwargs (bool): if True, raise an exception for
+            of :py:data:`nexuscli.repository.validations.KNOWN_FORMATS`.
+        blob_store_name (str): an existing blob store; 'default' should work
+            on most installations.
+        depth (int): only accepted when ``repo_format='yum'``. The Yum repodata
+            depth. Usually 1.
+        remote_url (str): only accepted when ``repo_type='proxy'``. The URL of
+            the repository being proxied, including the protocol scheme.
+        strict_content_type_validation (bool): only accepted when
+            ``repo_type='hosted'``. Whether to validate file extension against
+            its content type.
+        version_policy (str): only accepted when ``repo_type='hosted'``. Must
+            be one of
+            :py:data:`nexuscli.repository.validations.VERSION_POLICIES`.
+        write_policy (str): only accepted when ``repo_type='hosted'``. Must
+            be one of
+            :py:data:`nexuscli.repository.validations.WRITE_POLICIES`.
+        layout_policy (str): only accepted when ``format='maven'``. Must
+            be one of
+            :py:data:`nexuscli.repository.validations.LAYOUT_POLICIES`.
+        ignore_extra_kwargs (bool): if True, do not raise an exception for
             unnecessary/extra/invalid kwargs.
 
     :param repo_type: type for the new repository. Must be one of
-        :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
+        :data:`nexuscli.repository.validations.KNOWN_TYPES`.
     :param kwargs: attributes for the new repository.
-    :return: the created repository
+    :return: a Repository instance with the given settings
     :rtype: Repository
     """
     def __init__(self, repo_type, **kwargs):
@@ -148,6 +164,33 @@ class Repository(object):
 
     @property
     def configuration(self):
+        """
+        Validate the configuration for the Repository and build its
+        representation as a python dict. The dict returned by this property can
+        be converted to JSON for use with the ``nexus3-cli-repository-create``
+        groovy script returned by
+        :meth:`nexuscli.repository.groovy.script_create_repo`.
+
+        Example structure and attributes common to all repositories:
+
+        >>> common_configuration = {
+        >>>     'name': 'my-repository',
+        >>>     'online': True,
+        >>>     'recipeName': 'raw',
+        >>>     '_state': 'present',
+        >>>     'attributes': {
+        >>>         'storage': {
+        >>>             'blobStoreName': 'default',
+        >>>         }
+        >>>     }
+        >>> }
+
+        Depending on the repository type and format (recipe), other attributes
+        will be present.
+
+        :return: repository configuration
+        :rtype: dict
+        """
         validations.repository_args(self._repo_type, **self._raw)
         if self._repo_type == 'hosted':
             return self._configuration_hosted()
