@@ -167,7 +167,7 @@ class NexusClient(object):
         :attr:`config_path` and activates them via :meth:`set_config`.
 
         The configuration file is in JSON format and expects these keys:
-        ``nexus_user``, ``nexus_pass``, ``nexus_url``.
+        ``nexus_user``, ``nexus_pass``, ``nexus_url``, ``nexus_verify``.
 
         If the configuration file is not found, the default settings will be
         used instead.
