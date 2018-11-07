@@ -48,6 +48,8 @@ class NexusClient(object):
             :attr:`DEFAULT_USER`.
         password (str): password for given login. Default:
             :attr:`DEFAULT_PASS`.
+        verify (bool): toggle certificate validation. Default:
+            :attr:`DEFAULT_VERIFY`.
         config_path (str): local file containing configuration above in JSON
             format with these keys: ``nexus_url``, ``nexus_user`` and
             ``nexus_pass``. Default: :attr:`CONFIG_PATH`.
@@ -61,8 +63,10 @@ class NexusClient(object):
     DEFAULT_URL = 'http://localhost:8081'
     DEFAULT_USER = 'admin'
     DEFAULT_PASS = 'admin123'
+    DEFAULT_VERIFY = True
 
-    def __init__(self, url=None, user=None, password=None, config_path=None):
+    def __init__(self, url=None, user=None, password=None, verify=None,
+                 config_path=None):
         self.base_url = None
         self.config_path = config_path or NexusClient.CONFIG_PATH
         self._auth = None
@@ -71,15 +75,19 @@ class NexusClient(object):
         self._remote_sep = '/'
         self._repositories = None
         self._scripts = None
+        self._verify = None
+
+        if verify is None:
+            verify = NexusClient.DEFAULT_VERIFY
 
         if url and user and password:
-            self.set_config(user, password, url)
+            self.set_config(user, password, url, verify)
         else:
             self.read_config()
 
         self.repositories.refresh()
 
-    def set_config(self, user, password, base_url):
+    def set_config(self, user, password, base_url, verify):
         """
         Configures the Nexus service credentials and base URL. The credentials
         are stored in a private class attribute and the base URL in
@@ -91,9 +99,11 @@ class NexusClient(object):
         :param user: as per ``user`` argument of :class:`NexusClient`.
         :param password: as per ``password`` argument of :class:`NexusClient`.
         :param base_url: as per ``url`` argument of :class:`NexusClient`.
+        :param verify: as per ``verify`` argument of :class:`NexusClient`.
         """
         self._auth = (user, password)
         self.base_url = base_url
+        self._verify = verify or NexusClient.DEFAULT_VERIFY
 
     @property
     def repositories(self):
@@ -147,6 +157,7 @@ class NexusClient(object):
                     'nexus_user': self._auth[0],
                     'nexus_pass': self._auth[1],
                     'nexus_url': self.base_url,
+                    'nexus_verify': self._verify,
                 }, ensure_ascii=False)
             ))
 
@@ -169,12 +180,14 @@ class NexusClient(object):
                 config_attrs = (
                     config['nexus_user'],
                     config['nexus_pass'],
-                    config['nexus_url'])
+                    config['nexus_url'],
+                    config['nexus_verify'])
         except py.error.ENOENT:
             config_attrs = (
                 NexusClient.DEFAULT_USER,
                 NexusClient.DEFAULT_PASS,
-                NexusClient.DEFAULT_URL)
+                NexusClient.DEFAULT_URL,
+                NexusClient.DEFAULT_VERIFY)
 
         self.set_config(*config_attrs)
 
@@ -197,7 +210,7 @@ class NexusClient(object):
         url = urljoin(service_url, endpoint)
         try:
             response = requests.request(
-                method=method, auth=self._auth, url=url, verify=False,
+                method=method, auth=self._auth, url=url, verify=self._verify,
                 **kwargs)
         except requests.exceptions.ConnectionError as e:
             print(e)

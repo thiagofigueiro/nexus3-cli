@@ -32,13 +32,15 @@ def test_login_params(faker, mocker):
     x_user = faker.user_name()
     x_pass = faker.password()
     x_url = faker.url()
+    x_verify = faker.pybool()
 
-    client = nexus_client.NexusClient(user=x_user, password=x_pass, url=x_url)
+    client = nexus_client.NexusClient(
+        user=x_user, password=x_pass, url=x_url, verify=x_verify)
 
     nexuscli.nexus_client.RepositoryCollection.assert_called()
     client.repositories.refresh.assert_called_once()
     client.read_config.assert_not_called()
-    client.set_config.assert_called_with(x_user, x_pass, x_url)
+    client.set_config.assert_called_with(x_user, x_pass, x_url, x_verify)
 
 
 @pytest.mark.parametrize(
