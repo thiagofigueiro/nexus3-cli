@@ -98,7 +98,15 @@ def do_login():
     if not nexus_pass:
         nexus_pass = NexusClient.DEFAULT_PASS
 
-    client = NexusClient(url=nexus_url, user=nexus_user, password=nexus_pass)
+    try:
+        nexus_verify = {"true": True, "false": False}[
+            str(_input('Verify cert', NexusClient.DEFAULT_VERIFY)).lower()]
+    except KeyError:
+        nexus_verify = NexusClient.DEFAULT_VERIFY
+
+    client = NexusClient(
+        url=nexus_url, user=nexus_user, password=nexus_pass,
+        verify=nexus_verify)
     client.write_config()
 
     sys.stderr.write('\nConfiguration saved to {}\n'.format(
