@@ -174,22 +174,26 @@ class NexusClient(object):
 
         """
         nexus_config = py.path.local(self.config_path, expanduser=True)
+        config_attrs = {}
+        nexus_defaults = {
+            'nexus_user': NexusClient.DEFAULT_USER,
+            'nexus_pass': NexusClient.DEFAULT_PASS,
+            'nexus_url': NexusClient.DEFAULT_URL,
+            'nexus_verify': NexusClient.DEFAULT_VERIFY}
         try:
             with nexus_config.open(mode='r', encoding='utf-8') as fh:
                 config = json.load(fh)
-                config_attrs = (
-                    config['nexus_user'],
-                    config['nexus_pass'],
-                    config['nexus_url'],
-                    config['nexus_verify'])
+                for field in nexus_defaults.keys():
+                    if field in config:
+                        config_attrs[field] = config[field]
+                    else:
+                        config_attrs[field] = nexus_defaults[field]
         except py.error.ENOENT:
-            config_attrs = (
-                NexusClient.DEFAULT_USER,
-                NexusClient.DEFAULT_PASS,
-                NexusClient.DEFAULT_URL,
-                NexusClient.DEFAULT_VERIFY)
+            config_attrs = nexus_defaults
 
-        self.set_config(*config_attrs)
+        self.set_config(
+            config_attrs['nexus_user'], config_attrs['nexus_pass'],
+            config_attrs['nexus_url'], config_attrs['nexus_verify'])
 
     def _request(self, method, endpoint, **kwargs):
         """
