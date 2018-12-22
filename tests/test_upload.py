@@ -142,7 +142,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     path = dst_dir[:-1] + src_dir
 
     argv = ('repo create hosted raw {}'.format(repo)).split()
-    pytest.helpers.create_and_inspect(argv, repo)
+    pytest.helpers.create_and_inspect(nexus_client, argv, repo)
     nexus_client.repositories.refresh()
 
     count = nexus_client.upload_directory(src_dir, repo, dst_dir)

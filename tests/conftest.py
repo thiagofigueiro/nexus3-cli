@@ -46,9 +46,9 @@ def nexus_client():
 
 
 @pytest.helpers.register
-def create_and_inspect(argv, expected_repo_name):
+def create_and_inspect(client, argv, expected_repo_name):
     nexuscli.cli.main(argv=list(filter(None, argv)))
-    repositories = nexus_client().repositories.raw_list()
+    repositories = client.repositories.raw_list()
 
     return any(r['name'] == expected_repo_name for r in repositories)
 

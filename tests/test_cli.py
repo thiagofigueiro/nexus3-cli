@@ -35,7 +35,7 @@ def test_repo_list(mocker):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted(repo_format, w_policy, strict):
+def test_repo_create_hosted(nexus_client, repo_format, w_policy, strict):
     strict_name = strict[2:8]
     repo_name = 'hosted-{repo_format}-{w_policy}-{strict_name}'.format(
         **locals())
@@ -43,7 +43,7 @@ def test_repo_create_hosted(repo_format, w_policy, strict):
         'repo create hosted {repo_format} {repo_name} --write={w_policy} '
         '{strict}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_repo_create_hosted(repo_format, w_policy, strict):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
+def test_repo_create_hosted_maven(nexus_client, v_policy, l_policy, w_policy, strict):
     strict_name = strict[2:8]
     repo_name = ('hosted-maven-{v_policy}-{l_policy}-{w_policy}'
                  '-{strict_name}').format(**locals())
@@ -62,7 +62,7 @@ def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
         'repo create hosted maven {repo_name} --write={w_policy} '
         '--layout={l_policy} --version={v_policy} {strict}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_repo_create_hosted_maven(v_policy, l_policy, w_policy, strict):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted_yum(w_policy, depth, strict):
+def test_repo_create_hosted_yum(nexus_client, w_policy, depth, strict):
     strict_name = strict[2:8]
     repo_name = 'hosted-yum-{w_policy}-{depth}-{strict_name}'.format(
         **locals())
@@ -80,7 +80,7 @@ def test_repo_create_hosted_yum(w_policy, depth, strict):
         'repo create hosted yum {repo_name} --write={w_policy} '
         '--depth={depth} {strict}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ def test_repo_create_hosted_yum(w_policy, depth, strict):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_proxy(repo_format, strict, faker):
+def test_repo_create_proxy(nexus_client, repo_format, strict, faker):
     """
     Test all variations of this command:
 
@@ -105,7 +105,7 @@ def test_repo_create_proxy(repo_format, strict, faker):
         'repo create proxy {repo_format} {repo_name} {remote_url} '
         '{strict}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 
 @pytest.mark.parametrize(
@@ -115,7 +115,7 @@ def test_repo_create_proxy(repo_format, strict, faker):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_proxy_maven(v_policy, l_policy, strict, faker):
+def test_repo_create_proxy_maven(nexus_client, v_policy, l_policy, strict, faker):
     """
     Test all variations of this command:
 
@@ -131,17 +131,17 @@ def test_repo_create_proxy_maven(v_policy, l_policy, strict, faker):
         'repo create proxy maven {repo_name} {remote_url} '
         '--layout={l_policy} --version={v_policy} {strict}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 
 @pytest.mark.integration
-def test_list(faker):
+def test_list(nexus_client, faker):
     repo_name = faker.pystr()
     argv_create = pytest.helpers.create_argv(
         'repo create hosted raw {repo_name}', **locals())
     argv_list = pytest.helpers.create_argv('list {repo_name}', **locals())
 
-    assert pytest.helpers.create_and_inspect(argv_create, repo_name)
+    assert pytest.helpers.create_and_inspect(nexus_client, argv_create, repo_name)
     assert nexuscli.cli.main(argv=list(filter(None, argv_list))) is None
 
 
