@@ -54,7 +54,8 @@ def test_repo_create_hosted(nexus_client, repo_format, w_policy, strict):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_hosted_maven(nexus_client, v_policy, l_policy, w_policy, strict):
+def test_repo_create_hosted_maven(
+        nexus_client, v_policy, l_policy, w_policy, strict):
     strict_name = strict[2:8]
     repo_name = ('hosted-maven-{v_policy}-{l_policy}-{w_policy}'
                  '-{strict_name}').format(**locals())
@@ -115,7 +116,8 @@ def test_repo_create_proxy(nexus_client, repo_format, strict, faker):
         ['', '--strict-content'],  # strict
     ))
 @pytest.mark.integration
-def test_repo_create_proxy_maven(nexus_client, v_policy, l_policy, strict, faker):
+def test_repo_create_proxy_maven(
+        nexus_client, v_policy, l_policy, strict, faker):
     """
     Test all variations of this command:
 
@@ -141,7 +143,8 @@ def test_list(nexus_client, faker):
         'repo create hosted raw {repo_name}', **locals())
     argv_list = pytest.helpers.create_argv('list {repo_name}', **locals())
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv_create, repo_name)
+    assert pytest.helpers.create_and_inspect(
+        nexus_client, argv_create, repo_name)
     assert nexuscli.cli.main(argv=list(filter(None, argv_list))) is None
 
 
