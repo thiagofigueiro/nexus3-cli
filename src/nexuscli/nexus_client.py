@@ -6,10 +6,7 @@ import os.path
 import py
 import requests
 import sys
-
-
 from clint.textui import progress
-from nexuscli.exception import DownloadError
 
 try:
     from urllib.parse import urljoin  # Python 3
@@ -17,8 +14,8 @@ except ImportError:
     from urlparse import urljoin      # Python 2
 
 from . import exception, nexus_util
-from nexuscli.repository import RepositoryCollection
-from nexuscli.script import ScriptCollection
+from .repository import RepositoryCollection
+from .script import ScriptCollection
 
 # Python 2 compatibility
 try:
@@ -26,11 +23,7 @@ try:
 except NameError:
     FileNotFoundError = IOError  # Python 2
 
-logging.basicConfig()
 LOG = logging.getLogger(__name__)
-LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
-LOG.setLevel(LOG_LEVEL)
-
 SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
 
@@ -683,7 +676,7 @@ class NexusClient(object):
 
         if response.status_code != 200:
             sys.stderr.write(response.__dict__)
-            raise DownloadError(
+            raise exception.DownloadError(
                 'Downloading from {download_url}. '
                 'Reason: {response.reason}'.format(**locals()))
 
@@ -739,7 +732,7 @@ class NexusClient(object):
             try:
                 self.download_file(download_url, download_path)
                 download_count += 1
-            except DownloadError:
+            except exception.DownloadError:
                 LOG.warning('Error downloading {}\n'.format(download_url))
                 continue
 

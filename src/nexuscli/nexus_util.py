@@ -5,6 +5,8 @@ import os
 
 from six import string_types
 
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+
 
 def validate_strings(*args):
     """

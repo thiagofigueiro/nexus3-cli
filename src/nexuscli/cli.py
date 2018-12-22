@@ -60,15 +60,17 @@ Commands:
 import getpass
 import inflect
 import json
+import logging
 import os
 import sys
 import types
 
 from docopt import docopt
 
-from nexuscli.nexus_client import NexusClient
-from nexuscli import repository
+from .nexus_client import NexusClient
+from . import nexus_util, repository
 
+logging.basicConfig(level=nexus_util.LOG_LEVEL)
 PLURAL = inflect.engine().plural
 
 
