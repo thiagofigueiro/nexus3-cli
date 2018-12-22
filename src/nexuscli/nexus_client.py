@@ -289,7 +289,6 @@ class NexusClient(object):
         query = {
             'repository': repository_name,
         }
-        self._api_version = 'beta'
         raw_response = self._get_paginated('search/assets', params=query)
 
         return nexus_util.filtered_list_gen(
@@ -432,7 +431,6 @@ class NexusClient(object):
             'raw.asset1.filename': dst_file,
         }
 
-        self._api_version = 'beta'
         response = self._post(
             'components', files=files, data=data, params=params)
         if response.status_code != 204:

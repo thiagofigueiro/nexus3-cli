@@ -49,7 +49,6 @@ class RepositoryCollection(object):
         representation of repositories can be fetched using :meth:`raw_list`.
         """
         previous_api_version = self.client._api_version
-        self.client._api_version = 'beta'
         response = self.client._get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
