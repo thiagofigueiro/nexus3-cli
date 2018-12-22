@@ -72,12 +72,36 @@ from . import nexus_util, repository
 
 logging.basicConfig(level=nexus_util.LOG_LEVEL)
 PLURAL = inflect.engine().plural
+YESNO_OPTIONS = {
+    "true": True, "t": True, "yes": True, "y": True,
+    "false": False, "f": False, "no": False, "n": False,
+}
+
+
+def _input_yesno(prompt, default):
+    """
+    Prompts for a yes/true/no/false answer.
+
+    :param prompt: question to be displayed to user
+    :param default: default choice, also used for invalid answers
+    :return: choice
+    :rtype: bool
+    """
+    try:
+        return YESNO_OPTIONS[str(_input(prompt, default)).lower()]
+    except KeyError:
+        return default
 
 
 def _input(prompt, default=None):
     """
-    :return: raw_input for Python 2.x and input for Python 3.x
-    :rtype: function
+    Prompts for a text answer. Uses raw_input for Python 2.x and input for
+    Python 3.x
+
+    :param prompt: question to be displayed to user
+    :param default: default choice
+    :return: user-provided answer or None, if default not provided.
+    :rtype: Union[str,None]
     """
     if sys.version_info < (3, 0):
         real_input = raw_input  # noqa - Python2
@@ -100,11 +124,8 @@ def do_login():
     if not nexus_pass:
         nexus_pass = NexusClient.DEFAULT_PASS
 
-    try:
-        nexus_verify = {"true": True, "false": False}[
-            str(_input('Verify cert', NexusClient.DEFAULT_VERIFY)).lower()]
-    except KeyError:
-        nexus_verify = NexusClient.DEFAULT_VERIFY
+    nexus_verify = _input_yesno(
+        'Verify server certificate', NexusClient.DEFAULT_VERIFY)
 
     client = NexusClient(
         url=nexus_url, user=nexus_user, password=nexus_pass,

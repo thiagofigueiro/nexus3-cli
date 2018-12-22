@@ -70,9 +70,6 @@ class NexusClient(object):
         self._scripts = None
         self._verify = None
 
-        if verify is None:
-            verify = NexusClient.DEFAULT_VERIFY
-
         if url and user and password:
             self.set_config(user, password, url, verify)
         else:
@@ -96,7 +93,11 @@ class NexusClient(object):
         """
         self._auth = (user, password)
         self.base_url = base_url
-        self._verify = verify or NexusClient.DEFAULT_VERIFY
+
+        if verify is None:
+            self._verify = NexusClient.DEFAULT_VERIFY
+        else:
+            self._verify = verify
 
     @property
     def repositories(self):
