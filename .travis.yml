@@ -7,7 +7,6 @@ before_install:
 - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
 language: python
 python:
-- '2.7'
 - '3.6'
 - '3.7-dev'
 install:
