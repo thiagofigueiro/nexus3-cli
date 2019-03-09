@@ -81,28 +81,28 @@ def filtered_list_gen(raw_response, term=None, partial_match=True):
 
 
 def calculate_hash(hash_name, file_path_or_handle):
-        """
-        Calculate a hash for the given file.
+    """
+    Calculate a hash for the given file.
 
-        :param hash_name: name of the hash algorithm in hashlib
-        :type hash_name: str
-        :param file_path_or_handle: source file name (str) or file handle (from
-            open()) for the hash algorithm.
-        :type file_path_or_handle: Union[str, file object]
-        :return: the calculated hash
-        :rtype: str
-        """
-        def _hash(_fd):
-            h = hashlib.new(hash_name)
-            stat = os.fstat(_fd.fileno())
-            if stat.st_size > 0:  # can't map a zero-length file
-                m = mmap.mmap(_fd.fileno(),
-                              stat.st_size, access=mmap.ACCESS_READ)
-                h.update(m)
-            return h.hexdigest()
+    :param hash_name: name of the hash algorithm in hashlib
+    :type hash_name: str
+    :param file_path_or_handle: source file name (str) or file handle (from
+        open()) for the hash algorithm.
+    :type file_path_or_handle: Union[str, file object]
+    :return: the calculated hash
+    :rtype: str
+    """
+    def _hash(_fd):
+        h = hashlib.new(hash_name)
+        stat = os.fstat(_fd.fileno())
+        if stat.st_size > 0:  # can't map a zero-length file
+            m = mmap.mmap(_fd.fileno(),
+                          stat.st_size, access=mmap.ACCESS_READ)
+            h.update(m)
+        return h.hexdigest()
 
-        if hasattr(file_path_or_handle, 'read'):
-            return _hash(file_path_or_handle)
-        else:
-            with open(file_path_or_handle, 'rb') as fd:
-                return _hash(fd)
+    if hasattr(file_path_or_handle, 'read'):
+        return _hash(file_path_or_handle)
+    else:
+        with open(file_path_or_handle, 'rb') as fd:
+            return _hash(fd)
