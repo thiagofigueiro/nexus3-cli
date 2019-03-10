@@ -23,7 +23,7 @@ class RepositoryCollection(object):
             argument of :class:`RepositoryCollection`.
     """
     def __init__(self, client=None):
-        self.client = client
+        self._client = client
         self._repositories_json = None
 
     def get_by_name(self, name):
@@ -42,7 +42,7 @@ class RepositoryCollection(object):
         except IndexError:
             raise exception.NexusClientInvalidRepository(name)
 
-        return Repository(self.client, **raw_repo)
+        return Repository(self._client, **raw_repo)
 
     def get_raw_by_name(self, name):
         """
@@ -70,13 +70,13 @@ class RepositoryCollection(object):
         Refresh local list of repositories with latest from service. A raw
         representation of repositories can be fetched using :meth:`raw_list`.
         """
-        previous_api_version = self.client._api_version
-        response = self.client._get('repositories')
+        previous_api_version = self._client._api_version
+        response = self._client._get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
 
         self._repositories_json = response.json()
-        self.client._api_version = previous_api_version
+        self._client._api_version = previous_api_version
 
     def raw_list(self):
         """
@@ -103,8 +103,8 @@ class RepositoryCollection(object):
             repository.repositoryManager.delete(args)
             """,
         }
-        self.client.scripts.create_if_missing(script)
-        self.client.scripts.run(script['name'], data=name)
+        self._client.scripts.create_if_missing(script)
+        self._client.scripts.run(script['name'], data=name)
 
     def create(self, repository):
         """
@@ -124,10 +124,10 @@ class RepositoryCollection(object):
             'name': 'nexus3-cli-repository-create',
             'content': groovy.script_create_repo(),
         }
-        self.client.scripts.create_if_missing(script)
+        self._client.scripts.create_if_missing(script)
 
         script_args = json.dumps(repository.configuration)
-        resp = self.client.scripts.run(script['name'], data=script_args)
+        resp = self._client.scripts.run(script['name'], data=script_args)
 
         result = resp.get('result')
         if result != 'null':
@@ -178,7 +178,7 @@ class Repository(object):
     SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
     def __init__(self, client, **kwargs):
-        self.client = client
+        self._client = client
         self._raw = validations.upcase_policy_args(kwargs)
 
     def __repr__(self):
@@ -347,7 +347,7 @@ class Repository(object):
             'raw.asset1.filename': dst_file,
         }
 
-        response = self.client._post(
+        response = self._client._post(
             'components', files=files, data=data, params=params)
         if response.status_code != 204:
             raise exception.NexusClientAPIError(
@@ -361,8 +361,8 @@ class Repository(object):
             ['repository', self.name, dst_dir, dst_file])
 
         with open(src_file, 'rb') as fh:
-            response = self.client._put(
-                repository_path, data=fh, service_url=self.client.base_url)
+            response = self._client._put(
+                repository_path, data=fh, service_url=self._client.base_url)
 
         if response.status_code != 200:
             raise exception.NexusClientAPIError(
