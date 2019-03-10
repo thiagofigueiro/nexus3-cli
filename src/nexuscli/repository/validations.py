@@ -18,6 +18,8 @@ LAYOUT_POLICIES = ['PERMISSIVE', 'STRICT']
 VERSION_POLICIES = ['RELEASE', 'SNAPSHOT', 'MIXED']
 WRITE_POLICIES = ['ALLOW', 'ALLOW_ONCE', 'DENY']
 
+REMOTE_PATH_SEPARATOR = '/'
+
 
 def is_target_supported(target, value, known, supported):
     """

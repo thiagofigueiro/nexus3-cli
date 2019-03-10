@@ -201,7 +201,8 @@ def args_to_repo_type(args):
 def cmd_repo_create(nexus_client, args):
     """Performs ``rekt repo create *`` commands"""
     r = repository.Repository(
-        args_to_repo_type(args),
+        nexus_client,
+        type=args_to_repo_type(args),
         ignore_extra_kwargs=True,
         name=args.get('<repo_name>'),
         format=args_to_repo_format(args),

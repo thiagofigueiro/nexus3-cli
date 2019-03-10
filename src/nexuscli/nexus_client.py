@@ -14,7 +14,7 @@ except ImportError:
     from urlparse import urljoin      # Python 2
 
 from . import exception, nexus_util
-from .repository import RepositoryCollection
+from .repository import RepositoryCollection, REMOTE_PATH_SEPARATOR
 from .script import ScriptCollection
 
 # Python 2 compatibility
@@ -24,7 +24,6 @@ except NameError:
     FileNotFoundError = IOError  # Python 2
 
 LOG = logging.getLogger(__name__)
-SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
 
 class NexusClient(object):
@@ -65,7 +64,7 @@ class NexusClient(object):
         self._auth = None
         self._api_version = 'v1'
         self._local_sep = os.path.sep
-        self._remote_sep = '/'
+        self._remote_sep = REMOTE_PATH_SEPARATOR
         self._repositories = None
         self._scripts = None
         self._verify = None
@@ -420,129 +419,6 @@ class NexusClient(object):
 
         return repository, directory, filename
 
-    def _upload_file_raw(self, src_file, dst_repo, dst_dir, dst_file):
-        """Process upload_file() for raw repositories"""
-        if dst_dir is None or dst_dir.startswith(self._remote_sep):
-            raise exception.NexusClientInvalidRepositoryPath(
-                'Destination path does not contain a directory, which is '
-                'required by raw repositories')
-
-        params = {'repository': dst_repo}
-        files = {'raw.asset1': open(src_file, 'rb').read()}
-        data = {
-            'raw.directory': dst_dir,
-            'raw.asset1.filename': dst_file,
-        }
-
-        response = self._post(
-            'components', files=files, data=data, params=params)
-        if response.status_code != 204:
-            raise exception.NexusClientAPIError(
-                'Uploading to {dst_repo}. '
-                'Reason: {response.reason}'.format(**locals()))
-
-    def _upload_file_yum(self, src_file, dst_repo, dst_dir, dst_file):
-        """Process upload_file() for yum repositories"""
-        dst_dir = dst_dir or self._remote_sep
-        repository_path = self._remote_sep.join(
-            ['repository', dst_repo, dst_dir, dst_file])
-
-        with open(src_file, 'rb') as fh:
-            response = self._put(
-                repository_path, data=fh, service_url=self.base_url)
-
-        if response.status_code != 200:
-            raise exception.NexusClientAPIError(
-                'Uploading to {repository_path}. '
-                'Reason: {response.reason}'.format(**locals()))
-
-    def upload_file(self, src_file, dst_repo, dst_dir, dst_file=None):
-        """
-        Uploads a singe file to a Nexus repository under the directory and
-        file name specified. If the destination file name isn't given, the
-        source file name is used.
-
-        :param src_file: path to the local file to be uploaded.
-        :param dst_repo: name of the Nexus repository.
-        :param dst_dir: directory under dst_repo to place file in.
-        :param dst_file: destination file name.
-        """
-        try:
-            repository = self.repositories.get_raw_by_name(dst_repo)
-        except IndexError:
-            raise exception.NexusClientInvalidRepository(dst_repo)
-
-        # TODO: support all repository formats
-        repo_format = repository['format']
-        if repo_format not in SUPPORTED_FORMATS_FOR_UPLOAD:
-            raise NotImplementedError(
-                'Upload to {} repository not supported'.format(repo_format))
-
-        if dst_file is None:
-            dst_file = os.path.basename(src_file)
-
-        _upload = getattr(self, '_upload_file_' + repo_format)
-        _upload(src_file, dst_repo, dst_dir, dst_file)
-
-    def _get_upload_fileset(self, src_dir, recurse=True):
-        """
-        Walks the given directory and collects files to be uploaded. If
-        recurse option is False, only the files on the root of the directory
-        will be returned.
-
-        :param src_dir: location of files
-        :param recurse: If false, only the files on the root of src_dir
-                        are returned
-        :return: file set to be used with upload_directory
-        :rtype: set
-        """
-        source_files = set()
-        for dirname, dirnames, filenames in os.walk(src_dir):
-            if not recurse:
-                del dirnames[:]
-
-            source_files.update(
-                os.path.relpath(os.path.join(dirname, f), src_dir)
-                for f in filenames)
-
-        return source_files
-
-    def _get_upload_subdirectory(self, dst_dir, file_path, flatten=False):
-        # empty dst_dir because most repo formats, aside from raw, allow it
-        sub_directory = dst_dir or ''
-        sep = self._remote_sep
-        if not flatten:
-            dirname = os.path.dirname(file_path)
-            if sub_directory.endswith(sep) or dirname.startswith(sep):
-                sep = ''
-            sub_directory += '{sep}{dirname}'.format(**locals())
-
-        return sub_directory
-
-    def upload_directory(self, src_dir, dst_repo, dst_dir, **kwargs):
-        """
-        Uploads all files in a directory, honouring options flatten and
-        recurse.
-
-        :param src_dir: path to local directory to be uploaded
-        :param dst_repo: destination repository
-        :param dst_dir: destination directory in dst_repo
-        :return: number of files uploaded
-        :rtype: int
-        """
-        file_set = self._get_upload_fileset(
-                            src_dir, kwargs.get('recurse', True))
-        file_count = len(file_set)
-        file_set = progress.bar(file_set, expected_size=file_count)
-
-        for relative_filepath in file_set:
-            file_path = os.path.join(src_dir, relative_filepath)
-            sub_directory = self._get_upload_subdirectory(
-                            dst_dir, file_path, kwargs.get('flatten', False))
-            self.upload_file(file_path, dst_repo, sub_directory)
-
-        return file_count
-
     def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file,
                             **kwargs):
         """
@@ -555,15 +431,18 @@ class NexusClient(object):
         :param dst_file: destination file name.
         :return: number of files uploaded.
         """
+        repository = self.repositories.get_by_name(dst_repo)
+
         if os.path.isdir(file_or_dir):
-            if dst_file is None:
-                return self.upload_directory(file_or_dir, dst_repo, dst_dir,
-                                             **kwargs)
-            else:
+            src_file = file_or_dir
+            if dst_file is not None:
                 raise exception.NexusClientInvalidRepositoryPath(
                     'Not allowed to upload a directory to a file')
 
-        self.upload_file(file_or_dir, dst_repo, dst_dir, dst_file)
+            return repository.upload_directory(src_file, dst_dir, **kwargs)
+
+        src_dir = file_or_dir
+        repository.upload_file(src_dir, dst_dir, dst_file)
         return 1
 
     def upload(self, source, destination, **kwargs):

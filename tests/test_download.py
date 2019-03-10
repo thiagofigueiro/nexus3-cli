@@ -133,7 +133,8 @@ def test_download_tree(
     pytest.helpers.create_and_inspect(nexus_client, argv, repo)
     nexus_client.repositories.refresh()
 
-    count_uploaded = nexus_client.upload_directory(src_dir, repo, dst_dir)
+    r = nexus_client.repositories.get_by_name(repo)
+    count_uploaded = r.upload_directory(src_dir, dst_dir)
     file_set_uploaded = pytest.helpers.repo_list(
                             nexus_client, repo, count_uploaded, path)
 

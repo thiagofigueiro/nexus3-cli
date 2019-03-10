@@ -1,7 +1,11 @@
 import json
+import os
+from clint.textui import progress
 
 from nexuscli import exception
 from nexuscli.repository import validations, groovy
+from . import util
+from .validations import REMOTE_PATH_SEPARATOR
 
 
 class RepositoryCollection(object):
@@ -21,6 +25,24 @@ class RepositoryCollection(object):
     def __init__(self, client=None):
         self.client = client
         self._repositories_json = None
+
+    def get_by_name(self, name):
+        """
+        Get a Nexus 3 repository by its name.
+
+        :param name: name of the repository wanted
+        :type name: str
+        :return: the requested object
+        :rtype: Repository
+        :raise exception.NexusClientInvalidRepository: when a repository with
+            the given name isn't found.
+        """
+        try:
+            raw_repo = self.get_raw_by_name(name)
+        except IndexError:
+            raise exception.NexusClientInvalidRepository(name)
+
+        return Repository(self.client, **raw_repo)
 
     def get_raw_by_name(self, name):
         """
@@ -121,6 +143,8 @@ class Repository(object):
         name (str): name of the new repository.
         format (str): format (recipe) of the new repository. Must be one
             of :py:data:`nexuscli.repository.validations.KNOWN_FORMATS`.
+        type (str): type of the new repository. Must be one of
+            :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
         blob_store_name (str): an existing blob store; 'default' should work
             on most installations.
         depth (int): only accepted when ``repo_format='yum'``. The Yum repodata
@@ -142,24 +166,41 @@ class Repository(object):
         ignore_extra_kwargs (bool): if True, do not raise an exception for
             unnecessary/extra/invalid kwargs.
 
-    :param repo_type: type for the new repository. Must be one of
-        :data:`nexuscli.repository.validations.KNOWN_TYPES`.
+    :param client: the client instance that
+        will be used to perform operations against the Nexus 3 service. You
+        must provide this at instantiation or set it before calling any methods
+        that require connectivity to Nexus.
+    :type client: nexuscli.nexus_client.NexusClient
     :param kwargs: attributes for the new repository.
     :return: a Repository instance with the given settings
     :rtype: Repository
     """
-    def __init__(self, repo_type, **kwargs):
-        self._repo_type = repo_type
+    SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
+
+    def __init__(self, client, **kwargs):
+        self.client = client
         self._raw = validations.upcase_policy_args(kwargs)
 
     def __repr__(self):
-        return 'Repository({self._repo_type}, {self._raw})'.format(self=self)
+        return 'Repository({self.type}, {self._raw})'.format(self=self)
 
     def _recipe_name(self):
         repo_format = self._raw['format']
         if repo_format == 'maven':
             repo_format = 'maven2'
-        return '{repo_format}-{self._repo_type}'.format(**locals())
+        return '{repo_format}-{self.type}'.format(**locals())
+
+    @property
+    def format(self):
+        return self._raw['format']
+
+    @property
+    def name(self):
+        return self._raw['name']
+
+    @property
+    def type(self):
+        return self._raw['type']
 
     @property
     def configuration(self):
@@ -190,16 +231,16 @@ class Repository(object):
         :return: repository configuration
         :rtype: dict
         """
-        validations.repository_args(self._repo_type, **self._raw)
-        if self._repo_type == 'hosted':
+        validations.repository_args(self.type, **self._raw)
+        if self.type == 'hosted':
             return self._configuration_hosted()
-        elif self._repo_type == 'proxy':
+        elif self.type == 'proxy':
             return self._configuration_proxy()
-        elif self._repo_type == 'group':
+        elif self.type == 'group':
             return self._configuration_group()
 
         raise RuntimeError(
-            'Unexpected repository type: {}'.format(self._repo_type))
+            'Unexpected repository type: {}'.format(self.type))
 
     def _configuration_common(self):
         repo_config = {
@@ -270,3 +311,86 @@ class Repository(object):
 
         # TODO: accept/validate member_names in kwargs
         raise NotImplementedError
+
+    def upload_file(self, src_file, dst_dir, dst_file=None):
+        """
+        Uploads a singe file to this Nexus repository under the directory and
+        file name specified. If the destination file name isn't given, the
+        source file name is used.
+
+        :param src_file: path to the local file to be uploaded.
+        :param dst_dir: directory under dst_repo to place file in.
+        :param dst_file: destination file name.
+        """
+        # TODO: support all repository formats
+        if self.format not in self.SUPPORTED_FORMATS_FOR_UPLOAD:
+            raise NotImplementedError(
+                'Upload to {} repository not supported'.format(self.format))
+
+        if dst_file is None:
+            dst_file = os.path.basename(src_file)
+
+        _upload = getattr(self, '_upload_file_' + self.format)
+        _upload(src_file, dst_dir, dst_file)
+
+    def _upload_file_raw(self, src_file, dst_dir, dst_file):
+        """Process upload_file() for raw repositories"""
+        if dst_dir is None or dst_dir.startswith(REMOTE_PATH_SEPARATOR):
+            raise exception.NexusClientInvalidRepositoryPath(
+                'Destination path does not contain a directory, which is '
+                'required by raw repositories')
+
+        params = {'repository': self.name}
+        files = {'raw.asset1': open(src_file, 'rb').read()}
+        data = {
+            'raw.directory': dst_dir,
+            'raw.asset1.filename': dst_file,
+        }
+
+        response = self.client._post(
+            'components', files=files, data=data, params=params)
+        if response.status_code != 204:
+            raise exception.NexusClientAPIError(
+                'Uploading to {self.name}. '
+                'Reason: {response.reason}'.format(**locals()))
+
+    def _upload_file_yum(self, src_file, dst_dir, dst_file):
+        """Process upload_file() for yum repositories"""
+        dst_dir = dst_dir or REMOTE_PATH_SEPARATOR
+        repository_path = REMOTE_PATH_SEPARATOR.join(
+            ['repository', self.name, dst_dir, dst_file])
+
+        with open(src_file, 'rb') as fh:
+            response = self.client._put(
+                repository_path, data=fh, service_url=self.client.base_url)
+
+        if response.status_code != 200:
+            raise exception.NexusClientAPIError(
+                'Uploading to {repository_path}. '
+                'Reason: {response.reason}'.format(**locals()))
+
+    def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
+        """
+        Uploads all files in a directory to the specified destination directory
+        in this repository, honouring options flatten and recurse.
+
+        :param src_dir: path to local directory to be uploaded
+        :param dst_dir: destination directory in dst_repo
+        :param recurse: when True, upload directory recursively.
+        :type recurse: bool
+        :param flatten: when True, the source directory tree isn't replicated
+            on the destination.
+        :return: number of files uploaded
+        :rtype: int
+        """
+        file_set = util.get_files(src_dir, recurse)
+        file_count = len(file_set)
+        file_set = progress.bar(file_set, expected_size=file_count)
+
+        for relative_filepath in file_set:
+            file_path = os.path.join(src_dir, relative_filepath)
+            sub_directory = util.get_upload_subdirectory(
+                            dst_dir, file_path, flatten)
+            self.upload_file(file_path, sub_directory)
+
+        return file_count

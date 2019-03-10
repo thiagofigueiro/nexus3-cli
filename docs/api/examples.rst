@@ -49,7 +49,7 @@ Delete a repository
 Upload a file
 ^^^^^^^^^^^^^
 
->>> upload_count = nexus_client.upload(
->>>     '/etc/passwd', 'my-repository/etc/passwd')
+>>> repository = nexus_client.repositories.get_by_name('my-repository')
+>>> upload_count = repository.upload('/etc/passwd', '/etc/passwd')
 >>> print(upload_count)
 1

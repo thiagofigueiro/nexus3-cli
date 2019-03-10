@@ -150,9 +150,11 @@ def deep_file_tree(faker, tmpdir):
     """
     fixture = []
     with tmpdir.as_cwd():
-        for _ in range(faker.random_int(1, 100)):
+        # for _ in range(faker.random_int(1, 100)):
+        for _ in range(2):
             relative_path = faker.file_path(
-                depth=faker.random_number(1, 10))[1:]
+                # depth=faker.random_number(1, 10))[1:]
+                depth=2)[1:]
             fixture.append(relative_path)
             tmpdir.join(relative_path).ensure()
 
@@ -225,3 +227,21 @@ def client_args(faker, tmpdir):
         'config_path': tmpdir.join(faker.file_name()),
     }
     return fixture
+
+
+@pytest.fixture
+def nexus_raw_repo(nexus_mock_client, faker):
+    repo_name = faker.uri_page()
+    nexus_mock_client.repositories._repositories_json.append({
+        'name': repo_name, 'format': 'raw'})
+
+    return nexus_mock_client.repositories.get_by_name(repo_name)
+
+
+@pytest.fixture
+def nexus_yum_repo(nexus_mock_client, faker):
+    repo_name = faker.uri_page()
+    nexus_mock_client.repositories._repositories_json.append({
+        'name': repo_name, 'format': 'yum'})
+
+    return nexus_mock_client.repositories.get_by_name(repo_name)
