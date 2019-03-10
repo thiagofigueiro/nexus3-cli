@@ -10,7 +10,7 @@ python:
 - '3.6'
 - '3.7-dev'
 install:
-- pip install .[test]
+- pip install -U .[test]
 script:
 - flake8 *.py src tests --format=pylint
 - pytest -m 'not integration'

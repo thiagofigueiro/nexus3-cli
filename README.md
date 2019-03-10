@@ -97,3 +97,30 @@ For all commands and options, run `nexus3 -h`.
 ### API
 
 See [API documentation](https://nexus3-cli.readthedocs.io/en/latest/api.html).
+
+## Development
+
+The automated tests are configured in `.travis.yml`. To run tests locally,
+install the package with test dependencies and run pytest:
+
+```bash
+pip install -e .[test]
+pytest -m 'not integration'
+```
+
+Integration tests require a local Nexus instance listening on 8081 or as
+configured in `~/.nexus-cli`; the example configuration used for tests is in
+`tests/fixtures/dot-nexus-cli`.
+
+```bash
+docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3
+./tests/wait-for-nexus.sh  # the Nexus instance takes a while to be ready
+pytest -m integration
+docker kill nexus
+```
+
+Nota Bene: if you re-run integration tests without re-creating or cleaning-up the 
+dev Nexus instance, test will fail because objects created during tests will 
+already exist. 
+
+Pull requests are welcome; please see [CONTRIBUTING.md](CONTRIBUTING.md).
