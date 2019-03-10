@@ -61,7 +61,7 @@ class Repository(object):
         repo_format = self._raw['format']
         if repo_format == 'maven':
             repo_format = 'maven2'
-        return '{repo_format}-{self.type}'.format(**locals())
+        return f'{repo_format}-{self.type}'
 
     @property
     def format(self):
@@ -224,8 +224,7 @@ class Repository(object):
             'components', files=files, data=data, params=params)
         if response.status_code != 204:
             raise exception.NexusClientAPIError(
-                'Uploading to {self.name}. '
-                'Reason: {response.reason}'.format(**locals()))
+                f'Uploading to {self.name}. Reason: {response.reason}')
 
     def _upload_file_yum(self, src_file, dst_dir, dst_file):
         """Process upload_file() for yum repositories"""
@@ -239,8 +238,7 @@ class Repository(object):
 
         if response.status_code != 200:
             raise exception.NexusClientAPIError(
-                'Uploading to {repository_path}. '
-                'Reason: {response.reason}'.format(**locals()))
+                f'Uploading to {repository_path}. Reason: {response.reason}')
 
     def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
         """

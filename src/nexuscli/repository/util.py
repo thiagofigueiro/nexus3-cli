@@ -50,6 +50,6 @@ def get_upload_subdirectory(dst_dir, file_path, flatten=False):
     dirname = os.path.dirname(file_path)
     if sub_directory.endswith(sep) or dirname.startswith(sep):
         sep = ''
-    sub_directory += '{sep}{dirname}'.format(**locals())
+    sub_directory += f'{sep}{dirname}'
 
     return sub_directory

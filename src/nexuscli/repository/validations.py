@@ -34,14 +34,11 @@ def is_target_supported(target, value, known, supported):
           :class:`NotImplementedError`: if given value is not in ``supported``.
     """
     if value not in known:
-        raise ValueError(
-            '{target}={value} must be one of {known}'.format(
-                **locals()))
+        raise ValueError(f'{target}={value} must be one of {known}')
 
     if value not in supported:
         raise NotImplementedError(
-            '{target}={value}; supported {target}s: {supported}'.format(
-                **locals()))
+            f'{target}={value}; supported {target}s: {supported}')
 
 
 def _upcase_values(raw_repo, targets=[]):

@@ -37,8 +37,7 @@ def test_repo_list(mocker):
 @pytest.mark.integration
 def test_repo_create_hosted(nexus_client, repo_format, w_policy, strict):
     strict_name = strict[2:8]
-    repo_name = 'hosted-{repo_format}-{w_policy}-{strict_name}'.format(
-        **locals())
+    repo_name = f'hosted-{repo_format}-{w_policy}-{strict_name}'
     argv = pytest.helpers.create_argv(
         'repo create hosted {repo_format} {repo_name} --write={w_policy} '
         '{strict}', **locals())
@@ -57,8 +56,7 @@ def test_repo_create_hosted(nexus_client, repo_format, w_policy, strict):
 def test_repo_create_hosted_maven(
         nexus_client, v_policy, l_policy, w_policy, strict):
     strict_name = strict[2:8]
-    repo_name = ('hosted-maven-{v_policy}-{l_policy}-{w_policy}'
-                 '-{strict_name}').format(**locals())
+    repo_name = f'hosted-maven-{v_policy}-{l_policy}-{w_policy}-{strict_name}'
     argv = pytest.helpers.create_argv(
         'repo create hosted maven {repo_name} --write={w_policy} '
         '--layout={l_policy} --version={v_policy} {strict}', **locals())
@@ -75,8 +73,7 @@ def test_repo_create_hosted_maven(
 @pytest.mark.integration
 def test_repo_create_hosted_yum(nexus_client, w_policy, depth, strict):
     strict_name = strict[2:8]
-    repo_name = 'hosted-yum-{w_policy}-{depth}-{strict_name}'.format(
-        **locals())
+    repo_name = f'hosted-yum-{w_policy}-{depth}-{strict_name}'
     argv = pytest.helpers.create_argv(
         'repo create hosted yum {repo_name} --write={w_policy} '
         '--depth={depth} {strict}', **locals())
@@ -100,8 +97,7 @@ def test_repo_create_proxy(nexus_client, repo_format, strict, faker):
     """
     strict_name = strict[2:8]
     remote_url = faker.uri()
-    repo_name = 'proxy-{repo_format}-{strict_name}'.format(
-        **locals())
+    repo_name = f'proxy-{repo_format}-{strict_name}'
     argv = pytest.helpers.create_argv(
         'repo create proxy {repo_format} {repo_name} {remote_url} '
         '{strict}', **locals())
@@ -127,8 +123,7 @@ def test_repo_create_proxy_maven(
     """
     strict_name = strict[2:8]
     remote_url = faker.uri()
-    repo_name = 'proxy-maven-{v_policy}-{l_policy}-{strict_name}'.format(
-        **locals())
+    repo_name = f'proxy-maven-{v_policy}-{l_policy}-{strict_name}'
     argv = pytest.helpers.create_argv(
         'repo create proxy maven {repo_name} {remote_url} '
         '--layout={l_policy} --version={v_policy} {strict}', **locals())
@@ -188,16 +183,13 @@ def test_upload(hosted_raw_repo_empty, deep_file_tree, faker):
     """Ensure that `nexus3 upload` command works"""
     src_dir, x_file_set = deep_file_tree
     dst_dir = faker.uri_path() + '/'
-    path = dst_dir[:-1] + src_dir
 
     repo_name = hosted_raw_repo_empty
-
     dest_repo_path = '{}/{}'.format(repo_name, dst_dir)
-
-    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
-                        **locals())
+    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}'
 
     retcode = check_call(upload_command.split())
+
     assert retcode == 0
 
 
@@ -206,21 +198,18 @@ def test_download(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
     """Ensure that `nexus3 download` command works"""
     src_dir, x_file_set = deep_file_tree
     dst_dir = faker.uri_path() + '/'
-    path = dst_dir[:-1] + src_dir
 
     repo_name = hosted_raw_repo_empty
 
     dest_repo_path = '{}/{}'.format(repo_name, dst_dir)
 
-    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
-                        **locals())
+    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}'
 
     retcode = check_call(upload_command.split())
     assert retcode == 0
 
     download_dest = str(tmpdir)
-    download_command = 'nexus3 download {dest_repo_path} \
-                        {download_dest}'.format(**locals())
+    download_command = f'nexus3 download {dest_repo_path} {download_dest}'
 
     retcode = check_call(download_command.split())
     assert retcode == 0
@@ -231,19 +220,17 @@ def test_delete(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
     """Ensure that `nexus3 delete` command works"""
     src_dir, x_file_set = deep_file_tree
     dst_dir = faker.uri_path() + '/'
-    path = dst_dir[:-1] + src_dir
 
     repo_name = hosted_raw_repo_empty
 
     dest_repo_path = '{}/{}/'.format(repo_name, dst_dir)
 
-    upload_command = 'nexus3 upload {src_dir} {dest_repo_path}'.format(
-                        **locals())
+    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}'
 
     retcode = check_call(upload_command.split())
     assert retcode == 0
 
-    delete_command = 'nexus3 delete {dest_repo_path}'.format(**locals())
+    delete_command = f'nexus3 delete {dest_repo_path}'
 
     retcode = check_call(delete_command.split())
     assert retcode == 0

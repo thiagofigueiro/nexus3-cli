@@ -139,8 +139,9 @@ def test_download_tree(
                             nexus_client, repo, count_uploaded, path)
 
     download_dest = '{}{}{}'.format(str(tmpdir), os.path.sep, dest_dir_end)
-    source_path = '{repo}/{dst_dir}'.format(**locals())
+    source_path = f'{repo}/{dst_dir}'
     count_downloaded = nexus_client.download(
             source_path, download_dest, flatten=flatten, nocache=nocache)
 
     assert count_uploaded == count_downloaded
+    assert file_set_uploaded == x_file_set

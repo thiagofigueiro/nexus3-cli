@@ -536,8 +536,8 @@ class NexusClient(object):
                 continue
 
             if self._local_hash_matches_remote(download_path, h, hash_name):
-                LOG.debug('Skipping {download_url} because local copy '
-                          '{download_path} is up-to-date\n'.format(**locals()))
+                LOG.debug(f'Skipping {download_url} because local copy '
+                          f'{download_path} is up-to-date\n')
                 return True
 
         return False
@@ -557,12 +557,11 @@ class NexusClient(object):
         if response.status_code != 200:
             sys.stderr.write(response.__dict__)
             raise exception.DownloadError(
-                'Downloading from {download_url}. '
-                'Reason: {response.reason}'.format(**locals()))
+                f'Downloading from {download_url}. '
+                f'Reason: {response.reason}')
 
         with open(destination, 'wb') as fd:
-            LOG.debug('Writing {download_url} to {destination}\n'.format(
-                **locals()))
+            LOG.debug('Writing %s to %s', download_url, destination)
             for chunk in response.iter_content(chunk_size=8192):
                 fd.write(chunk)
 
@@ -637,9 +636,8 @@ class NexusClient(object):
             id_ = artefact['id']
             artefact_path = artefact['path']
 
-            response = self._delete('assets/{id_}'.format(**locals()))
-            LOG.info(
-                'Deleted: {artefact_path} ({id_})'.format(**locals()))
+            response = self._delete(f'assets/{id_}')
+            LOG.info('Deleted: %s (%s)', artefact_path, id_)
             delete_count += 1
             if response.status_code == 404:
                 LOG.warning('File disappeared while deleting')
