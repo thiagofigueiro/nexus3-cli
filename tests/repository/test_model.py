@@ -6,17 +6,18 @@ from nexuscli import exception, repository
 from nexuscli.repository import Repository
 
 
-def test_collection_delete(repository_collection, faker):
+def test_collection_delete(nexus_mock_client, faker, mocker):
     """
     Ensure the delete method verifies the groovy script is in place and runs it
     with the name of the repository to be deleted as an argument
     """
+    mocker.patch('nexuscli.nexus_client.ScriptCollection')
     x_name = faker.word()
 
-    repository_collection.delete(x_name)
+    nexus_mock_client.repositories.delete(x_name)
 
-    repository_collection.client.scripts.create_if_missing.assert_called_once()
-    repository_collection.client.scripts.run.assert_called_with(
+    nexus_mock_client.scripts.create_if_missing.assert_called_once()
+    nexus_mock_client.scripts.run.assert_called_with(
         'nexus3-cli-repository-delete', data=x_name)
 
 
@@ -42,14 +43,15 @@ def test_create_repository_error(repo_type, repository_collection, mocker):
     repository.validations.KNOWN_TYPES,
     [{}, {'result': 'something'}, {'result': 'null'}]))
 def test_create_repository(
-        repo_type, response, repository_collection, faker, mocker):
+        repo_type, response, nexus_mock_client, faker, mocker):
     """
     Ensure the delete method verifies the groovy script is in place and runs it
     with the configuration for the repository to be created as argument. Also
     test that the result is correctly interpreted for success/failure.
     """
     x_configuration = faker.pydict()
-    repository_collection.client.scripts.run.return_value = response
+    mocker.patch('nexuscli.nexus_client.ScriptCollection')
+    nexus_mock_client.scripts.run.return_value = response
 
     mocker.patch('json.dumps')
     json.dumps.return_value = x_configuration
@@ -61,14 +63,14 @@ def test_create_repository(
     repo = repository.Repository(repo_type)
 
     if response.get('result') == 'null':
-        repository_collection.create(repo)
+        nexus_mock_client.repositories.create(repo)
     else:
         with pytest.raises(exception.NexusClientCreateRepositoryError):
-            repository_collection.create(repo)
+            nexus_mock_client.repositories.create(repo)
 
-    repository_collection.client.scripts.create_if_missing.assert_called_once()
+    nexus_mock_client.scripts.create_if_missing.assert_called_once()
     json.dumps.assert_called_with(repo.configuration)
-    repository_collection.client.scripts.run.assert_called_with(
+    nexus_mock_client.scripts.run.assert_called_with(
         'nexus3-cli-repository-create', data=json.dumps.return_value)
 
 
@@ -186,7 +188,7 @@ def test_upload_file_yum_error(
     x_src_file, _, x_dst_dir, x_dst_file = file_upload_args
     x_args = [x_src_file, x_dst_dir, x_dst_file]
     x_content = faker.binary(length=100)
-    x_values = nexus_yum_repo.client._request.return_value
+    x_values = nexus_yum_repo._client._request.return_value
     x_values.status_code = 999
 
     with tmpdir.as_cwd():
@@ -195,7 +197,7 @@ def test_upload_file_yum_error(
         with pytest.raises(exception.NexusClientAPIError) as e:
             nexus_yum_repo.upload_file(*x_args)
 
-    nexus_yum_repo.client._request.assert_called()
+    nexus_yum_repo._client._request.assert_called()
     assert nexus_yum_repo.name in str(e.value)
     assert x_dst_dir in str(e.value)
     assert x_dst_file in str(e.value)

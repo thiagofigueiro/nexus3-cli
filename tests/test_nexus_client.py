@@ -2,7 +2,8 @@
 import pytest
 
 import nexuscli
-from nexuscli import exception, nexus_client
+from nexuscli import exception
+from nexuscli.nexus_client import NexusClient
 
 
 def test_login_config(mocker):
@@ -11,9 +12,9 @@ def test_login_config(mocker):
     repositories on instantiation
     """
     mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+    mocker.patch.object(NexusClient, 'read_config')
 
-    client = nexus_client.NexusClient()
+    client = NexusClient()
 
     nexuscli.nexus_client.RepositoryCollection.assert_called()
     client.repositories.refresh.assert_called_once()
@@ -26,15 +27,15 @@ def test_login_params(faker, mocker):
     uses the provided connection parameters on instantiation.
     """
     mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'set_config')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+    mocker.patch.object(NexusClient, 'set_config')
+    mocker.patch.object(NexusClient, 'read_config')
 
     x_user = faker.user_name()
     x_pass = faker.password()
     x_url = faker.url()
     x_verify = faker.pybool()
 
-    client = nexus_client.NexusClient(
+    client = NexusClient(
         user=x_user, password=x_pass, url=x_url, verify=x_verify)
 
     nexuscli.nexus_client.RepositoryCollection.assert_called()
@@ -86,13 +87,13 @@ def test_split_component_path_errors(
 def test_write_config(client_args, mocker):
     """Ensure values written in config file can be read back"""
     mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
+    mocker.patch.object(NexusClient, 'read_config')
 
-    client = nexus_client.NexusClient(**client_args)
+    client = NexusClient(**client_args)
     client.write_config()
 
-    mocker.patch.object(nexus_client.NexusClient, 'set_config')
-    client_with_config = nexus_client.NexusClient(
+    mocker.patch.object(NexusClient, 'set_config')
+    client_with_config = NexusClient(
         config_path=client_args['config_path'])
 
     x_args = (client_args['user'], client_args['password'], client_args['url'])

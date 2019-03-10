@@ -1,9 +1,9 @@
 import pytest
 
-from nexuscli import repository
+from nexuscli.repository import RepositoryCollection
 
 
 @pytest.fixture
 def repository_collection(mocker):
-    fixture = repository.RepositoryCollection(client=mocker.Mock())
+    fixture = RepositoryCollection(client=mocker.Mock())
     return fixture
