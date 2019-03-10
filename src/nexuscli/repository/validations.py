@@ -1,9 +1,5 @@
+from urllib.parse import urlparse
 from nexuscli.nexus_util import validate_strings
-
-try:
-    from urllib.parse import urlparse  # Python 3
-except ImportError:
-    from urlparse import urlparse      # Python 2
 
 
 # TODO: remove when all known formats/types are supported

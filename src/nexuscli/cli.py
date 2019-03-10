@@ -95,20 +95,14 @@ def _input_yesno(prompt, default):
 
 def _input(prompt, default=None):
     """
-    Prompts for a text answer. Uses raw_input for Python 2.x and input for
-    Python 3.x
+    Prompts for a text answer with an optional default choice.
 
     :param prompt: question to be displayed to user
     :param default: default choice
     :return: user-provided answer or None, if default not provided.
     :rtype: Union[str,None]
     """
-    if sys.version_info < (3, 0):
-        real_input = raw_input  # noqa - Python2
-    else:
-        real_input = input
-
-    value = real_input('{prompt} ({default}):'.format(**locals()))
+    value = input(f'{prompt} ({default}):')
     if value:
         return value
 
