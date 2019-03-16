@@ -104,3 +104,24 @@ def calculate_hash(hash_name, file_path_or_handle):
     else:
         with open(file_path_or_handle, 'rb') as fd:
             return _hash(fd)
+
+
+def has_same_hash(artefact, filepath):
+    """
+    Checks if a Nexus artefact has the same hash as a local filepath.
+
+    :param artefact:  as returned by :py:meth:`nexus_client.list_raw`
+    :type artefact: dict
+    :param filepath: local file path
+    :return: True if artefact and filepath have the same hash.
+    :rtype: bool
+    """
+    for hash_name in ['sha1', 'md5']:
+        remote_hash = artefact.get('checksum', {}).get(hash_name)
+        if remote_hash is None:
+            continue
+
+        local_hash = calculate_hash(hash_name, filepath)
+        return local_hash == remote_hash
+
+    return False

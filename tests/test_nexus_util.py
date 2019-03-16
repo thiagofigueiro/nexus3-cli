@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import itertools
 import pytest
 
+from nexuscli import nexus_util
 from nexuscli.nexus_util import calculate_hash, filtered_list_gen
 
 
@@ -57,3 +59,26 @@ def test__calculate_hash(hash_name, x_hash, nexus_mock_client):
 
     assert sha1_fh == sha1_file
     assert sha1_fh == x_hash
+
+
+@pytest.mark.parametrize('hash_name, match',
+                         itertools.product(['sha1', 'md5'], [True, False]))
+def test_has_same_hash(hash_name, match, mocker, faker):
+    """Ensure method returns True when checksum matches and False otherwise"""
+    file_path = faker.file_path()
+    remote_hash = getattr(faker, hash_name)()
+    if match:
+        local_hash = remote_hash
+    else:
+        local_hash = getattr(faker, hash_name)()
+
+    mocker.patch('nexuscli.nexus_util.calculate_hash', return_value=local_hash)
+    artefact = {'checksum': {hash_name: remote_hash}}
+
+    assert match == nexus_util.has_same_hash(artefact, file_path)
+    nexus_util.calculate_hash.assert_called_with(hash_name, file_path)
+
+
+def test_has_same_hash_empty():
+    """Ensure method returns false when artefact has no checksum entries"""
+    assert not nexus_util.has_same_hash({}, 'any')

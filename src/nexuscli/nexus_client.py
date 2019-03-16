@@ -509,17 +509,8 @@ class NexusClient(object):
             local_absolute_path.ensure(dir=remote_isdir)
         return str(local_absolute_path)
 
-    def _local_hash_matches_remote(
-            self, file_path, remote_hash, hash_name='sha1'):
-        """
-        True if the hash for file_path matches remote_hash for the given
-        algorithm
-        """
-        local_hash = nexus_util.calculate_hash(hash_name, file_path)
-        return local_hash == remote_hash
-
-    def _should_skip_download(
-            self, download_url, download_path, artefact, nocache):
+    @staticmethod
+    def _should_skip_download(download_url, download_path, artefact, nocache):
         """False when nocache is set or local file is out-of-date"""
         if nocache:
             try:
@@ -530,15 +521,10 @@ class NexusClient(object):
                 pass
             return False
 
-        for hash_name in ['sha1', 'md5']:
-            h = artefact.get('checksum', {}).get(hash_name)
-            if h is None:
-                continue
-
-            if self._local_hash_matches_remote(download_path, h, hash_name):
-                LOG.debug(f'Skipping {download_url} because local copy '
-                          f'{download_path} is up-to-date\n')
-                return True
+        if nexus_util.has_same_hash(artefact, download_path):
+            LOG.debug(f'Skipping {download_url} because local copy '
+                      f'{download_path} is up-to-date\n')
+            return True
 
         return False
 
@@ -585,7 +571,6 @@ class NexusClient(object):
                         available on Nexus.
         :return: number of downloaded files.
         """
-
         download_count = 0
         if source.endswith(self._remote_sep) and \
                 not (destination.endswith('.') or destination.endswith('..')):
@@ -612,7 +597,7 @@ class NexusClient(object):
                 self.download_file(download_url, download_path)
                 download_count += 1
             except exception.DownloadError:
-                LOG.warning('Error downloading {}\n'.format(download_url))
+                LOG.warning('Error downloading %s', download_url)
                 continue
 
         return download_count
