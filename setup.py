@@ -54,6 +54,10 @@ setup(
     ],
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    package_data={
+        'nexuscli': ['script/groovy/'],
+    },
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'nexus3=nexuscli.cli:main',

@@ -1,7 +1,6 @@
 import json
 
-from nexuscli import exception
-from . import groovy
+from nexuscli import exception, nexus_util
 from .model import Repository
 
 
@@ -119,7 +118,7 @@ class RepositoryCollection(object):
         script = {
             'type': 'groovy',
             'name': 'nexus3-cli-repository-create',
-            'content': groovy.script_create_repo(),
+            'content': nexus_util.groovy_script('repository_collection-create')
         }
         self._client.scripts.create_if_missing(script)
 

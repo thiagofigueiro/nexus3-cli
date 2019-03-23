@@ -81,8 +81,8 @@ class Repository(object):
         Validate the configuration for the Repository and build its
         representation as a python dict. The dict returned by this property can
         be converted to JSON for use with the ``nexus3-cli-repository-create``
-        groovy script returned by
-        :meth:`nexuscli.repository.groovy.script_create_repo`.
+        groovy script created by the
+        :py:meth:`nexuscli.repository.RepositoryCollection.create` method.
 
         Example structure and attributes common to all repositories:
 

@@ -2,8 +2,31 @@
 import hashlib
 import mmap
 import os
-
+import pkg_resources
 from six import string_types
+
+
+def _resource_filename(resource_name):
+    """wrapper for pkg_resources.resource_filename"""
+    return pkg_resources.resource_filename('nexuscli', resource_name)
+
+
+def groovy_script(script_name):
+    """
+    Returns the content for a groovy script located in the package installation
+    path under script/groovy.
+
+    E.g.: groovy_script('foo') returns the content for the file at
+    ``.../site-packages/nexuscli/script/groovy/foo.groovy``.
+
+    :param script_name: file name of the groovy script; ``.groovy`` is appended
+        to this parameter to form the file name.
+    :return: content for the groovy script
+    :rtype: str
+    """
+    script_path = os.path.join('script', 'groovy', f'{script_name}.groovy')
+    script_path = _resource_filename(script_path)
+    return open(script_path).read()
 
 
 def validate_strings(*args):
