@@ -11,6 +11,33 @@ NexusClient
     :show-inheritance:
 
 
+Cleanup Policy
+^^^^^^^^^^^^^^
+
+.. automodule:: nexuscli.cleanup_policy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+.. automodule:: nexuscli.cleanup_policy.collection
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+.. automodule:: nexuscli.cleanup_policy.model
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+.. automodule:: nexuscli.cleanup_policy.validations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 Exception
 ^^^^^^^^^
 
@@ -23,19 +50,30 @@ Exception
 Repository
 ^^^^^^^^^^
 
+.. automodule:: nexuscli.repository
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+.. automodule:: nexuscli.repository.collection
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 .. automodule:: nexuscli.repository.model
     :members:
     :undoc-members:
     :show-inheritance:
 
 
-.. automodule:: nexuscli.repository.groovy
+.. automodule:: nexuscli.repository.validations
     :members:
     :undoc-members:
     :show-inheritance:
 
-
-.. automodule:: nexuscli.repository.validations
+.. automodule:: nexuscli.repository.util
     :members:
     :undoc-members:
     :show-inheritance:

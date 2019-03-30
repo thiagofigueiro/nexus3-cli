@@ -9,6 +9,7 @@ from clint.textui import progress
 from urllib.parse import urljoin
 
 from . import exception, nexus_util
+from .cleanup_policy import CleanupPolicyCollection
 from .repository import RepositoryCollection, REMOTE_PATH_SEPARATOR
 from .script import ScriptCollection
 
@@ -54,6 +55,7 @@ class NexusClient(object):
         self._api_version = 'v1'
         self._local_sep = os.path.sep
         self._remote_sep = REMOTE_PATH_SEPARATOR
+        self._cleanup_policies = None
         self._repositories = None
         self._scripts = None
         self._verify = None
@@ -98,6 +100,18 @@ class NexusClient(object):
         if self._repositories is None:
             self._repositories = RepositoryCollection(client=self)
         return self._repositories
+
+    @property
+    def cleanup_policies(self):
+        """
+        Instance of
+        :class:`nexuscli.repository.model.CleanupPolicyCollection`. This will
+        automatically use the existing instance of :class:`NexusClient` to
+        communicate with the Nexus service.
+        """
+        if self._cleanup_policies is None:
+            self._cleanup_policies = CleanupPolicyCollection(client=self)
+        return self._cleanup_policies
 
     @property
     def scripts(self):

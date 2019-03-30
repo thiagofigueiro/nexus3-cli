@@ -61,7 +61,6 @@ Commands:
 """
 import getpass
 import inflect
-import json
 import os
 import sys
 import types
