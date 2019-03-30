@@ -27,7 +27,7 @@ Usage:
   nexus3 repo rm <repo_name> [--force]
   nexus3 script create <script_name> <script_path> [--script_type=<type>]
   nexus3 script list
-  nexus3 script run <script_name> [<script_args>...]
+  nexus3 script run <script_name> [<script_args>]
   nexus3 script (delete|del) <script_name>
 
 Options:
@@ -159,11 +159,9 @@ def cmd_script(args):
     elif args.get('del') or args.get('delete'):
         nexus_client.scripts.delete(args.get('<script_name>'))
     elif args.get('run'):
-        script_args = args.get('<script_args>')
-        if script_args is not None:
-            script_args = json.dumps(script_args)
-        nexus_client.scripts.run(
-            args.get('<script_name>'), script_args)
+        resp = nexus_client.scripts.run(
+            args.get('<script_name>'), args.get('<script_args>'))
+        print(resp)
     elif args.get('create'):
         cmd_script_do_create(
             nexus_client, args.get('<script_name>'), args.get('<script_path>'),
