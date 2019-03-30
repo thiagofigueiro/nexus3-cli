@@ -19,7 +19,7 @@ def docopt_args(faker):
         '--strict-content': False,
         '--version': 'release',
         '<repo_name>': faker.word(),
-        '<script.json>': None,
+        '<script.groovy>': None,
         '<script_name>': None,
         'create': False,
         'hosted': False,

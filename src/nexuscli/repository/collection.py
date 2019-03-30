@@ -3,6 +3,9 @@ import json
 from nexuscli import exception, nexus_util
 from .model import Repository
 
+SCRIPT_NAME_CREATE = 'nexus3-cli-repository-create'
+SCRIPT_NAME_DELETE = 'nexus3-cli-repository-delete'
+
 
 class RepositoryCollection(object):
     """
@@ -91,16 +94,9 @@ class RepositoryCollection(object):
 
         :param name: name of the repository to be deleted.
         """
-        script = {
-            'type': 'groovy',
-            'name': 'nexus3-cli-repository-delete',
-            'content': """
-            log.info("Deleting repository [${args}]")
-            repository.repositoryManager.delete(args)
-            """,
-        }
-        self._client.scripts.create_if_missing(script)
-        self._client.scripts.run(script['name'], data=name)
+        content = nexus_util.groovy_script(SCRIPT_NAME_DELETE)
+        self._client.scripts.create_if_missing(SCRIPT_NAME_DELETE, content)
+        self._client.scripts.run(SCRIPT_NAME_DELETE, data=name)
 
     def create(self, repository):
         """
@@ -114,16 +110,11 @@ class RepositoryCollection(object):
             raise TypeError('repository ({}) must be a Repository'.format(
                 type(repository)
             ))
-
-        script = {
-            'type': 'groovy',
-            'name': 'nexus3-cli-repository-create',
-            'content': nexus_util.groovy_script('repository_collection-create')
-        }
-        self._client.scripts.create_if_missing(script)
+        content = nexus_util.groovy_script(SCRIPT_NAME_CREATE)
+        self._client.scripts.create_if_missing(SCRIPT_NAME_CREATE, content)
 
         script_args = json.dumps(repository.configuration)
-        resp = self._client.scripts.run(script['name'], data=script_args)
+        resp = self._client.scripts.run(SCRIPT_NAME_CREATE, data=script_args)
 
         result = resp.get('result')
         if result != 'null':

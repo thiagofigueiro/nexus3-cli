@@ -159,7 +159,7 @@ def test_repo_rm(nexus_client):
 def test_script(nexus_client):
     """Test that the `repo script` commands for create, run and rm work"""
     x_name = 'test_script_run'
-    argv = 'script create tests/fixtures/script.json'.split(' ')
+    argv = f'script create {x_name} tests/fixtures/script.groovy'.split(' ')
     nexuscli.cli.main(argv=argv)
 
     scripts = nexus_client.scripts.list()
@@ -168,7 +168,7 @@ def test_script(nexus_client):
     argv = 'script run {}'.format(x_name).split(' ')
     nexuscli.cli.main(argv=argv)
 
-    argv = 'script rm {}'.format(x_name).split(' ')
+    argv = 'script del {}'.format(x_name).split(' ')
     nexuscli.cli.main(argv=argv)
 
     scripts = nexus_client.scripts.list()

@@ -25,9 +25,10 @@ Usage:
          [--blob=<store_name>] [--strict-content]
   nexus3 repo list
   nexus3 repo rm <repo_name> [--force]
-  nexus3 script create <script.json>
+  nexus3 script create <script_name> <script_path> [--script_type=<type>]
   nexus3 script list
-  nexus3 script (rm|run) <script_name>
+  nexus3 script run <script_name> [<script_args>...]
+  nexus3 script (delete|del) <script_name>
 
 Options:
   -h --help             This screen
@@ -44,6 +45,7 @@ Options:
   --strict-content      Enable strict content type validation
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
   --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
+  --script_type=<type>  Script type [default: groovy]
 
 Commands:
   download      Download an artefact or a directory to local file system
@@ -52,10 +54,10 @@ Commands:
   repo create   Create a repository using the format and options provided
   repo list     List all repositories available on the server
   repo rm       Not implemented; please use Nexus Web UI to remove <repo_name>
-  script create Create or update a script using the <script.json> file
+  script create Create or update a script using the <script_path> file
   script list   List all scripts available on the server
-  script rm     Remove existing <script_name>
-  script run    Run the existing <script_name>
+  script del    Remove existing <script_name>
+  script run    Run the existing <script_name> with optional <script_args>
 """
 import getpass
 import inflect
@@ -144,9 +146,9 @@ def cmd_script_do_list(nexus_client):
             script=script))
 
 
-def cmd_script_do_create(nexus_client, script_path):
-    script_content = json.load(open(script_path), strict=False)
-    nexus_client.scripts.create(script_content)
+def cmd_script_do_create(nexus_client, script_name, script_path, script_type):
+    script_content = open(script_path).read()
+    nexus_client.scripts.create(script_name, script_content, script_type)
 
 
 def cmd_script(args):
@@ -154,12 +156,18 @@ def cmd_script(args):
 
     if args.get('list'):
         cmd_script_do_list(nexus_client)
-    elif args.get('rm'):
+    elif args.get('del') or args.get('delete'):
         nexus_client.scripts.delete(args.get('<script_name>'))
     elif args.get('run'):
-        nexus_client.scripts.run(args.get('<script_name>'))
+        script_args = args.get('<script_args>')
+        if script_args is not None:
+            script_args = json.dumps(script_args)
+        nexus_client.scripts.run(
+            args.get('<script_name>'), script_args)
     elif args.get('create'):
-        cmd_script_do_create(nexus_client, args.get('<script.json>'))
+        cmd_script_do_create(
+            nexus_client, args.get('<script_name>'), args.get('<script_path>'),
+            args.get('--script_type'))
     else:
         raise NotImplementedError
 

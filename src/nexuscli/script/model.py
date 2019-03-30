@@ -51,33 +51,39 @@ class ScriptCollection(object):
 
         return resp.json()
 
-    def create_if_missing(self, script_dict):
+    def create_if_missing(self, name, content, script_type='groovy'):
         """
         Creates a script in the Nexus 3 service IFF a script with the same name
         doesn't exist. Equivalent to checking if the script exists with
         :meth:`get` and, if not, creating it with :meth:`create`.
 
-        :param script_dict: instance of script to be created.
-        :type script_dict: dict
+        Parameters as per :py:meth:`create`.
         """
-        name = script_dict.get('name')
-        if name is None:
-            raise ValueError('script_dict must have a name')
-        # FIXME: use head?
+        # TODO: use HEAD to avoid downloading whole script
         script = self.get(name)
         if script is None:
-            self.create(script_dict)
+            self.create(name, content, script_type)
 
-    def create(self, script_dict):
+    def create(self, script_name, script_content, script_type='groovy'):
         """
         Create the given script in the Nexus 3 service.
 
-        :param script_dict: instance of script to be created.
-        :type script_dict: dict
+        :param script_name: name of script to be created.
+        :type script_name: str
+        :param script_content: script code.
+        :type script_content: str
+        :param script_type: type of script to be created.
+        :type script_type: str
         :raises exception.NexusClientAPIError: if the script creation isn't
             successful; i.e.: any HTTP code other than 204.
         """
-        resp = self.client._post('script', json=script_dict)
+        script = {
+            'type': script_type,
+            'name': script_name,
+            'content': script_content,
+        }
+
+        resp = self.client._post('script', json=script)
         if resp.status_code != 204:
             raise exception.NexusClientAPIError(resp.content)
 
@@ -88,7 +94,7 @@ class ScriptCollection(object):
         :param script_name: name of script to be run.
         :param data: parameters to be passed to the script, via HTTP POST. If
             the script being run requires a certain format or encoding, you
-            need to prepare it yourself.
+            need to prepare it yourself. Typically this is `json.dumps(data)`.
         :return: the content returned by the script, if any.
         :rtype: str, dict
         :raises exception.NexusClientAPIError: if the Nexus service fails to
