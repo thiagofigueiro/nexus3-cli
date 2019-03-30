@@ -27,3 +27,16 @@ def test_get_by_name_exception(cleanup_policy_collection):
 
     with pytest.raises(exception.NexusClientInvalidCleanupPolicy):
         cleanup_policy_collection.get_by_name('dummy')
+
+
+def test_create_or_update(
+        cleanup_policy_collection, cleanup_policy_configuration,
+        create_response):
+    """"""
+    cleanup_policy = CleanupPolicy(None, **cleanup_policy_configuration)
+    response = create_response(cleanup_policy_configuration)
+    cleanup_policy_collection._client.scripts.run.return_value = response
+
+    cleanup_policy_collection.create_or_update(cleanup_policy)
+
+    cleanup_policy_collection._client.scripts.run.assert_called_once()

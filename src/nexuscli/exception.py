@@ -34,6 +34,11 @@ class NexusClientCreateRepositoryError(Exception):
     pass
 
 
+class NexusClientCreateCleanupPolicyError(Exception):
+    """Used when a cleanup policy creation operation in Nexus fails."""
+    pass
+
+
 class DownloadError(Exception):
     """Error retrieving artefact from Nexus service."""
     pass
