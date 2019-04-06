@@ -15,6 +15,7 @@ requires = [
     'future',
     'requests[security]>=2.14.2',
     'six',
+    'texttable'
 ]
 
 test_requires = [

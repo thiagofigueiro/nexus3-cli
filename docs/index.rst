@@ -12,6 +12,7 @@ nexus3-cli: a Sonatype Nexus 3 client
 
    cli
    api
+   groovy-scripts
 
 
 Indices and tables

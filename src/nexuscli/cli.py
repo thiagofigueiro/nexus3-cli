@@ -21,7 +21,7 @@ Usage:
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
   nexus3 repo create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
-          <repo_name> <remote_url>
+         <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content]
   nexus3 repo list
   nexus3 repo rm <repo_name> [--force]
@@ -29,6 +29,9 @@ Usage:
   nexus3 script list
   nexus3 script run <script_name> [<script_args>]
   nexus3 script (delete|del) <script_name>
+  nexus3 cleanup_policy create <policy_name> [--format=<format>]
+         [--downloaded=<days>] [--updated=<days>]
+  nexus3 cleanup_policy list
 
 Options:
   -h --help             This screen
@@ -46,6 +49,10 @@ Options:
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
   --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
   --script_type=<type>  Script type [default: groovy]
+  --format=<format>     Accepted: all or a repository format [default: all]
+  --downloaded=<days>   Cleanup criteria; last downloaded in this many days.
+  --updated=<days>      Cleanup criteria; last updated in this many days.
+
 
 Commands:
   download      Download an artefact or a directory to local file system
@@ -58,16 +65,20 @@ Commands:
   script list   List all scripts available on the server
   script del    Remove existing <script_name>
   script run    Run the existing <script_name> with optional <script_args>
+  cleanup_policy create  Create or update the cleanup policy <policy_name>
+  cleanup_policy list    List all existing cleanup policies.
 """
+# TODO: split the above into different modules
 import getpass
 import inflect
 import os
 import sys
 import types
 from docopt import docopt
+from texttable import Texttable
 
 from .nexus_client import NexusClient
-from . import repository
+from . import cleanup_policy, repository
 
 PLURAL = inflect.engine().plural
 YESNO_OPTIONS = {
@@ -298,8 +309,7 @@ def cmd_download(args):
 
 
 def cmd_delete(options):
-    """
-    Performs `nexus3 delete`"""
+    """Performs `nexus3 delete`"""
     nexus_client = get_client()
     repository_path = options['<repository_path>']
     delete_count = nexus_client.delete(repository_path)
@@ -311,11 +321,59 @@ def cmd_delete(options):
     return 0
 
 
+def cmd_cleanup_policy_do_list(nexus_client):
+    policies = nexus_client.cleanup_policies.list()
+
+    table = Texttable()
+    headers = ['Name', 'Format', 'lastDownloaded', 'lastBlobUpdated']
+    table.add_row(headers)
+    table.set_deco(Texttable.HEADER)
+    for policy in policies:
+        p = policy.configuration
+        table.add_row([
+            p['name'], p['format'],
+            p['criteria'].get('lastDownloaded', 'null'),
+            p['criteria'].get('lastBlobUpdated', 'null')])
+
+    sys.stdout.write(table.draw() + '\n')
+
+
+def cmd_cleanup_policy_do_create(nexus_client, options):
+    criteria = {}
+    if options.get('--downloaded'):
+        criteria['lastDownloaded'] = options.get('--downloaded')
+    if options.get('--updated'):
+        criteria['lastBlobUpdated'] = options.get('--updated')
+
+    policy = cleanup_policy.CleanupPolicy(
+        None,
+        name=options.get('<policy_name>'),
+        format=options.get('--format'),
+        mode='delete',
+        criteria=criteria,
+    )
+
+    nexus_client.cleanup_policies.create_or_update(policy)
+
+
+def cmd_cleanup_policy(options):
+    """Performs `nexus3 cleanup_policy`"""
+    nexus_client = get_client()
+    if options.get('create'):
+        cmd_cleanup_policy_do_create(nexus_client, options)
+    if options.get('list'):
+        cmd_cleanup_policy_do_list(nexus_client)
+    return 0
+
+
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
     if arguments.get('login'):
         do_login()
         NexusClient()
+    # TODO: pass nexus_client
+    elif arguments.get('cleanup_policy'):
+        cmd_cleanup_policy(arguments)
     elif arguments.get('script'):
         cmd_script(arguments)
     elif arguments.get('repo'):

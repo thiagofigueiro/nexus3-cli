@@ -32,7 +32,8 @@ class CleanupPolicy(object):
         returned by this property can
         be converted to JSON for use with the ``nexus3-cli-cleanup-policy``
         groovy script created by the
-        :py:class:`nexuscli.cleanup_policies.CleanupPolicyCollection` methods.
+        :py:class:`nexuscli.cleanup_policy.collection.CleanupPolicyCollection`
+        methods.
 
         Example structure and attributes common to all repositories:
 

@@ -74,3 +74,17 @@ class CleanupPolicyCollection(object):
         cleanup_policy = json.loads(response['result'])
 
         return CleanupPolicy(self._client, **cleanup_policy)
+
+    def list(self):
+        """
+        Return all cleanup policies.
+
+        :return: every policy as a list of
+            :py:class:`nexuscli.cleanup_policy.model.CleanupPolicy` instances.
+        :rtype: list
+        """
+        response = self._client.scripts.run(self.GROOVY_SCRIPT_NAME, data={})
+
+        cleanup_policies = json.loads(response['result'])
+
+        return [CleanupPolicy(self._client, **c) for c in cleanup_policies]

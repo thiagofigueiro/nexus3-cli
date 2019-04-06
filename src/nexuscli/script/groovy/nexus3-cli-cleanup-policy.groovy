@@ -14,7 +14,17 @@ import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProdu
 
 def cleanupPolicyStorage = container.lookup(CleanupPolicyStorage.class.getName())
 
-parsed_args = new JsonSlurper().parseText(args)
+try {
+    parsed_args = new JsonSlurper().parseText(args)
+} catch(Exception ex) {
+    // "list" operation
+    def policies = []
+    cleanupPolicyStorage.getAll().each {
+        policies << toJsonString(it)
+    }
+    return policies
+}
+
 parsed_args.each {
     log.debug("Received arguments: <${it.key}=${it.value}> (${it.value.getClass()})")
 }
