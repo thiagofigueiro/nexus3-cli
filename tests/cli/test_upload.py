@@ -12,7 +12,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
 
-    argv = ('repo create hosted raw {}'.format(repo_name)).split()
+    argv = ('repository create hosted raw {}'.format(repo_name)).split()
     pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
     nexus_client.repositories.refresh()
 

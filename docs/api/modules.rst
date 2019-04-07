@@ -11,8 +11,8 @@ NexusClient
     :show-inheritance:
 
 
-Cleanup Policy
-^^^^^^^^^^^^^^
+CleanupPolicy
+^^^^^^^^^^^^^
 
 .. automodule:: nexuscli.cleanup_policy
     :members:

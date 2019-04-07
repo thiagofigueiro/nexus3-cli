@@ -5,6 +5,7 @@ from faker import Faker
 from subprocess import check_call
 
 import nexuscli
+import nexuscli.cli.util
 
 
 @pytest.fixture
@@ -29,8 +30,8 @@ def docopt_args(faker):
         'npm': False,
         'pypi': False,
         'raw': False,
-        'repo': False,
-        'rm': False,
+        'repository': False,
+        'delete': False,
         'rubygems': False,
         'run': False,
         'script': False,
@@ -42,7 +43,7 @@ def docopt_args(faker):
 
 @pytest.fixture(scope='session')
 def nexus_client():
-    return nexuscli.cli.get_client()
+    return nexuscli.cli.util.get_client()
 
 
 @pytest.helpers.register
@@ -201,7 +202,7 @@ def find_file_count(dir_name):
 def hosted_raw_repo_empty(tmpdir, faker):
     """Create an empty hosted raw repository"""
     repo_name = faker.pystr()
-    command = 'nexus3 repo create hosted raw {}'.format(repo_name)
+    command = 'nexus3 repository create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name
 
