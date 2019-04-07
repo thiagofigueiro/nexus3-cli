@@ -94,6 +94,9 @@ class Repository(object):
         >>>     'attributes': {
         >>>         'storage': {
         >>>             'blobStoreName': 'default',
+        >>>         },
+        >>>         'cleanup': {
+        >>>             'policyName': None,
         >>>         }
         >>>     }
         >>> }
@@ -125,6 +128,9 @@ class Repository(object):
                 'storage': {
                     'blobStoreName': self._raw['blob_store_name'],
                 },
+                'cleanup': {
+                    'policyName': self._raw['cleanup_policy'],
+                }
             }
         }
 

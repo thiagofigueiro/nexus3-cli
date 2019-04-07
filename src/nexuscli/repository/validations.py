@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 from nexuscli.nexus_util import validate_strings
 
-
+# TODO: refactor this whole module into something that doesn't make me cry
 # TODO: remove when all known formats/types are supported
 KNOWN_TYPES = ['group', 'hosted', 'proxy']
 KNOWN_FORMATS = [

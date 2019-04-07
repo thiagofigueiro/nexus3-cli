@@ -1,23 +1,22 @@
-"""Nexus 3 CLI
-
+"""
 Usage:
   nexus3 repository --help
   nexus3 repository create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
-         [--write=<w_policy>]
+         [--write=<w_policy>] [--cleanup=<c_policy>]
   nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
          <repo_name> [--blob=<store_name>] [--write=<w_policy>]
-         [--strict-content]
+        [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository create hosted yum <repo_name>
          [--blob=<store_name>] [--write=<w_policy>]
-         [--depth=<repo_depth>] [--strict-content]
+         [--depth=<repo_depth>] [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository create proxy maven <repo_name> <remote_url>
          [--blob=<store_name>] [--version=<v_policy>]
-         [--layout=<l_policy>] [--strict-content]
+         [--layout=<l_policy>] [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
          <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content]
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository list
   nexus3 repository (delete|del) <repo_name> [--force]
 
@@ -29,7 +28,8 @@ Options:
   --strict-content      Enable strict content type validation
   --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
   --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
-  -f --force            Do not ask for confirmation before deleting.
+  --cleanup=<c_policy>  Accepted: an existing Cleanup Policy name
+  -f --force            Do not ask for confirmation before deleting
 
 Commands:
   repository create  Create a repository using the format and options provided
@@ -88,6 +88,7 @@ def cmd_create(nexus_client, args):
         version_policy=args.get('--version'),
         write_policy=args.get('--write'),
         layout_policy=args.get('--layout'),
+        cleanup_policy=args.get('--cleanup'),
     )
     nexus_client.repositories.create(r)
     return CliReturnCode.SUCCESS.value

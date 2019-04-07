@@ -40,16 +40,11 @@ def convertJsonFileToRepo(String jsonData) {
 }
 
 def createConfiguration(Repository repo){
-    def name = getName(repo)
-    def recipeName = getRecipeName(repo)
-    def online = getOnline(repo)
-    def attributes = repo.properties.get("attributes")
-
     Configuration conf = new Configuration(
-        repositoryName: name,
-        recipeName: recipeName,
-        online: online,
-        attributes: attributes
+        repositoryName: getName(repo),
+        recipeName: getRecipeName(repo),
+        online: getOnline(repo),
+        attributes: repo.properties.get("attributes")
         )
 
     return conf

@@ -1,5 +1,4 @@
-"""Nexus 3 CLI
-
+"""
 Usage:
   nexus3 cleanup_policy --help
   nexus3 cleanup_policy create <policy_name> [--format=<format>]
