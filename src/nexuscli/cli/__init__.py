@@ -99,9 +99,9 @@ def cmd_list(nexus_client, args):
     if isinstance(artefact_list, (list, types.GeneratorType)):
         for artefact in iter(artefact_list):
             print(artefact)
-        return 0
+        return CliReturnCode.SUCCESS.value
     else:
-        return 1
+        return CliReturnCode.UNKNOWN_ERROR.value
 
 
 def cmd_ls(nexus_client, args):
@@ -113,11 +113,11 @@ def _cmd_up_down_errors(count, action):
     if count == 0:
         # FIXME: inflex the action verb to past participle
         sys.stderr.write('WARNING: no files were {}\'ed.'.format(action))
-        sys.exit(1)
+        sys.exit(CliReturnCode.NO_FILES.value)
 
     if count == -1:
         sys.stderr.write('ERROR during {} operation.'.format(action))
-        sys.exit(2)
+        sys.exit(CliReturnCode.API_ERROR.value)
 
 
 def cmd_upload(nexus_client, args):
@@ -136,7 +136,7 @@ def cmd_upload(nexus_client, args):
 
     file = PLURAL('file', upload_count)
     sys.stderr.write(f'Uploaded {upload_count} {file} to {destination}\n')
-    return 0
+    return CliReturnCode.SUCCESS.value
 
 
 def cmd_up(nexus_client, args):
@@ -160,7 +160,7 @@ def cmd_download(nexus_client, args):
     file_word = PLURAL('file', download_count)
     sys.stderr.write(
         f'Downloaded {download_count} {file_word} to {destination}\n')
-    return 0
+    return CliReturnCode.SUCCESS.value
 
 
 def cmd_dl(nexus_client, args):
@@ -176,7 +176,7 @@ def cmd_delete(nexus_client, options):
 
     file_word = PLURAL('file', delete_count)
     sys.stderr.write(f'Deleted {delete_count} {file_word}\n')
-    return 0
+    return CliReturnCode.SUCCESS.value
 
 
 def cmd_del(nexus_client, args):
