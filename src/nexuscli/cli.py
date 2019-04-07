@@ -86,6 +86,12 @@ YESNO_OPTIONS = {
     "false": False, "f": False, "no": False, "n": False,
 }
 
+try:
+    _, TTY_MAX_WIDTH = os.popen('stty size', 'r').read().split()
+    TTY_MAX_WIDTH = int(TTY_MAX_WIDTH)
+except ValueError:
+    TTY_MAX_WIDTH = 80
+
 
 def _input_yesno(prompt, default):
     """
@@ -181,14 +187,16 @@ def cmd_script(args):
 
 
 def cmd_repo_do_list(nexus_client):
-    json_response = nexus_client.repositories.raw_list()
+    repositories = nexus_client.repositories.raw_list()
 
-    output_format = '{0:40} {1:7} {2:7} {3}\n'
-    sys.stderr.write(output_format.format('Name', 'Format', 'Type', 'URL'))
-    sys.stderr.write(output_format.format('----', '------', '----', '---'))
-    for repo in json_response:
-        sys.stdout.write(output_format.format(
-            repo['name'], repo['format'], repo['type'], repo['url']))
+    table = Texttable(max_width=TTY_MAX_WIDTH)
+    table.add_row(['Name', 'Format', 'Type', 'URL'])
+    table.set_deco(Texttable.HEADER)
+    for repo in repositories:
+        table.add_row(
+            [repo['name'], repo['format'], repo['type'], repo['url']])
+
+    print(table.draw())
 
 
 def args_to_repo_format(args):
@@ -249,7 +257,7 @@ def cmd_list(args):
     # FIXME: is types.GeneratorType still used?
     if isinstance(artefact_list, (list, types.GeneratorType)):
         for artefact in iter(artefact_list):
-            sys.stdout.write('{}\n'.format(artefact))
+            print(artefact)
         return 0
     else:
         return 1
@@ -324,9 +332,8 @@ def cmd_delete(options):
 def cmd_cleanup_policy_do_list(nexus_client):
     policies = nexus_client.cleanup_policies.list()
 
-    table = Texttable()
-    headers = ['Name', 'Format', 'lastDownloaded', 'lastBlobUpdated']
-    table.add_row(headers)
+    table = Texttable(max_width=TTY_MAX_WIDTH)
+    table.add_row(['Name', 'Format', 'lastDownloaded', 'lastBlobUpdated'])
     table.set_deco(Texttable.HEADER)
     for policy in policies:
         p = policy.configuration
@@ -335,7 +342,7 @@ def cmd_cleanup_policy_do_list(nexus_client):
             p['criteria'].get('lastDownloaded', 'null'),
             p['criteria'].get('lastBlobUpdated', 'null')])
 
-    sys.stdout.write(table.draw() + '\n')
+    print(table.draw())
 
 
 def cmd_cleanup_policy_do_create(nexus_client, options):

@@ -56,15 +56,14 @@ away; here's the list of default repositories:
 
 ```bash
 $ nexus3 repo list
-Name                                     Format  Type    URL
-----                                     ------  ----    ---
-maven-snapshots                          maven2  hosted  http://localhost:8081/repository/maven-snapshots
-maven-central                            maven2  proxy   http://localhost:8081/repository/maven-central
-nuget-group                              nuget   group   http://localhost:8081/repository/nuget-group
-nuget.org-proxy                          nuget   proxy   http://localhost:8081/repository/nuget.org-proxy
-maven-releases                           maven2  hosted  http://localhost:8081/repository/maven-releases
-nuget-hosted                             nuget   hosted  http://localhost:8081/repository/nuget-hosted
-maven-public                             maven2  group   http://localhost:8081/repository/maven-public
+Name              Format   Type     URL
+maven-snapshots   maven2   hosted   http://localhost:8081/repository/maven-snapshots
+maven-central     maven2   proxy    http://localhost:8081/repository/maven-central
+nuget-group       nuget    group    http://localhost:8081/repository/nuget-group
+nuget.org-proxy   nuget    proxy    http://localhost:8081/repository/nuget.org-proxy
+maven-releases    maven2   hosted   http://localhost:8081/repository/maven-releases
+nuget-hosted      nuget    hosted   http://localhost:8081/repository/nuget-hosted
+maven-public      maven2   group    http://localhost:8081/repository/maven-public
 ```
 
 The `login` command will store the service URL and your credentials in 
@@ -76,20 +75,21 @@ $ nexus3 login
 Nexus OSS URL (http://localhost:8081):
 Nexus admin username (admin):
 Nexus admin password (admin123):
+Verify server certificate (True):
+
+Configuration saved to /Users/thiago/.nexus-cli
 ```
 
-Create a Yum repository with read-only access:
+Create a repository, upload a file and list contents:
 ```bash
-$ nexus3 repo create hosted yum my-yum-repository --write=deny
-Created repository: my-yum-repository
-```
+$ nexus3 repo create hosted raw reponame
 
-The CLI output can be filtered using standard *nix tools, e.g. using `grep`:
-```bash
-$ nexus3 repo list | grep my-yum-repository
-Name                                     Format  Type    URL
-----                                     ------  ----    ---
-my-yum-repository                        yum     hosted  http://localhost:8081/repository/my-yum-repository
+$ nexus3 up file.txt reponame/path/
+Uploading file.txt to reponame/path/
+Uploaded 1 file to reponame/path/
+
+$ nexus3 ls rwrepo/path/
+path/file.txt
 ```
 
 For all commands and options, run `nexus3 -h`.
@@ -120,7 +120,7 @@ docker kill nexus
 ```
 
 Nota Bene: if you re-run integration tests without re-creating or cleaning-up the 
-dev Nexus instance, test will fail because objects created during tests will 
+dev Nexus instance, test will fail because some objects created during tests will 
 already exist. 
 
 Pull requests are welcome; please see [CONTRIBUTING.md](CONTRIBUTING.md).
