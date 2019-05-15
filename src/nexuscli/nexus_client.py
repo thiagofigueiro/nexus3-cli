@@ -221,7 +221,7 @@ class NexusClient(object):
         return response
 
     def _get(self, endpoint):
-        return self._request('get', endpoint)
+        return self._request('get', endpoint, stream=True)
 
     def _get_paginated(self, endpoint, **request_kwargs):
         """
@@ -684,7 +684,7 @@ class NexusClient(object):
         with open(destination, 'wb') as fd:
             LOG.debug('Writing {download_url} to {destination}\n'.format(
                 **locals()))
-            for chunk in response.iter_content():
+            for chunk in response.iter_content(chunk_size=8192):
                 fd.write(chunk)
 
     def download(self, source, destination, **kwargs):
