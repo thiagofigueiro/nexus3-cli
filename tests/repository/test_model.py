@@ -79,7 +79,8 @@ def test_refresh_repositories(nexus_mock_client):
     repositories = nexus_mock_client.repositories.raw_list()
     x_repositories = nexus_mock_client._request.return_value._json
 
-    nexus_mock_client._request.assert_called_with('get', 'repositories')
+    nexus_mock_client._request.assert_called_with(
+        'get', 'repositories', stream=True)
     assert repositories == x_repositories
 
 
