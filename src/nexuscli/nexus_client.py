@@ -243,7 +243,11 @@ class NexusClient(object):
         if response.status_code == 404:
             raise exception.NexusClientAPIError(response.reason)
 
-        content = response.json()
+        try:
+            content = response.json()
+        except json.decoder.JSONDecodeError:
+            raise exception.NexusClientAPIError(response.content)
+
         while True:
             for item in content.get('items'):
                 yield item
@@ -283,8 +287,13 @@ class NexusClient(object):
         query = {
             'repository': repository_name,
         }
+
+        if path_filter:
+            query['keyword'] = f'"{path_filter}"'  # hacky as fuck :(
+
         raw_response = self._get_paginated('search/assets', params=query)
 
+        # TODO: maybe this filter is no longer needed due to keyword use ^
         return nexus_util.filtered_list_gen(
             raw_response, term=path_filter, partial_match=partial_match)
 
