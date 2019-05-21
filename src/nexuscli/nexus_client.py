@@ -152,7 +152,7 @@ class NexusClient(object):
                     'nexus_pass': self._auth[1],
                     'nexus_url': self.base_url,
                     'nexus_verify': self._verify,
-                }, ensure_ascii=False)
+                }, ensure_ascii=False, indent=4, sort_keys=True)
             ))
 
     def read_config(self):
