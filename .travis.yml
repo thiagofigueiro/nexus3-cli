@@ -19,7 +19,7 @@ install:
 script:
   - flake8 *.py src tests --format=pylint
   - pytest -m 'not integration'
-  - ./tests/wait-for-nexus.sh
+  - ./tests/wait-for-nexus.sh || exit 1
   - ./tests/nexus-login $(docker exec nexus cat /nexus-data/admin.password)
   -  pytest -m integration
 after_success:
