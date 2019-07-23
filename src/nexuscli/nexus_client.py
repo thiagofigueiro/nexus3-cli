@@ -81,16 +81,17 @@ class NexusClient(object):
     @property
     def rest_url(self):
         """
-        Full URL to the Nexus REST API, based on :attr:`base_url`.
+        Full URL to the Nexus REST API, based on :attr:`config`.
 
         :return: the URL.
         """
         url = urljoin(self.config.url, '/service/rest/')
         return urljoin(url, self.config.api_version + '/')
 
-    def _request(self, method, endpoint, **kwargs):
+    def http_request(self, method, endpoint, **kwargs):
         """
-        Performs a request to the Nexus service URL.
+        Performs a HTTP request to the Nexus REST API on the specified
+        endpoint.
 
         :param method: one of ``get``, ``put``, ``post``, ``delete``.
         :param endpoint: URI path to be appended to the service URL.
@@ -119,8 +120,15 @@ class NexusClient(object):
 
         return response
 
-    def _get(self, endpoint):
-        return self._request('get', endpoint, stream=True)
+    def http_get(self, endpoint):
+        """
+        Performs a HTTP GET request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :return: request result
+        :rtype: requests.Response
+        """
+        return self.http_request('get', endpoint, stream=True)
 
     def _get_paginated(self, endpoint, **request_kwargs):
         """
@@ -138,7 +146,7 @@ class NexusClient(object):
             for the argument needed to paginate requests.
         :return: a generator that yields on response item at a time.
         """
-        response = self._request('get', endpoint, **request_kwargs)
+        response = self.http_request('get', endpoint, **request_kwargs)
         if response.status_code == 404:
             raise exception.NexusClientAPIError(response.reason)
 
@@ -157,17 +165,41 @@ class NexusClient(object):
 
             request_kwargs['params'].update(
                 {'continuationToken': continuation_token})
-            response = self._request('get', endpoint, **request_kwargs)
+            response = self.http_request('get', endpoint, **request_kwargs)
             content = response.json()
 
-    def _post(self, endpoint, **kwargs):
-        return self._request('post', endpoint, **kwargs)
+    def http_post(self, endpoint, **kwargs):
+        """
+        Performs a HTTP POST request on the given endpoint.
 
-    def _put(self, endpoint, **kwargs):
-        return self._request('put', endpoint, **kwargs)
+        :param endpoint: name of the Nexus REST API endpoint.
+        :param kwargs: as per requests.request.
+        :return: request result
+        :rtype: requests.Response
+        """
+        return self.http_request('post', endpoint, **kwargs)
 
-    def _delete(self, endpoint, **kwargs):
-        return self._request('delete', endpoint, **kwargs)
+    def http_put(self, endpoint, **kwargs):
+        """
+        Performs a HTTP PUT request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :param kwargs: as per requests.request.
+        :return: request result
+        :rtype: requests.Response
+        """
+        return self.http_request('put', endpoint, **kwargs)
+
+    def http_delete(self, endpoint, **kwargs):
+        """
+        Performs a HTTP DELETE request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :param kwargs: as per requests.request.
+        :return: request result
+        :rtype: requests.Response
+        """
+        return self.http_request('delete', endpoint, **kwargs)
 
     def list(self, repository_path):
         """
@@ -447,7 +479,7 @@ class NexusClient(object):
             location will be overwritten.
         :return:
         """
-        response = self._get(download_url)
+        response = self.http_get(download_url)
 
         if response.status_code != 200:
             sys.stderr.write(response.__dict__)
@@ -530,7 +562,7 @@ class NexusClient(object):
             id_ = artefact['id']
             artefact_path = artefact['path']
 
-            response = self._delete(f'assets/{id_}')
+            response = self.http_delete(f'assets/{id_}')
             LOG.info('Deleted: %s (%s)', artefact_path, id_)
             delete_count += 1
             if response.status_code == 404:

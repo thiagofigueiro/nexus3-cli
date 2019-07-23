@@ -226,7 +226,7 @@ class Repository(object):
             'raw.asset1.filename': dst_file,
         }
 
-        response = self._client._post(
+        response = self._client.http_post(
             'components', files=files, data=data, params=params)
         if response.status_code != 204:
             raise exception.NexusClientAPIError(
@@ -239,7 +239,7 @@ class Repository(object):
             ['repository', self.name, dst_dir, dst_file])
 
         with open(src_file, 'rb') as fh:
-            response = self._client._put(
+            response = self._client.http_put(
                 repository_path, data=fh, service_url=self._client.config.url)
 
         if response.status_code != 200:

@@ -69,8 +69,7 @@ class RepositoryCollection(object):
         Refresh local list of repositories with latest from service. A raw
         representation of repositories can be fetched using :meth:`raw_list`.
         """
-        # TODO: make _client and its methods public
-        response = self._client._get('repositories')
+        response = self._client.http_get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
 

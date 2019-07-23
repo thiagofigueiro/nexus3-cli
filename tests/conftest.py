@@ -138,7 +138,7 @@ def nexus_mock_client(mocker, faker):
         def json(self):
             return self._json
 
-    mocker.patch('nexuscli.nexus_client.NexusClient._request',
+    mocker.patch('nexuscli.nexus_client.NexusClient.http_request',
                  return_value=ResponseMock())
 
     client = nexuscli.nexus_client.NexusClient()
