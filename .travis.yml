@@ -2,6 +2,7 @@ sudo: required
 services:
 - docker
 before_install:
+- sudo apt-get install -y expect
 - docker pull sonatype/nexus3
 - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3
 - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
@@ -14,7 +15,9 @@ install:
 script:
 - flake8 *.py src tests --format=pylint
 - pytest -m 'not integration'
-- "./tests/wait-for-nexus.sh && pytest -m integration"
+- ./tests/wait-for-nexus.sh
+- ./tests/nexus-login $(docker exec nexus cat /nexus-data/admin.password)
+-  pytest -m integration
 after_success:
   - codecov
 deploy:

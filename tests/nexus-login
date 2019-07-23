@@ -1,0 +1,15 @@
+#!/usr/bin/expect
+
+set nexus_password [lindex $argv 0]
+
+set timeout -1
+spawn nexus3 login
+expect "Nexus OSS URL *"
+send "\n"
+expect "Nexus admin username *"
+send "\n"
+expect "Nexus admin password *"
+send "$nexus_password\n"
+expect "Verify server certificate *"
+send "No\n"
+expect eof"
