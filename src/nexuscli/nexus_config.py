@@ -110,7 +110,8 @@ class NexusConfig:
         """
         self._config_path.touch(mode=0o600)
         with self._config_path.open(mode='w+', encoding='utf-8') as fh:
-            json.dump(self.to_dict, fh, ensure_ascii=False)
+            json.dump(
+                self.to_dict, fh, ensure_ascii=False, indent=4, sort_keys=True)
 
     def load(self):
         """
