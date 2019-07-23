@@ -1,3 +1,4 @@
+dist: bionic
 sudo: required
 env:
   - NEXUS_VERSION=3.17.0
@@ -7,11 +8,12 @@ before_install:
   - sudo apt-get install -y expect
   - docker pull sonatype/nexus3:$NEXUS_VERSION
   - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3:$NEXUS_VERSION
-- cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
+  - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
 language: python
 python:
   - '3.6'
-  - '3.7-dev'
+  - '3.7'
+  - '3.8-dev'
 install:
 - pip install -U .[test]
 script:
