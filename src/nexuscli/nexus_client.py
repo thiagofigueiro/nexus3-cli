@@ -25,21 +25,11 @@ class NexusClient(object):
     if unsuccessful, use defaults.
 
     Args:
-        url (str): URL to Nexus 3 OSS service. Default: :attr:`DEFAULT_URL`.
-        user (str): login for Nexus service at given url. Default:
-            :attr:`DEFAULT_USER`.
-        password (str): password for given login. Default:
-            :attr:`DEFAULT_PASS`.
-        verify (bool): toggle certificate validation. Default:
-            :attr:`DEFAULT_VERIFY`.
-        config_path (str): local file containing configuration above in JSON
-            format with these keys: ``nexus_url``, ``nexus_user`` and
-            ``nexus_pass``. Default: :attr:`CONFIG_PATH`.
-
-    Attributes:
-        base_url (str): as per ``url`` argument of :class:`NexusClient`.
         config (NexusConfig): instance of :class:`NexusConfig` containing the
             configuration for the Nexus service used by this instance.
+
+    Attributes:
+        config (NexusConfig): as per the argument with the same name.
     """
     def __init__(self, config=None):
         self.config = config or NexusConfig()

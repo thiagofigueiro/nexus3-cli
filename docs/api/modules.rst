@@ -2,6 +2,15 @@ Modules
 -------
 
 
+NexusConfig
+^^^^^^^^^^^
+
+.. automodule:: nexuscli.nexus_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 NexusClient
 ^^^^^^^^^^^
 
