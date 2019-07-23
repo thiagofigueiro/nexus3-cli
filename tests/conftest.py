@@ -155,11 +155,9 @@ def deep_file_tree(faker, tmpdir):
     """
     fixture = []
     with tmpdir.as_cwd():
-        # for _ in range(faker.random_int(1, 100)):
-        for _ in range(2):
+        for _ in range(faker.random_int(1, 100)):
             relative_path = faker.file_path(
-                # depth=faker.random_number(1, 10))[1:]
-                depth=2)[1:]
+                depth=faker.random_number(1, 10))[1:]
             fixture.append(relative_path)
             tmpdir.join(relative_path).ensure()
 
