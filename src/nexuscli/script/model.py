@@ -16,7 +16,7 @@ class ScriptCollection(object):
             argument of :class:`ScriptCollection`.
     """
     def __init__(self, client=None):
-        self.client = client
+        self._client = client
 
     def get(self, name):
         """
@@ -28,7 +28,7 @@ class ScriptCollection(object):
         :raises exception.NexusClientAPIError: if the response from the Nexus
             service isn't recognised; i.e.: any HTTP code other than 200, 404.
         """
-        resp = self.client._get('script/{}'.format(name))
+        resp = self._client.http_get('script/{}'.format(name))
         if resp.status_code == 200:
             return resp.json()
         elif resp.status_code == 404:
@@ -45,7 +45,7 @@ class ScriptCollection(object):
         :raises exception.NexusClientAPIError: if the script names cannot be
             retrieved; i.e.: any HTTP code other than 200.
         """
-        resp = self.client._get('script')
+        resp = self._client.http_get('script')
         if resp.status_code != 200:
             raise exception.NexusClientAPIError(resp.content)
 
@@ -83,7 +83,7 @@ class ScriptCollection(object):
             'content': script_content,
         }
 
-        resp = self.client._post('script', json=script)
+        resp = self._client.http_post('script', json=script)
         if resp.status_code != 204:
             raise exception.NexusClientAPIError(resp.content)
 
@@ -102,7 +102,7 @@ class ScriptCollection(object):
         """
         headers = {'content-type': 'text/plain'}
         endpoint = 'script/{}/run'.format(script_name)
-        resp = self.client._post(endpoint, headers=headers, data=data)
+        resp = self._client.http_post(endpoint, headers=headers, data=data)
         if resp.status_code != 200:
             raise exception.NexusClientAPIError(resp.content)
 
@@ -117,7 +117,7 @@ class ScriptCollection(object):
             delete the script; i.e.: any HTTP code other than 204.
         """
         endpoint = 'script/{}'.format(script_name)
-        resp = self.client._delete(endpoint)
+        resp = self._client.http_delete(endpoint)
         if resp.status_code != 204:
             raise exception.NexusClientAPIError(resp.reason)
 

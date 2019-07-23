@@ -22,11 +22,11 @@ def test_delete(faker, nexus_mock_client, mocker):
     nexus.list_raw = mocker.Mock(return_value=raw_response)
 
     ResponseMock = pytest.helpers.get_ResponseMock()
-    nexus._delete = mocker.Mock(return_value=ResponseMock(204, 'All OK'))
+    nexus.http_delete = mocker.Mock(return_value=ResponseMock(204, 'All OK'))
 
     # call actual method being tested
     delete_count = nexus.delete(x_repository)
 
     assert delete_count == x_count
     nexus.list_raw.assert_called_with(x_repository)
-    nexus._delete.assert_called()
+    nexus.http_delete.assert_called()

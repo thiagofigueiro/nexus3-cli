@@ -48,6 +48,11 @@ class NexusConfig:
 
     @property
     def to_dict(self):
+        """
+        Current instance configuration.
+
+        :rtype: dict
+        """
         config = {}
         for key in DEFAULTS.keys():
             config[key] = getattr(self, f'_{key}')
@@ -61,7 +66,8 @@ class NexusConfig:
     @property
     def api_version(self):
         """
-        :return: the API version to be used
+        The API version to be used
+
         :rtype: str
         """
         return self._api_version
@@ -69,7 +75,8 @@ class NexusConfig:
     @property
     def url(self):
         """
-        :return: the Nexus service URL
+        The Nexus service URL
+
         :rtype: str
         """
         return self._url
@@ -77,8 +84,9 @@ class NexusConfig:
     @property
     def x509_verify(self):
         """
-        :return: whether to validate the x509 certificate when using https to
-            access the Nexus service
+        Whether to validate the x509 certificate when using https to
+        access the Nexus service
+
         :rtype: str
         """
         return self._x509_verify
@@ -86,8 +94,9 @@ class NexusConfig:
     @property
     def config_file(self):
         """
-        :return: path to configuration file, as given by ``config_path`` during
-            instantiation.
+        Path to configuration file, as given by ``config_path`` during
+        instantiation.
+
         :rtype: str
         """
         return str(self._config_path)

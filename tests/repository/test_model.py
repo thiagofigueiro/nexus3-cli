@@ -80,9 +80,9 @@ def test_refresh_repositories(nexus_mock_client):
     attribute.
     """
     repositories = nexus_mock_client.repositories.raw_list()
-    x_repositories = nexus_mock_client._request.return_value._json
+    x_repositories = nexus_mock_client.http_request.return_value._json
 
-    nexus_mock_client._request.assert_called_with(
+    nexus_mock_client.http_request.assert_called_with(
         'get', 'repositories', stream=True)
     assert repositories == x_repositories
 
@@ -92,7 +92,7 @@ def test_refresh_repositories_error(nexus_mock_client):
     Ensure the method does't modify the existing repositories attribute when
     the client request fails.
     """
-    nexus_mock_client._request.return_value.status_code = 400
+    nexus_mock_client.http_request.return_value.status_code = 400
     nexus_mock_client.repositories._repositories_json = None
 
     with pytest.raises(exception.NexusClientAPIError):
@@ -109,7 +109,7 @@ def test_get_repository_by_name(
     x_name = faker.pystr()
     x_format = faker.pystr()
     x_repo = None
-    x_values = nexus_mock_client._request.return_value._json
+    x_values = nexus_mock_client.http_request.return_value._json
 
     if x_found:
         x_repo = pytest.helpers.nexus_repository(x_name, x_format)
@@ -137,7 +137,7 @@ def test_upload_file(format_, mocker, nexus_mock_client, file_upload_args):
     x_src_file, x_repo_name, x_dst_dir, x_dst_file = file_upload_args
     x_args = [x_src_file, x_dst_dir, x_dst_file]
 
-    x_values = nexus_mock_client._request.return_value._json
+    x_values = nexus_mock_client.http_request.return_value._json
 
     # ensure a repo of the needed format exists
     x_values.append(
@@ -188,7 +188,7 @@ def test_upload_file_yum_error(
     x_src_file, _, x_dst_dir, x_dst_file = file_upload_args
     x_args = [x_src_file, x_dst_dir, x_dst_file]
     x_content = faker.binary(length=100)
-    x_values = nexus_yum_repo._client._request.return_value
+    x_values = nexus_yum_repo._client.http_request.return_value
     x_values.status_code = 999
 
     with tmpdir.as_cwd():
@@ -197,7 +197,7 @@ def test_upload_file_yum_error(
         with pytest.raises(exception.NexusClientAPIError) as e:
             nexus_yum_repo.upload_file(*x_args)
 
-    nexus_yum_repo._client._request.assert_called()
+    nexus_yum_repo._client.http_request.assert_called()
     assert nexus_yum_repo.name in str(e.value)
     assert x_dst_dir in str(e.value)
     assert x_dst_file in str(e.value)
