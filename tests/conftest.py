@@ -5,6 +5,7 @@ from faker import Faker
 from subprocess import check_call
 
 import nexuscli
+import nexuscli.nexus_config
 import nexuscli.cli.util
 
 
@@ -43,7 +44,10 @@ def docopt_args(faker):
 
 @pytest.fixture(scope='session')
 def nexus_client():
-    return nexuscli.cli.util.get_client()
+    config = nexuscli.nexus_config.NexusConfig()
+    config.load()
+    client = nexuscli.nexus_client.NexusClient(config=config)
+    return client
 
 
 @pytest.helpers.register
@@ -199,7 +203,7 @@ def find_file_count(dir_name):
 
 
 @pytest.fixture
-def hosted_raw_repo_empty(tmpdir, faker):
+def hosted_raw_repo_empty(faker):
     """Create an empty hosted raw repository"""
     repo_name = faker.pystr()
     command = 'nexus3 repository create hosted raw {}'.format(repo_name)
@@ -219,13 +223,24 @@ def get_ResponseMock():
 
 
 @pytest.fixture
-def client_args(faker, tmpdir):
+def client_args(config_args):
     """Parameters suitable for use with NexusClient()"""
     fixture = {
-        'url': faker.url(),
-        'user': faker.user_name(),
+        'config': config_args,
+    }
+    return fixture
+
+
+@pytest.fixture
+def config_args(faker, tmpdir):
+    """Parameters suitable for use with NexusConfig()"""
+    fixture = {
+        'api_version': faker.pystr(),
+        'username': faker.user_name(),
         'password': faker.password(),
-        'config_path': tmpdir.join(faker.file_name()),
+        'url': faker.url(),
+        'x509_verify': faker.pybool(),
+        'config_path': str(tmpdir.join(faker.file_name())),
     }
     return fixture
 

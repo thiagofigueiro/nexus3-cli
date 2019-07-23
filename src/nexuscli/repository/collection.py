@@ -69,13 +69,12 @@ class RepositoryCollection(object):
         Refresh local list of repositories with latest from service. A raw
         representation of repositories can be fetched using :meth:`raw_list`.
         """
-        previous_api_version = self._client._api_version
+        # TODO: make _client and its methods public
         response = self._client._get('repositories')
         if response.status_code != 200:
             raise exception.NexusClientAPIError(response.content)
 
         self._repositories_json = response.json()
-        self._client._api_version = previous_api_version
 
     def raw_list(self):
         """

@@ -38,7 +38,7 @@ import sys
 import types
 from docopt import docopt
 
-from ..nexus_client import NexusClient
+from nexuscli import nexus_config, nexus_client
 from . import (util, subcommand_cleanup_policy,
                subcommand_repository, subcommand_script)
 from .errors import CliReturnCode
@@ -67,27 +67,30 @@ def _input_yesno(prompt, default):
 
 
 def cmd_login(_, args):
-    nexus_url = input_with_default('Nexus OSS URL', NexusClient.DEFAULT_URL)
+    args  # no arguments for this command
+    nexus_url = input_with_default(
+        'Nexus OSS URL', nexus_config.DEFAULTS['url'])
     nexus_user = input_with_default(
-        'Nexus admin username', NexusClient.DEFAULT_USER)
+        'Nexus admin username', nexus_config.DEFAULTS['username'])
     nexus_pass = getpass.getpass(
-        prompt=f'Nexus admin password ({NexusClient.DEFAULT_PASS}):')
+        prompt=f'Nexus admin password ({nexus_config.DEFAULTS["password"]}):')
     if not nexus_pass:
-        nexus_pass = NexusClient.DEFAULT_PASS
+        nexus_pass = nexus_config.DEFAULTS['password']
 
     nexus_verify = _input_yesno(
-        'Verify server certificate', NexusClient.DEFAULT_VERIFY)
+        'Verify server certificate', nexus_config.DEFAULTS['x509_verify'])
 
-    client = NexusClient(
-        url=nexus_url, user=nexus_user, password=nexus_pass,
-        verify=nexus_verify)
-    client.write_config()
+    config = nexus_config.NexusConfig(
+        username=nexus_user, password=nexus_pass, url=nexus_url,
+        x509_verify=nexus_verify)
 
-    sys.stderr.write('\nConfiguration saved to {}\n'.format(
-        NexusClient.CONFIG_PATH))
+    # make sure configuration works before saving
+    nexus_client.NexusClient(config=config)
 
-    # make sure the saved configuration works
-    NexusClient()
+    config.dump()
+
+    sys.stderr.write(f'\nConfiguration saved to {config.config_file}\n')
+
 
 
 def cmd_list(nexus_client, args):

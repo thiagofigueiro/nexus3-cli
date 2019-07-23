@@ -240,7 +240,7 @@ class Repository(object):
 
         with open(src_file, 'rb') as fh:
             response = self._client._put(
-                repository_path, data=fh, service_url=self._client.base_url)
+                repository_path, data=fh, service_url=self._client.config.url)
 
         if response.status_code != 200:
             raise exception.NexusClientAPIError(

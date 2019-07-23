@@ -2,7 +2,9 @@ import os
 import sys
 from subprocess import CalledProcessError
 
-from ..nexus_client import NexusClient
+from nexuscli.nexus_client import NexusClient
+from nexuscli.nexus_config import NexusConfig
+
 
 try:
     _, TTY_MAX_WIDTH = os.popen('stty size', 'r').read().split()
@@ -37,12 +39,18 @@ def get_client():
     """
     Returns a Nexus Client instance. Prints a warning if a configuration file
     isn't file.
+
+    :return: client instance
+    :rtype: nexuscli.nexus_client.NexusClient
     """
-    if not os.path.isfile(NexusClient.CONFIG_PATH):
+    config = NexusConfig()
+    try:
+        config.load()
+    except FileNotFoundError:
         sys.stderr.write(
             'Warning: configuration not found; proceeding with defaults.\n'
             'To remove this warning, please run `nexus3 login`\n')
-    return NexusClient()
+    return NexusClient(config=config)
 
 
 def input_with_default(prompt, default=None):

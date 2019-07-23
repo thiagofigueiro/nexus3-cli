@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import os.path
@@ -8,6 +7,7 @@ import sys
 from clint.textui import progress
 from urllib.parse import urljoin
 
+from nexuscli.nexus_config import NexusConfig
 from . import exception, nexus_util
 from .cleanup_policy import CleanupPolicyCollection
 from .repository import RepositoryCollection, REMOTE_PATH_SEPARATOR
@@ -38,21 +38,11 @@ class NexusClient(object):
 
     Attributes:
         base_url (str): as per ``url`` argument of :class:`NexusClient`.
-        config_path (str): as per ``config_path`` argument of
-            :class:`NexusClient`.
+        config (NexusConfig): instance of :class:`NexusConfig` containing the
+            configuration for the Nexus service used by this instance.
     """
-    CONFIG_PATH = os.path.expanduser('~/.nexus-cli')
-    DEFAULT_URL = 'http://localhost:8081'
-    DEFAULT_USER = 'admin'
-    DEFAULT_PASS = 'admin123'
-    DEFAULT_VERIFY = True
-
-    def __init__(self, url=None, user=None, password=None, verify=None,
-                 config_path=None):
-        self.base_url = None
-        self.config_path = config_path or NexusClient.CONFIG_PATH
-        self._auth = None
-        self._api_version = 'v1'
+    def __init__(self, config=None):
+        self.config = config or NexusConfig()
         self._local_sep = os.path.sep
         self._remote_sep = REMOTE_PATH_SEPARATOR
         self._cleanup_policies = None
@@ -60,34 +50,7 @@ class NexusClient(object):
         self._scripts = None
         self._verify = None
 
-        if url and user and password:
-            self.set_config(user, password, url, verify)
-        else:
-            self.read_config()
-
         self.repositories.refresh()
-
-    def set_config(self, user, password, base_url, verify):
-        """
-        Configures the Nexus service credentials and base URL. The credentials
-        are stored in a private class attribute and the base URL in
-        :attr:`base_url`.
-
-        Every subsequent operation that requires a request to the Nexus service
-        will use this configuration.
-
-        :param user: as per ``user`` argument of :class:`NexusClient`.
-        :param password: as per ``password`` argument of :class:`NexusClient`.
-        :param base_url: as per ``url`` argument of :class:`NexusClient`.
-        :param verify: as per ``verify`` argument of :class:`NexusClient`.
-        """
-        self._auth = (user, password)
-        self.base_url = base_url
-
-        if verify is None:
-            self._verify = NexusClient.DEFAULT_VERIFY
-        else:
-            self._verify = verify
 
     @property
     def repositories(self):
@@ -132,66 +95,8 @@ class NexusClient(object):
 
         :return: the URL.
         """
-        url = urljoin(self.base_url, '/service/rest/')
-        return urljoin(url, self._api_version + '/')
-
-    @property
-    def config(self):
-        return {
-            'nexus_user': self._auth[0],
-            'nexus_pass': self._auth[1],
-            'nexus_url': self.base_url,
-            'nexus_verify': self._verify,
-        }
-
-    def write_config(self):
-        """
-        Writes the latest configuration set using :meth:`set_config` to disk
-        under :attr:`config_path`.
-
-        If a file already exists, it will be overwritten. The permission will
-        be set to read/write to the owner only.
-        """
-        nexus_config = py.path.local(self.config_path, expanduser=True)
-        nexus_config.ensure()
-        nexus_config.chmod(0o600)
-        with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
-            json.dump(self.config, fh, ensure_ascii=False, indent=4,
-                sort_keys=True)
-
-    def read_config(self):
-        """
-        Read the configuration settings from the file specified by
-        :attr:`config_path` and activates them via :meth:`set_config`.
-
-        The configuration file is in JSON format and expects these keys:
-        ``nexus_user``, ``nexus_pass``, ``nexus_url``, ``nexus_verify``.
-
-        If the configuration file is not found, the default settings will be
-        used instead.
-
-        """
-        nexus_config = py.path.local(self.config_path, expanduser=True)
-        config_attrs = {}
-        nexus_defaults = {
-            'nexus_user': NexusClient.DEFAULT_USER,
-            'nexus_pass': NexusClient.DEFAULT_PASS,
-            'nexus_url': NexusClient.DEFAULT_URL,
-            'nexus_verify': NexusClient.DEFAULT_VERIFY}
-        try:
-            with nexus_config.open(mode='r', encoding='utf-8') as fh:
-                config = json.load(fh)
-                for field in nexus_defaults.keys():
-                    if field in config:
-                        config_attrs[field] = config[field]
-                    else:
-                        config_attrs[field] = nexus_defaults[field]
-        except py.error.ENOENT:
-            config_attrs = nexus_defaults
-
-        self.set_config(
-            config_attrs['nexus_user'], config_attrs['nexus_pass'],
-            config_attrs['nexus_url'], config_attrs['nexus_verify'])
+        url = urljoin(self.config.url, '/service/rest/')
+        return urljoin(url, self.config.api_version + '/')
 
     def _request(self, method, endpoint, **kwargs):
         """
@@ -212,8 +117,8 @@ class NexusClient(object):
         url = urljoin(service_url, endpoint)
         try:
             response = requests.request(
-                method=method, auth=self._auth, url=url, verify=self._verify,
-                **kwargs)
+                method=method, auth=self.config.auth, url=url,
+                verify=self.config.x509_verify, **kwargs)
         except requests.exceptions.ConnectionError as e:
             print(e)
             sys.exit(1)
