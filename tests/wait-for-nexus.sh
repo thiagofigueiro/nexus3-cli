@@ -7,7 +7,7 @@ count=0
 until nexus_ready
 do
   count=$((count+1))
-  if [ ${count} -gt 50 ]
+  if [ ${count} -gt 70 ]
   then
     echo 'Timeout-out waiting for nexus container'
     exit 1
