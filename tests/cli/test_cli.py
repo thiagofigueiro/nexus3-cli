@@ -7,11 +7,11 @@ from nexuscli import cli
 
 def test_login(mocker):
     """Ensure it calls the expected method"""
-    mocker.patch('nexuscli.cli.cmd_login')
+    mock_cmd_login = mocker.patch('nexuscli.cli.root_commands.cmd_login')
 
     cli.main(argv=['login'])
 
-    cli.cmd_login.assert_called_once()
+    mock_cmd_login.assert_called_once()
 
 
 @pytest.mark.integration
