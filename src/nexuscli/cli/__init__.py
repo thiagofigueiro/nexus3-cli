@@ -39,10 +39,7 @@ import types
 from docopt import docopt
 
 from nexuscli import nexus_config, nexus_client
-from . import (util, subcommand_cleanup_policy,
-               subcommand_repository, subcommand_script)
-from .errors import CliReturnCode
-from .util import find_cmd_method, get_client, input_with_default, TTY_MAX_WIDTH
+from nexuscli.cli import errors, util
 
 PLURAL = inflect.engine().plural
 YESNO_OPTIONS = {
@@ -61,16 +58,16 @@ def _input_yesno(prompt, default):
     :rtype: bool
     """
     try:
-        return YESNO_OPTIONS[str(input_with_default(prompt, default)).lower()]
+        return YESNO_OPTIONS[util.input_with_default(prompt, default).lower()]
     except KeyError:
         return default
 
 
 def cmd_login(_, args):
     args  # no arguments for this command
-    nexus_url = input_with_default(
+    nexus_url = util.input_with_default(
         'Nexus OSS URL', nexus_config.DEFAULTS['url'])
-    nexus_user = input_with_default(
+    nexus_user = util.input_with_default(
         'Nexus admin username', nexus_config.DEFAULTS['username'])
     nexus_pass = getpass.getpass(
         prompt=f'Nexus admin password ({nexus_config.DEFAULTS["password"]}):')
@@ -92,7 +89,6 @@ def cmd_login(_, args):
     sys.stderr.write(f'\nConfiguration saved to {config.config_file}\n')
 
 
-
 def cmd_list(nexus_client, args):
     """Performs ``nexus3 list``"""
     repository_path = args['<repository_path>']
@@ -102,9 +98,9 @@ def cmd_list(nexus_client, args):
     if isinstance(artefact_list, (list, types.GeneratorType)):
         for artefact in iter(artefact_list):
             print(artefact)
-        return CliReturnCode.SUCCESS.value
+        return errors.CliReturnCode.SUCCESS.value
     else:
-        return CliReturnCode.UNKNOWN_ERROR.value
+        return errors.CliReturnCode.UNKNOWN_ERROR.value
 
 
 def cmd_ls(nexus_client, args):
@@ -116,11 +112,11 @@ def _cmd_up_down_errors(count, action):
     if count == 0:
         # FIXME: inflex the action verb to past participle
         sys.stderr.write('WARNING: no files were {}\'ed.'.format(action))
-        sys.exit(CliReturnCode.NO_FILES.value)
+        sys.exit(errors.CliReturnCode.NO_FILES.value)
 
     if count == -1:
         sys.stderr.write('ERROR during {} operation.'.format(action))
-        sys.exit(CliReturnCode.API_ERROR.value)
+        sys.exit(errors.CliReturnCode.API_ERROR.value)
 
 
 def cmd_upload(nexus_client, args):
@@ -139,7 +135,7 @@ def cmd_upload(nexus_client, args):
 
     file = PLURAL('file', upload_count)
     sys.stderr.write(f'Uploaded {upload_count} {file} to {destination}\n')
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_up(nexus_client, args):
@@ -163,7 +159,7 @@ def cmd_download(nexus_client, args):
     file_word = PLURAL('file', download_count)
     sys.stderr.write(
         f'Downloaded {download_count} {file_word} to {destination}\n')
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_dl(nexus_client, args):
@@ -179,7 +175,7 @@ def cmd_delete(nexus_client, options):
 
     file_word = PLURAL('file', delete_count)
     sys.stderr.write(f'Deleted {delete_count} {file_word}\n')
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(nexus_client, args):
@@ -194,22 +190,25 @@ def main(argv=None):
     if maybe_subcommand is None:
         # commands in this level are handled by methods named `cmd_COMMAND`,
         # where COMMAND is the first argument given by the user
-        command_method = find_cmd_method(arguments, globals())
+        command_method = util.find_cmd_method(arguments, globals())
 
         # don't show "missing config" error when the user is creating a config
         nexus_client = None
         if not arguments['login']:
-            nexus_client = get_client()
+            nexus_client = util.get_client()
 
         return command_method(nexus_client, arguments)
 
     # subcommands
     argv = [arguments['<subcommand>']] + arguments['<arguments>']
     try:
+        from nexuscli.cli import (subcommand_cleanup_policy,
+                                  subcommand_repository,
+                                  subcommand_script)
         subcommand_module = globals()[f'subcommand_{maybe_subcommand}']
         subcommand_method = getattr(subcommand_module, 'main')
     except KeyError:
         print(__doc__)
-        sys.exit(CliReturnCode.INVALID_SUBCOMMAND.value)
+        sys.exit(errors.CliReturnCode.INVALID_SUBCOMMAND.value)
 
     return subcommand_method(argv)

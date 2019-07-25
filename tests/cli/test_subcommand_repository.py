@@ -6,13 +6,13 @@ from nexuscli.cli import subcommand_repository
 
 
 def test_list(mocker):
-    mocker.patch('nexuscli.cli.subcommand_repository.get_client')
+    mocker.patch('nexuscli.cli.subcommand_repository.util.get_client')
     mocker.patch('nexuscli.cli.subcommand_repository.cmd_list')
 
     argv = 'repository list'.split(' ')
     subcommand_repository.main(argv=argv)
 
-    subcommand_repository.get_client.assert_called_once()
+    subcommand_repository.util.get_client.assert_called_once()
     subcommand_repository.cmd_list.assert_called_once()
 
 

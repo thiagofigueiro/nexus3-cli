@@ -1,1 +1,1 @@
-from .model import Script, ScriptCollection
+from nexuscli.script.model import Script, ScriptCollection

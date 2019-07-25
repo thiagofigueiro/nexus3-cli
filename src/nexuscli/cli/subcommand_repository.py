@@ -39,16 +39,14 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from .. import repository
-from .errors import CliReturnCode
-from .util import (find_cmd_method, get_client, input_with_default,
-                   TTY_MAX_WIDTH)
+from nexuscli import repository
+from nexuscli.cli import errors, util
 
 
-def cmd_list(nexus_client, args):
+def cmd_list(nexus_client, _):
     repositories = nexus_client.repositories.raw_list()
 
-    table = Texttable(max_width=TTY_MAX_WIDTH)
+    table = Texttable(max_width=util.TTY_MAX_WIDTH)
     table.add_row(['Name', 'Format', 'Type', 'URL'])
     table.set_deco(Texttable.HEADER)
     for repo in repositories:
@@ -56,7 +54,7 @@ def cmd_list(nexus_client, args):
             [repo['name'], repo['format'], repo['type'], repo['url']])
 
     print(table.draw())
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def args_to_repo_format(args):
@@ -91,15 +89,15 @@ def cmd_create(nexus_client, args):
         cleanup_policy=args.get('--cleanup'),
     )
     nexus_client.repositories.create(r)
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(nexus_client, args):
     if not args.get('--force'):
-        input_with_default(
+        util.input_with_default(
             'Press ENTER to confirm deletion', 'ctrl+c to cancel')
     nexus_client.repositories.delete(args.get('<repo_name>'))
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_delete(nexus_client, args):
@@ -108,5 +106,5 @@ def cmd_delete(nexus_client, args):
 
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
-    command_method = find_cmd_method(arguments, globals())
-    return command_method(get_client(), arguments)
+    command_method = util.find_cmd_method(arguments, globals())
+    return command_method(util.get_client(), arguments)

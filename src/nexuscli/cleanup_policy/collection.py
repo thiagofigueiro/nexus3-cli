@@ -1,7 +1,7 @@
 import json
 
 from nexuscli import exception, nexus_util
-from .model import CleanupPolicy
+from nexuscli.cleanup_policy.model import CleanupPolicy
 
 
 class CleanupPolicyCollection(object):

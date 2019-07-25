@@ -19,14 +19,13 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from .errors import CliReturnCode
-from .util import find_cmd_method, get_client, TTY_MAX_WIDTH
+from nexuscli.cli import errors, util
 
 
-def cmd_list(nexus_client, args):
+def cmd_list(nexus_client, _):
     scripts = nexus_client.scripts.list()
 
-    table = Texttable(max_width=TTY_MAX_WIDTH)
+    table = Texttable(max_width=util.TTY_MAX_WIDTH)
     table.add_row(['Name', 'Type', 'Content'])
     table.set_deco(Texttable.HEADER | Texttable.HLINES)
     for script in scripts:
@@ -36,19 +35,19 @@ def cmd_list(nexus_client, args):
         table.add_row([script['name'], script['type'], content])
 
     print(table.draw())
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_create(nexus_client, args):
     script_content = open(args.get('<script_path>')).read()
     nexus_client.scripts.create(
         args.get('<script_name>'), script_content, args.get('--script_type'))
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(nexus_client, args):
     nexus_client.scripts.delete(args.get('<script_name>'))
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_delete(nexus_client, args):
@@ -59,10 +58,10 @@ def cmd_run(nexus_client, args):
     resp = nexus_client.scripts.run(
         args.get('<script_name>'), args.get('<script_args>'))
     print(resp)
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
-    command_method = find_cmd_method(arguments, globals())
-    return command_method(get_client(), arguments)
+    command_method = util.find_cmd_method(arguments, globals())
+    return command_method(util.get_client(), arguments)

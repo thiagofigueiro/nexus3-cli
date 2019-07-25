@@ -64,6 +64,6 @@ def input_with_default(prompt, default=None):
     """
     value = input(f'{prompt} ({default}):')
     if value:
-        return value
+        return str(value)
 
-    return default
+    return str(default)

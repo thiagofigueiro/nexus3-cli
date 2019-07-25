@@ -6,7 +6,6 @@ from subprocess import check_call
 
 import nexuscli
 import nexuscli.nexus_config
-import nexuscli.cli.util
 
 
 @pytest.fixture
