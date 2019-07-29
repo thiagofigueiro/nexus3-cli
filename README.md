@@ -11,7 +11,7 @@ OSS 3](https://www.sonatype.com/download-oss-sonatype).
 
 1. Compatible with [Nexus 3 OSS](https://www.sonatype.com/download-oss-sonatype)
 1. Python API and command-line support
-1. Artefact management: list, upload, download, delete. 
+1. Artefact management: list, delete, bulk upload and download.
 1. Repository management:
    1. Create hosted and proxy.
    1. Create bower, maven, npm, nuget, pypi, raw, rubygems, yum.
@@ -44,32 +44,23 @@ For a quick start, use the [sonatype/nexus3 Docker image](https://hub.docker.com
 
 
 ```bash
-docker run -d --rm -p 8081:8081 sonatype/nexus3
+docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3
 ```
 
 Nexus will take a little while to start-up the first time you run it. You can
 tell when it's available by looking at the Docker instance logs or browsing to
-[http://localhost:8081](http://admin:admin123@localhost:8081).
+[http://localhost:8081](http://localhost:8081).
 
-If you haven't changed the default Nexus credentials, you can use it straight 
-away; here's the list of default repositories:
-
-```bash
-$ nexus3 repo list
-Name              Format   Type     URL
-maven-snapshots   maven2   hosted   http://localhost:8081/repository/maven-snapshots
-maven-central     maven2   proxy    http://localhost:8081/repository/maven-central
-nuget-group       nuget    group    http://localhost:8081/repository/nuget-group
-nuget.org-proxy   nuget    proxy    http://localhost:8081/repository/nuget.org-proxy
-maven-releases    maven2   hosted   http://localhost:8081/repository/maven-releases
-nuget-hosted      nuget    hosted   http://localhost:8081/repository/nuget-hosted
-maven-public      maven2   group    http://localhost:8081/repository/maven-public
-```
+On older versions of the nexus3 Docker image, the default `admin` password is
+`admin123`; on newer versions it's automatically generated and you can find it
+by running `docker exec nexus cat /nexus-data/admin.password`.
 
 The `login` command will store the service URL and your credentials in 
 `~/.nexus-cli` (warning: restrictive file permissions are set but the contents
 are saved in plain-text).
 
+
+Setup CLI credentials:
 ```bash
 $ nexus3 login
 Nexus OSS URL (http://localhost:8081):
@@ -80,19 +71,44 @@ Verify server certificate (True):
 Configuration saved to /Users/thiago/.nexus-cli
 ```
 
-Create a repository, upload a file and list contents:
+List repositories:
 ```bash
-$ nexus3 repo create hosted raw reponame
-
-$ nexus3 up file.txt reponame/path/
-Uploading file.txt to reponame/path/
-Uploaded 1 file to reponame/path/
-
-$ nexus3 ls rwrepo/path/
-path/file.txt
+$ nexus3 repository list
+Name              Format   Type     URL
+maven-snapshots   maven2   hosted   http://localhost:8081/repository/maven-snapshots
+maven-central     maven2   proxy    http://localhost:8081/repository/maven-central
+nuget-group       nuget    group    http://localhost:8081/repository/nuget-group
+nuget.org-proxy   nuget    proxy    http://localhost:8081/repository/nuget.org-proxy
+maven-releases    maven2   hosted   http://localhost:8081/repository/maven-releases
+nuget-hosted      nuget    hosted   http://localhost:8081/repository/nuget-hosted
+maven-public      maven2   group    http://localhost:8081/repository/maven-public
 ```
 
-For all commands and options, run `nexus3 -h`.
+Create a repository:
+```bash
+$ nexus3 repository create hosted raw reponame
+```
+
+Do a recursive directory upload:
+```bash
+$ mkdir -p /tmp/some/deep/test/path
+$ touch /tmp/some/deep/test/file.txt /tmp/some/deep/test/path/other.txt
+$ cd /tmp; nexus3 up some/ reponame/path/
+Uploading some/ to reponame/path/
+[################################] 2/2 - 00:00:00
+Uploaded 2 files to reponame/path/
+```
+Nota Bene: nexus3-cli interprets a path ending in `/` as a directory.
+
+List repository contents:
+```bash
+$ nexus3 ls reponame/path/
+path/some/deep/test/path/other.txt
+path/some/deep/test/file.txt
+```
+
+For all commands, subcommands and options, run `nexus3 -h`.
+[CLI documentation](https://nexus3-cli.readthedocs.io/en/latest/cli.html)
 
 ### API
 
