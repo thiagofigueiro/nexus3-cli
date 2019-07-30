@@ -1,2 +1,2 @@
-from .model import CleanupPolicy
-from .collection import CleanupPolicyCollection
+from nexuscli.cleanup_policy.model import CleanupPolicy
+from nexuscli.cleanup_policy.collection import CleanupPolicyCollection

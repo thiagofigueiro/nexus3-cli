@@ -8,10 +8,10 @@ from clint.textui import progress
 from urllib.parse import urljoin
 
 from nexuscli.nexus_config import NexusConfig
-from . import exception, nexus_util
-from .cleanup_policy import CleanupPolicyCollection
-from .repository import RepositoryCollection, REMOTE_PATH_SEPARATOR
-from .script import ScriptCollection
+from nexuscli import exception, nexus_util
+from nexuscli.cleanup_policy import CleanupPolicyCollection
+from nexuscli.repository import validations, RepositoryCollection
+from nexuscli.script import ScriptCollection
 
 LOG = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class NexusClient(object):
     def __init__(self, config=None):
         self.config = config or NexusConfig()
         self._local_sep = os.path.sep
-        self._remote_sep = REMOTE_PATH_SEPARATOR
+        self._remote_sep = validations.REMOTE_PATH_SEPARATOR
         self._cleanup_policies = None
         self._repositories = None
         self._scripts = None

@@ -19,17 +19,16 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from .. import cleanup_policy
-from .errors import CliReturnCode
-from .util import find_cmd_method, get_client, TTY_MAX_WIDTH
+from nexuscli import cleanup_policy
+from nexuscli.cli import errors, util
 
 
-def cmd_list(nexus_client, args):
+def cmd_list(nexus_client, _):
     policies = nexus_client.cleanup_policies.list()
     if len(policies) == 0:
-        return CliReturnCode.POLICY_NOT_FOUND.value
+        return errors.CliReturnCode.POLICY_NOT_FOUND.value
 
-    table = Texttable(max_width=TTY_MAX_WIDTH)
+    table = Texttable(max_width=util.TTY_MAX_WIDTH)
     table.add_row(['Name', 'Format', 'lastDownloaded', 'lastBlobUpdated'])
     table.set_deco(Texttable.HEADER)
     for policy in policies:
@@ -40,7 +39,7 @@ def cmd_list(nexus_client, args):
             p['criteria'].get('lastBlobUpdated', 'null')])
 
     print(table.draw())
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def cmd_create(nexus_client, args):
@@ -59,10 +58,10 @@ def cmd_create(nexus_client, args):
     )
 
     nexus_client.cleanup_policies.create_or_update(policy)
-    return CliReturnCode.SUCCESS.value
+    return errors.CliReturnCode.SUCCESS.value
 
 
 def main(argv=None):
     arguments = docopt(__doc__, argv=argv)
-    command_method = find_cmd_method(arguments, globals())
-    return command_method(get_client(), arguments)
+    command_method = util.find_cmd_method(arguments, globals())
+    return command_method(util.get_client(), arguments)

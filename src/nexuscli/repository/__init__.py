@@ -1,3 +1,2 @@
-from .model import Repository, REMOTE_PATH_SEPARATOR
-from .collection import RepositoryCollection
-from . import validations
+from nexuscli.repository.model import Repository
+from nexuscli.repository.collection import RepositoryCollection
