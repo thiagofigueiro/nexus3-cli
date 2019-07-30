@@ -19,7 +19,7 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from nexuscli import cleanup_policy
+from nexuscli.api import cleanup_policy
 from nexuscli.cli import errors, util
 
 

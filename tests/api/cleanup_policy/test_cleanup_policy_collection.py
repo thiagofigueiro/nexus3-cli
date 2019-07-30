@@ -2,7 +2,7 @@ import json
 import pytest
 
 from nexuscli import exception
-from nexuscli.cleanup_policy import CleanupPolicy
+from nexuscli.api.cleanup_policy import CleanupPolicy
 
 
 def test_get_by_name(cleanup_policy_collection, cleanup_policy_configuration):

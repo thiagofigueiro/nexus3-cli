@@ -2,8 +2,8 @@ import os
 from clint.textui import progress
 
 from nexuscli import exception
-from nexuscli.repository import validations, util
-from nexuscli.repository.validations import REMOTE_PATH_SEPARATOR
+from nexuscli.api.repository import validations, util
+from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
 
 
 class Repository(object):

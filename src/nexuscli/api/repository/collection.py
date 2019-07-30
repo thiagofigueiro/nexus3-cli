@@ -1,7 +1,7 @@
 import json
 
 from nexuscli import exception, nexus_util
-from nexuscli.repository.model import Repository
+from nexuscli.api.repository.model import Repository
 
 SCRIPT_NAME_CREATE = 'nexus3-cli-repository-create'
 SCRIPT_NAME_DELETE = 'nexus3-cli-repository-delete'

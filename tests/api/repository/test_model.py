@@ -2,8 +2,9 @@ import itertools
 import json
 import pytest
 
-from nexuscli import exception, repository
-from nexuscli.repository import Repository
+from nexuscli import exception
+from nexuscli.api import repository
+from nexuscli.api.repository import Repository
 
 
 def test_collection_delete(nexus_mock_client, faker, mocker):
@@ -133,7 +134,7 @@ def test_upload_file(format_, mocker, nexus_mock_client, file_upload_args):
     format; also verify that an unsupported repository raises an exception.
     """
     x_method = '_upload_file_' + format_
-    mocker.patch('nexuscli.repository.Repository.' + x_method)
+    mocker.patch('nexuscli.api.repository.Repository.' + x_method)
     x_src_file, x_repo_name, x_dst_dir, x_dst_file = file_upload_args
     x_args = [x_src_file, x_dst_dir, x_dst_file]
 

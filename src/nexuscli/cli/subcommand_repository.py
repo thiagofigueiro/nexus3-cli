@@ -39,7 +39,7 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from nexuscli import repository
+from nexuscli.api import repository
 from nexuscli.cli import errors, util
 
 

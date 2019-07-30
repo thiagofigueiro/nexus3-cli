@@ -1,6 +1,6 @@
 import pytest
 
-from nexuscli.repository import RepositoryCollection
+from nexuscli.api.repository import RepositoryCollection
 
 
 @pytest.fixture
