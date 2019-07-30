@@ -10,5 +10,5 @@ Relevant Nexus 3 API documentation:
    :maxdepth: 2
    :caption: nexus3-cli contents:
 
+   modules
    api/examples
-   api/modules
