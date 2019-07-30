@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+import sphinx.ext.apidoc
+
+
+def setup(_):
+    sphinx.ext.apidoc.main('-o . ../src/nexuscli'.split())
+
 
 # -- Project information -----------------------------------------------------
 

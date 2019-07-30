@@ -1,7 +1,7 @@
 import json
 import pytest
 
-from nexuscli.cleanup_policy import CleanupPolicyCollection
+from nexuscli.api.cleanup_policy import CleanupPolicyCollection
 
 
 @pytest.fixture

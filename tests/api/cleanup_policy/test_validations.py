@@ -1,6 +1,6 @@
 import pytest
 
-from nexuscli.cleanup_policy import validations
+from nexuscli.api.cleanup_policy import validations
 
 
 @pytest.mark.parametrize('method_name, broken_configuration', [

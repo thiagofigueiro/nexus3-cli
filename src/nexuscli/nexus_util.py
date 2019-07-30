@@ -24,7 +24,8 @@ def groovy_script(script_name):
     :return: content for the groovy script
     :rtype: str
     """
-    script_path = os.path.join('script', 'groovy', f'{script_name}.groovy')
+    script_path = os.path.join(
+        'api', 'script', 'groovy', f'{script_name}.groovy')
     script_path = _resource_filename(script_path)
     return open(script_path).read()
 

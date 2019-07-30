@@ -65,6 +65,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/modules.rst
+docs/nexuscli*.rst
 
 # PyBuilder
 target/

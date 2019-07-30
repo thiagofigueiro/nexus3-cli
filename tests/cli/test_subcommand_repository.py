@@ -1,7 +1,7 @@
 import pytest
 import itertools
 
-from nexuscli import repository
+from nexuscli.api import repository
 from nexuscli.cli import subcommand_repository
 
 

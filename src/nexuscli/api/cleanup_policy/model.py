@@ -1,4 +1,4 @@
-from nexuscli.cleanup_policy import validations
+from nexuscli.api.cleanup_policy import validations
 
 
 class CleanupPolicy(object):
