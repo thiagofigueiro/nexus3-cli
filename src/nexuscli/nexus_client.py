@@ -20,16 +20,33 @@ class NexusClient(object):
     """
     A class to interact with Nexus 3's API.
 
-    Unless all keyword arguments ``url``, ``user`` and ``password`` are
-    supplied, the class will attempt to read the configuration file and,
-    if unsuccessful, use defaults.
+    If the ``config`` argument is not given, the default configuration will be
+    used. If your nexus instance requires authentication, this is unlikely to
+    work.
+
+    >>> from nexuscli.nexus_config import NexusConfig
+    >>> from nexuscli.nexus_client import NexusClient
+    >>>
+    >>> config = NexusConfig(
+    >>>     username='joe', password='row',
+    >>>     url='https://nexus.example.com',
+    >>>     x509_verify=False)
+    >>>
+    >>> client = NexusClient(config)
+    >>> repository = client.repositories.get_by_name('nuget-hosted')
+    >>>
+    >>> print(repository)
+    >>> Repository(hosted, {
+    >>>     'name': 'nuget-hosted',
+    >>>     'format': 'nuget',
+    >>>     'type': 'hosted',
+    >>>     'url': 'https://nexus.example.com/repository/nuget-hosted',
+    >>>     'attributes': {}})
+
 
     Args:
         config (NexusConfig): instance of :class:`NexusConfig` containing the
             configuration for the Nexus service used by this instance.
-
-    Attributes:
-        config (NexusConfig): as per the argument with the same name.
     """
     def __init__(self, config=None):
         self.config = config or NexusConfig()
@@ -46,9 +63,9 @@ class NexusClient(object):
     def repositories(self):
         """
         Instance of
-        :class:`nexuscli.repository.model.RepositoryCollection`. This will
-        automatically use the existing instance of :class:`NexusClient` to
-        communicate with the Nexus service.
+        :py:class:`nexuscli.api.repository.collection.RepositoryCollection`.
+
+        Uses the current instance of :class:`NexusClient` as the client.
         """
         if self._repositories is None:
             self._repositories = RepositoryCollection(client=self)
@@ -58,9 +75,9 @@ class NexusClient(object):
     def cleanup_policies(self):
         """
         Instance of
-        :class:`nexuscli.repository.model.CleanupPolicyCollection`. This will
-        automatically use the existing instance of :class:`NexusClient` to
-        communicate with the Nexus service.
+        :class:`nexuscli.api.cleanup_policy.collection.CleanupPolicyCollection`.
+
+        Uses the current instance of :class:`NexusClient` as the client.
         """
         if self._cleanup_policies is None:
             self._cleanup_policies = CleanupPolicyCollection(client=self)
@@ -70,9 +87,9 @@ class NexusClient(object):
     def scripts(self):
         """
         Instance of
-        :class:`nexuscli.script.model.ScriptCollection`. This will
-        automatically use the existing instance of :class:`NexusClient` to
-        communicate with the Nexus service.
+        :class:`nexuscli.api.script.model.ScriptCollection`.
+
+        Uses the current instance of :class:`NexusClient` as the client.
         """
         if self._scripts is None:
             self._scripts = ScriptCollection(client=self)
@@ -96,8 +113,8 @@ class NexusClient(object):
         :param method: one of ``get``, ``put``, ``post``, ``delete``.
         :param endpoint: URI path to be appended to the service URL.
         :param kwargs: if ``service_url`` is not provided,
-            :py:property:`self.rest_url` is used by default. All other kwargs
-            are passed-through to ``requests.method``.
+            :py:property:`rest_url` is used by default. All other kwargs
+            are passed-through to :meth:``requests.method``.
         :return: requests response object
         """
         try:
@@ -492,6 +509,7 @@ class NexusClient(object):
             for chunk in response.iter_content(chunk_size=8192):
                 fd.write(chunk)
 
+    # FIXME: replace **kwargs with named kwargs
     def download(self, source, destination, **kwargs):
         """Process a download. The source must be a valid Nexus 3
         repository path, including the repository name as the first component
@@ -500,16 +518,21 @@ class NexusClient(object):
         The destination must be a local file name or directory.
 
         If a file name is given as destination, the asset may be renamed. The
-        final destination will depend on self.flatten: when True, the remote
-        path isn't reproduced locally.
+        final destination will depend on the ``flatten`` kwarg: when True, all
+        files are downloaded to the root of the destination directory (i.e.: the
+        source structure isn't reproduced locally).
 
         :param source: location of artefact or directory on the repository
             service.
+        :type source: str
         :param destination: path to the local file or directory.
+        :type destination: str
         :param flatten: when True, the remote path isn't reproduced locally.
+        :type flatten: bool
         :param nocache: Force download of a directory or artefact even if local
                         copy is available and is up-to-date with the version
                         available on Nexus.
+        :type nocache: bool
         :return: number of downloaded files.
         """
         download_count = 0
@@ -543,12 +566,14 @@ class NexusClient(object):
 
         return download_count
 
+    # FIXME: kwargs doesn't seem to be used
     def delete(self, repository_path, **kwargs):
         """
-        Delete artefacts, recursively if repository_path is a directory.
+        Delete one or multiple artefacts. If ``repository_path`` is a directory,
+        all artefacts matching the path are deleted.
 
         :param repository_path: location on the repository service.
-        :param kwargs: implementation-specific arguments.
+        :type repository_path: str
         :return: number of deleted files. Negative number for errors.
         :rtype: int
         """

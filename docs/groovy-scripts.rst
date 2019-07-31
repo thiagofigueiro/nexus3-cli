@@ -10,9 +10,15 @@ All scripts added have names starting with ``nexus3-cli-``.
    :emphasize-lines: 1
 
     $ nexus3 script list
-    Name (type)
-    nexus3-cli-cleanup-policy (groovy)
-    nexus3-cli-repository-create (groovy)
+    Name                           Type     Content
+    -----------------------------------------------------------------------------------
+    nexus3-cli-repository-create   groovy   import groovy.json.JsonSlurper
+                                            import or...
+    -----------------------------------------------------------------------------------
+    nexus3-cli-cleanup-policy      groovy   // Original from:
+                                            // https://github.com/...
+    -----------------------------------------------------------------------------------
+    nexus3-cli-repository-delete   groovy   log.info("Deleting <repository=${args}>"...
 
 
 You can delete them all by running:
