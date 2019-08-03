@@ -60,13 +60,17 @@ class NexusConfig:
 
     @property
     def auth(self):
-        """Return the username and password as a tuple"""
+        """
+        Current username and password as a tuple.
+
+        :rtype: tuple[str, str]
+        """
         return self._username, self._password
 
     @property
     def api_version(self):
         """
-        The API version to be used
+        Current API version in use.
 
         :rtype: str
         """
@@ -103,7 +107,7 @@ class NexusConfig:
 
     def dump(self):
         """
-        Writes the current configuration to disk under :py:prop:`config_file`.
+        Writes the current configuration to disk under property:`config_file`.
 
         If a file already exists, it will be overwritten. The permission will
         be set to read/write to the owner only.
