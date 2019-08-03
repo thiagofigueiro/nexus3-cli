@@ -44,6 +44,7 @@ from nexuscli.cli import errors, util
 
 
 def cmd_list(nexus_client, _):
+    """Performs ``nexus3 repository list``"""
     repositories = nexus_client.repositories.raw_list()
 
     table = Texttable(max_width=util.TTY_MAX_WIDTH)
@@ -57,14 +58,14 @@ def cmd_list(nexus_client, _):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def args_to_repo_format(args):
+def _args_to_repo_format(args):
     # docopt guarantees only one is True
     for format_name in repository.validations.KNOWN_FORMATS:
         if args.get(format_name) is True:
             return format_name
 
 
-def args_to_repo_type(args):
+def _args_to_repo_type(args):
     # docopt guarantees only one is True
     for type_name in repository.validations.KNOWN_TYPES:
         if args.get(type_name) is True:
@@ -72,13 +73,13 @@ def args_to_repo_type(args):
 
 
 def cmd_create(nexus_client, args):
-    """Performs ``rekt repo create *`` commands"""
+    """Performs ``nexus3 repository create`` commands"""
     r = repository.Repository(
         nexus_client,
-        type=args_to_repo_type(args),
+        type=_args_to_repo_type(args),
         ignore_extra_kwargs=True,
         name=args.get('<repo_name>'),
-        format=args_to_repo_format(args),
+        format=_args_to_repo_format(args),
         blob_store_name=args.get('--blob'),
         depth=int(args.get('--depth')),
         remote_url=args.get('<remote_url>'),
@@ -92,7 +93,13 @@ def cmd_create(nexus_client, args):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def cmd_del(nexus_client, args):
+def cmd_del(*args, **kwargs):
+    """Alias for :func:`cmd_delete`"""
+    return cmd_delete(*args, **kwargs)
+
+
+def cmd_delete(nexus_client, args):
+    """Performs ``nexus3 repository delete``"""
     if not args.get('--force'):
         util.input_with_default(
             'Press ENTER to confirm deletion', 'ctrl+c to cancel')
@@ -100,11 +107,8 @@ def cmd_del(nexus_client, args):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def cmd_delete(nexus_client, args):
-    return cmd_del(nexus_client, args)
-
-
 def main(argv=None):
+    """Entrypoint for ``nexus3 repository`` subcommand."""
     arguments = docopt(__doc__, argv=argv)
     command_method = util.find_cmd_method(arguments, globals())
     return command_method(util.get_client(), arguments)

@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class CliReturnCode(Enum):
+    """Error codes returned by :py:mod:`nexuscli.cli`"""
     SUCCESS = 0
     NO_FILES = 1
     API_ERROR = 2

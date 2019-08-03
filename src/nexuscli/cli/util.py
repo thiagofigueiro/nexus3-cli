@@ -20,7 +20,7 @@ def find_cmd_method(arguments, methods):
     Suitable python methods must be named ``cmd_COMMAND``, where `COMMAND` is
     the CLI command and ``cmd_`` is a hard-coded prefix.
 
-    :param arguments: the return of :py:meth:`docopt.docopt`.
+    :param arguments: the return of :py:func:`docopt.docopt`.
     :param methods: the return value from `globals()`, as-is
     :return: the python method corresponding to the given CLI command. None if
         no suitable method is found.
@@ -40,7 +40,6 @@ def get_client():
     Returns a Nexus Client instance. Prints a warning if a configuration file
     isn't file.
 
-    :return: client instance
     :rtype: nexuscli.nexus_client.NexusClient
     """
     config = NexusConfig()

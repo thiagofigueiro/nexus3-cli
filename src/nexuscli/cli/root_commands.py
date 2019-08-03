@@ -1,3 +1,4 @@
+"""Handles base/root commands (as opposed to subcommands)"""
 import getpass
 import inflect
 import sys
@@ -30,6 +31,7 @@ def _input_yesno(prompt, default):
 
 
 def cmd_login(_, __):
+    """Performs ``nexus3 login``"""
     nexus_url = util.input_with_default(
         'Nexus OSS URL', nexus_config.DEFAULTS['url'])
     nexus_user = util.input_with_default(
@@ -68,8 +70,9 @@ def cmd_list(nexus_client, args):
         return errors.CliReturnCode.UNKNOWN_ERROR.value
 
 
-def cmd_ls(nexus_client, args):
-    return cmd_list(nexus_client, args)
+def cmd_ls(*args, **kwargs):
+    """Alias for :func:`cmd_list`"""
+    return cmd_list(*args, **kwargs)
 
 
 def _cmd_up_down_errors(count, action):
@@ -103,8 +106,9 @@ def cmd_upload(nexus_client, args):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def cmd_up(nexus_client, args):
-    return cmd_upload(nexus_client, args)
+def cmd_up(*args, **kwargs):
+    """Alias for :func:`cmd_upload`"""
+    return cmd_upload(*args, **kwargs)
 
 
 def cmd_download(nexus_client, args):
@@ -127,12 +131,13 @@ def cmd_download(nexus_client, args):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def cmd_dl(nexus_client, args):
-    return cmd_download(nexus_client, args)
+def cmd_dl(*args, **kwargs):
+    """Alias for :func:`cmd_download`"""
+    return cmd_download(*args, **kwargs)
 
 
 def cmd_delete(nexus_client, options):
-    """Performs `nexus3 delete`"""
+    """Performs ``nexus3 delete``"""
     repository_path = options['<repository_path>']
     delete_count = nexus_client.delete(repository_path)
 
@@ -143,5 +148,6 @@ def cmd_delete(nexus_client, options):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def cmd_del(nexus_client, args):
-    return cmd_del(nexus_client, args)
+def cmd_del(*args, **kwargs):
+    """Alias for :func:`cmd_delete`"""
+    return cmd_delete(*args, **kwargs)
