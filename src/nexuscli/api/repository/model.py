@@ -1,9 +1,227 @@
 import os
 from clint.textui import progress
+from urllib.parse import urlparse
 
 from nexuscli import exception
 from nexuscli.api.repository import validations, util
 from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
+
+DEFAULT_RECIPE = 'raw'
+DEFAULT_WRITE_POLICY = 'ALLOW'
+DEFAULT_BLOB_STORE_NAME = 'default'
+DEFAULT_STRICT_CONTENT = False
+
+
+# TODO: use ABC
+class Repository:
+    """
+    A base Nexus repository.
+    """
+    RECIPES = ('bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems')
+    """
+    Nexus 3 repository recipes (formats) supported by this class:
+
+        - `bower
+          <https://help.sonatype.com/repomanager3/formats/bower-repositories>`_
+        - `npm
+          <https://help.sonatype.com/repomanager3/formats/npm-registry>`_
+        - `nuget
+          <https://help.sonatype.com/repomanager3/formats/nuget-repositories>`_
+        - `pypi
+          <https://help.sonatype.com/repomanager3/formats/pypi-repositories>`_
+        - `raw
+          <https://help.sonatype.com/repomanager3/formats/raw-repositories>`_
+        - `rubygems
+          <https://help.sonatype.com/repomanager3/formats/rubygems-repositories>`_
+
+    :param name: name of the repository.
+    :type name: str
+    :param recipe: format (recipe) of the new repository. Must be one of
+        :py:attr:`RECIPES`. See Nexus documentation for details.
+    :type recipe: str
+    :param blob_store_name: name of an existing blob store; 'default'
+        should work on most installations.
+    :type blob_store_name: str
+    :param strict_content_type_validation: Whether to validate file
+        extension against its content type.
+    :type strict_content_type_validation: bool
+    :param cleanup_policy: name of an existing repository clean-up policy.
+    :type cleanup_policy: str
+    """
+    def __init__(self, name,
+                 recipe=DEFAULT_RECIPE,
+                 blob_store_name=DEFAULT_BLOB_STORE_NAME,
+                 strict_content_type_validation=DEFAULT_STRICT_CONTENT,
+                 cleanup_policy=None
+                 ):
+        self.name = name
+        self.recipe = recipe
+        self.blob_store_name = blob_store_name
+        self.strict_content = strict_content_type_validation
+        self.cleanup_policy = cleanup_policy
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        validations.ensure_known('recipe', self.recipe, self.RECIPES)
+
+
+class ProxyRepository(Repository):
+    """
+    A proxy Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param remote_url: The URL of the repository being proxied, including the
+        protocol scheme.
+    :type remote_url: str
+    :param kwargs: see :class:`Repository`
+    """
+    def __init__(self, name, remote_url=None, **kwargs):
+        self.remote_url = remote_url
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        if not isinstance(self.remote_url, str):
+            raise ValueError('remote_url must be a str')
+
+        parsed_url = urlparse(self.remote_url)
+        if not (parsed_url.scheme and parsed_url.netloc):
+            raise ValueError(
+                f'remote_url={self.remote_url} is not a valid URL')
+
+
+class HostedRepository(Repository):
+    """
+    A hosted Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param write_policy: one of :py:attr:`WRITE_POLICIES`. See Nexus
+        documentation for details.
+    :type write_policy: str
+    :param kwargs: see :class:`Repository`
+    """
+    WRITE_POLICIES = ['ALLOW', 'ALLOW_ONCE', 'DENY']
+    """Nexus 3 repository write policies supported by this class."""
+
+    def __init__(self, name, write_policy=DEFAULT_WRITE_POLICY, **kwargs):
+        self.write_policy = write_policy
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        validations.ensure_known(
+            'write_policy', self.write_policy, self.WRITE_POLICIES)
+
+
+class MavenRepository(Repository):
+    """
+    A base `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param layout_policy: one of :py:attr:`LAYOUT_POLICIES`. See Nexus
+        documentation for details.
+    :param version_policy: one of :py:attr:`VERSION_POLICIES`. See Nexus
+        documentation for details.
+    :param kwargs: see :class:`Repository`
+    """
+    RECIPES = ('maven',)
+
+    LAYOUT_POLICIES = ('PERMISSIVE', 'STRICT')
+    """Maven layout policies"""
+
+    VERSION_POLICIES = ('RELEASE', 'SNAPSHOT', 'MIXED')
+    """Maven version policies"""
+
+    def __init__(self, name,
+                 layout_policy='PERMISSIVE',
+                 version_policy='RELEASE',
+                 **kwargs):
+        self.layout_policy = layout_policy
+        self.version_policy = version_policy
+
+        kwargs.update({'recipe': 'maven'})
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        validations.ensure_known(
+            'layout_policy', self.layout_policy, self.LAYOUT_POLICIES)
+        validations.ensure_known(
+            'version_policy', self.version_policy, self.VERSION_POLICIES)
+
+
+class MavenHostedRepository(HostedRepository, MavenRepository):
+    """
+    A `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    hosted Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param kwargs: see :class:`HostedRepository` and :class:`MavenRepository`
+    """
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
+
+
+class MavenProxyRepository(MavenRepository, ProxyRepository):
+    """
+    A `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    proxy Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param kwargs: see :class:`MavenRepository` and :class:`ProxyRepository`
+    """
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
+
+
+class YumRepository(Repository):
+    """
+    A `Yum <https://help.sonatype.com/repomanager3/formats/yum-repositories>`_
+    base Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param depth: The Yum ``repodata`` depth. Usually 1.
+    :type depth: int
+    :param kwargs: see :class:`Repository`
+    """
+    RECIPES = ('yum',)
+
+    def __init__(self, name, depth=1, **kwargs):
+        self.depth = depth
+
+        kwargs.update({'recipe': 'yum'})
+
+        super().__init__(name, **kwargs)
+
+
+class YumHostedRepository(HostedRepository, YumRepository):
+    """
+    A `Yum <https://help.sonatype.com/repomanager3/formats/yum-repositories>`_
+    hosted Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param kwargs: see :class:`HostedRepository` and :class:`YumRepository`
+    """
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
 
 
 class LegacyRepository(object):

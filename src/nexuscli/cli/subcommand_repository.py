@@ -4,21 +4,26 @@ Usage:
   nexus3 repository list
   nexus3 repository (delete|del) <repo_name> [--force]
   nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
-         <repo_name> [--blob=<store_name>] [--write=<w_policy>]
-        [--strict-content] [--cleanup=<c_policy>]
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
   nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create hosted maven <repo_name>
-         [--blob=<store_name>] [--version=<v_policy>]
-         [--layout=<l_policy>] [--strict-content]
-         [--write=<w_policy>] [--cleanup=<c_policy>]
-  nexus3 repository create proxy maven <repo_name> <remote_url>
-         [--blob=<store_name>] [--version=<v_policy>]
-         [--layout=<l_policy>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create hosted yum <repo_name>
-         [--blob=<store_name>] [--write=<w_policy>]
-         [--depth=<repo_depth>] [--strict-content] [--cleanup=<c_policy>]
+  nexus3 repository create hosted maven
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--version=<v_policy>] [--layout=<l_policy>]
+  nexus3 repository create proxy maven
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--version=<v_policy>] [--layout=<l_policy>]
+  nexus3 repository create hosted yum
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--depth=<repo_depth>]
 
 Options:
   -h --help             This screen
