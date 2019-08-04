@@ -108,9 +108,9 @@ def calculate_hash(hash_name, file_path_or_handle):
 
     :param hash_name: name of the hash algorithm in hashlib
     :type hash_name: str
-    :param file_path_or_handle: source file name (str) or file handle (from
-        open()) for the hash algorithm.
-    :type file_path_or_handle: Union[str, file object]
+    :param file_path_or_handle: source file name (:py:obj:`str`) or file
+        handle (:py:obj:`file-like`) for the hash algorithm.
+    :type file_path_or_handle: str
     :return: the calculated hash
     :rtype: str
     """
@@ -134,7 +134,8 @@ def has_same_hash(artefact, filepath):
     """
     Checks if a Nexus artefact has the same hash as a local filepath.
 
-    :param artefact:  as returned by :py:meth:`nexus_client.list_raw`
+    :param artefact:  as returned by
+        :py:meth:`~nexuscli.nexus_client.NexusClient.list_raw`
     :type artefact: dict
     :param filepath: local file path
     :return: True if artefact and filepath have the same hash.

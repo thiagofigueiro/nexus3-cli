@@ -13,12 +13,9 @@ class CleanupPolicyCollection(object):
             will be used to perform operations against the Nexus 3 service. You
             must provide this at instantiation or set it before calling any
             methods that require connectivity to Nexus.
-
-    Attributes:
-        client(nexuscli.nexus_client.NexusClient): as per ``client``
-            argument of :class:`RepositoryCollection`.
     """
     GROOVY_SCRIPT_NAME = 'nexus3-cli-cleanup-policy'
+    """Groovy script used by this class"""
 
     def __init__(self, client=None):
         self._client = client
@@ -33,7 +30,8 @@ class CleanupPolicyCollection(object):
 
         :param cleanup_policy: the policy to create or update.
         :type cleanup_policy: CleanupPolicy
-        :return: None
+        :raises exception.NexusClientCreateCleanupPolicyError: when the Nexus
+            API returns an error or unexpected result.
         """
         if not isinstance(cleanup_policy, CleanupPolicy):
             raise TypeError(
@@ -80,8 +78,9 @@ class CleanupPolicyCollection(object):
         Return all cleanup policies.
 
         :return: every policy as a list of
-            :py:class:`nexuscli.cleanup_policy.model.CleanupPolicy` instances.
-        :rtype: list
+            :class:`~nexuscli.api.cleanup_policy.model.CleanupPolicy`
+            instances.
+        :rtype: list[CleanupPolicy]
         """
         response = self._client.scripts.run(self.GROOVY_SCRIPT_NAME, data={})
 

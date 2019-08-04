@@ -24,6 +24,7 @@ from nexuscli.cli import errors, util
 
 
 def cmd_list(nexus_client, _):
+    """Performs ``nexus3 cleanup_policy list``"""
     policies = nexus_client.cleanup_policies.list()
     if len(policies) == 0:
         return errors.CliReturnCode.POLICY_NOT_FOUND.value
@@ -43,6 +44,7 @@ def cmd_list(nexus_client, _):
 
 
 def cmd_create(nexus_client, args):
+    """Performs ``nexus3 cleanup_policy create``"""
     criteria = {}
     if args.get('--downloaded'):
         criteria['lastDownloaded'] = args.get('--downloaded')
@@ -62,6 +64,7 @@ def cmd_create(nexus_client, args):
 
 
 def main(argv=None):
+    """Entrypoint for ``nexus3 cleanup_policy`` subcommand."""
     arguments = docopt(__doc__, argv=argv)
     command_method = util.find_cmd_method(arguments, globals())
     return command_method(util.get_client(), arguments)

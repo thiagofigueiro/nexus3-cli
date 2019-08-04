@@ -16,10 +16,6 @@ class RepositoryCollection(object):
             will be used to perform operations against the Nexus 3 service. You
             must provide this at instantiation or set it before calling any
             methods that require connectivity to Nexus.
-
-    Attributes:
-        client(nexuscli.nexus_client.NexusClient): as per ``client``
-            argument of :class:`RepositoryCollection`.
     """
     def __init__(self, client=None):
         self._client = client
@@ -31,7 +27,6 @@ class RepositoryCollection(object):
 
         :param name: name of the repository wanted
         :type name: str
-        :return: the requested object
         :rtype: Repository
         :raise exception.NexusClientInvalidRepository: when a repository with
             the given name isn't found.
@@ -91,6 +86,7 @@ class RepositoryCollection(object):
         Delete a repository.
 
         :param name: name of the repository to be deleted.
+        :type name: str
         """
         content = nexus_util.groovy_script(SCRIPT_NAME_DELETE)
         self._client.scripts.create_if_missing(SCRIPT_NAME_DELETE, content)
@@ -100,9 +96,10 @@ class RepositoryCollection(object):
         """
         Creates a Nexus repository with the given format and type.
 
-        :param repository:
+        :param repository: the instance containing the settings for the
+            repository to be created.
         :type repository: Repository
-        :return: None
+        :raises NexusClientCreateRepositoryError: error creating repository.
         """
         if not isinstance(repository, Repository):
             raise TypeError('repository ({}) must be a Repository'.format(
