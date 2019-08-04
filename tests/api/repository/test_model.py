@@ -4,7 +4,7 @@ import pytest
 
 from nexuscli import exception
 from nexuscli.api import repository
-from nexuscli.api.repository import Repository
+from nexuscli.api.repository import LegacyRepository
 
 
 def test_collection_delete(nexus_mock_client, faker, mocker):
@@ -31,10 +31,10 @@ def test_create_type_error(repository_collection, faker):
 def test_create_repository_error(repo_type, repository_collection, mocker):
     mocker.patch('json.dumps')
     mocker.patch.object(
-        repository.Repository, 'configuration',
+        repository.LegacyRepository, 'configuration',
         new_callable=mocker.PropertyMock)
 
-    repo = repository.Repository(repo_type)
+    repo = repository.LegacyRepository(repo_type)
 
     with pytest.raises(exception.NexusClientCreateRepositoryError):
         repository_collection.create(repo)
@@ -58,10 +58,10 @@ def test_create_repository(
     json.dumps.return_value = x_configuration
 
     mocker.patch.object(
-        repository.Repository, 'configuration',
+        repository.LegacyRepository, 'configuration',
         new_callable=mocker.PropertyMock, return_value=x_configuration)
 
-    repo = repository.Repository(repo_type)
+    repo = repository.LegacyRepository(repo_type)
 
     if response.get('result') == 'null':
         nexus_mock_client.repositories.create(repo)
@@ -127,14 +127,15 @@ def test_get_repository_by_name(
             nexus.repositories.get_raw_by_name(x_name)
 
 
-@pytest.mark.parametrize('format_', Repository.SUPPORTED_FORMATS_FOR_UPLOAD)
+@pytest.mark.parametrize(
+    'format_', LegacyRepository.SUPPORTED_FORMATS_FOR_UPLOAD)
 def test_upload_file(format_, mocker, nexus_mock_client, file_upload_args):
     """
     Ensure the method calls the right upload method for the given repository
     format; also verify that an unsupported repository raises an exception.
     """
     x_method = '_upload_file_' + format_
-    mocker.patch('nexuscli.api.repository.Repository.' + x_method)
+    mocker.patch('nexuscli.api.repository.LegacyRepository.' + x_method)
     x_src_file, x_repo_name, x_dst_dir, x_dst_file = file_upload_args
     x_args = [x_src_file, x_dst_dir, x_dst_file]
 
@@ -159,7 +160,8 @@ def test_upload_file_unsupported(nexus_raw_repo, faker):
     format; also verify that an unsupported repository raises an exception.
     """
     repo_format = faker.pystr()  # won't match supported formats
-    assert repo_format not in Repository.SUPPORTED_FORMATS_FOR_UPLOAD  # JIC
+    # Just in case
+    assert repo_format not in LegacyRepository.SUPPORTED_FORMATS_FOR_UPLOAD
 
     # change repo format to the unsupported format above
     nexus_raw_repo._raw['format'] = repo_format

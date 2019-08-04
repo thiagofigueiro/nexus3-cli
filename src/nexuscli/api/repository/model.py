@@ -6,8 +6,10 @@ from nexuscli.api.repository import validations, util
 from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
 
 
-class Repository(object):
+class LegacyRepository(object):
     """
+    Do not use this. It will be removed before 2.0.0 final is out.
+
     Creates an object representing a Nexus repository with the given
     format, type and attributes.
 
@@ -45,7 +47,7 @@ class Repository(object):
     :type client: nexuscli.nexus_client.NexusClient
     :param kwargs: attributes for the new repository.
     :return: a Repository instance with the given settings
-    :rtype: Repository
+    :rtype: LegacyRepository
     """
     SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 

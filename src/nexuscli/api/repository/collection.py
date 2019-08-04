@@ -1,7 +1,7 @@
 import json
 
 from nexuscli import exception, nexus_util
-from nexuscli.api.repository.model import Repository
+from nexuscli.api.repository.model import LegacyRepository
 
 SCRIPT_NAME_CREATE = 'nexus3-cli-repository-create'
 SCRIPT_NAME_DELETE = 'nexus3-cli-repository-delete'
@@ -27,7 +27,7 @@ class RepositoryCollection(object):
 
         :param name: name of the repository wanted
         :type name: str
-        :rtype: Repository
+        :rtype: LegacyRepository
         :raise exception.NexusClientInvalidRepository: when a repository with
             the given name isn't found.
         """
@@ -36,7 +36,7 @@ class RepositoryCollection(object):
         except IndexError:
             raise exception.NexusClientInvalidRepository(name)
 
-        return Repository(self._client, **raw_repo)
+        return LegacyRepository(self._client, **raw_repo)
 
     def get_raw_by_name(self, name):
         """
@@ -98,10 +98,10 @@ class RepositoryCollection(object):
 
         :param repository: the instance containing the settings for the
             repository to be created.
-        :type repository: Repository
+        :type repository: LegacyRepository
         :raises NexusClientCreateRepositoryError: error creating repository.
         """
-        if not isinstance(repository, Repository):
+        if not isinstance(repository, LegacyRepository):
             raise TypeError('repository ({}) must be a Repository'.format(
                 type(repository)
             ))

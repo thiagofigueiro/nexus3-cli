@@ -1,24 +1,24 @@
 """
 Usage:
   nexus3 repository --help
+  nexus3 repository list
+  nexus3 repository (delete|del) <repo_name> [--force]
+  nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
+         <repo_name> [--blob=<store_name>] [--write=<w_policy>]
+        [--strict-content] [--cleanup=<c_policy>]
+  nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository create hosted maven <repo_name>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content]
          [--write=<w_policy>] [--cleanup=<c_policy>]
-  nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
-         <repo_name> [--blob=<store_name>] [--write=<w_policy>]
-        [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create hosted yum <repo_name>
-         [--blob=<store_name>] [--write=<w_policy>]
-         [--depth=<repo_depth>] [--strict-content] [--cleanup=<c_policy>]
   nexus3 repository create proxy maven <repo_name> <remote_url>
          [--blob=<store_name>] [--version=<v_policy>]
          [--layout=<l_policy>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository list
-  nexus3 repository (delete|del) <repo_name> [--force]
+  nexus3 repository create hosted yum <repo_name>
+         [--blob=<store_name>] [--write=<w_policy>]
+         [--depth=<repo_depth>] [--strict-content] [--cleanup=<c_policy>]
 
 Options:
   -h --help             This screen
@@ -74,7 +74,7 @@ def _args_to_repo_type(args):
 
 def cmd_create(nexus_client, args):
     """Performs ``nexus3 repository create`` commands"""
-    r = repository.Repository(
+    r = repository.LegacyRepository(
         nexus_client,
         type=_args_to_repo_type(args),
         ignore_extra_kwargs=True,
