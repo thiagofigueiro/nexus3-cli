@@ -11,9 +11,10 @@ def policy_criteria(raw_policy):
     Ensures the policy criteria fields are valid. Will transform strings to the
     correct type where needed.
 
-    :param raw_policy: as returned by
-        :py:attr:`nexuscli.cleanup_policy.CleanupPolicy.configuration`
-    :raises ValueError: when an invalid configuration is found.
+    :param raw_policy: as returned by the
+        :py:class:`~nexuscli.api.cleanup_policy.model.CleanupPolicy`
+        :py:attr:`~nexuscli.api.cleanup_policy.model.CleanupPolicy.configuration`
+    :raises ValueError: when a criterion has an invalid value.
     """
     criteria = raw_policy.get('criteria')
     if criteria is None:
@@ -26,6 +27,10 @@ def policy_criteria(raw_policy):
 
 
 def policy_name(raw_policy):
-    """Ensure the policy has a name"""
+    """
+    Ensure the policy has a name
+
+    :raises ValueError: when the name attribute is missing.
+    """
     if not raw_policy.get('name'):
         raise ValueError('required attribute `name` is missing or empty')

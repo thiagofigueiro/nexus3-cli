@@ -14,12 +14,12 @@ class CleanupPolicy(object):
         format (str): 'all' or the name of the repository format this policy
             applies to.
         mode (str): 'delete'
-        criteria (dict): the deletion criteria(on) for the policy.
-            ``lastDownloaded`` (int): seconds since artefact last downloaded;
-            ``lastBlobUpdated`` (int): seconds since last update to artefact;
-
-    :return: a Repository instance with the given settings
-    :rtype: Repository
+        criteria (dict): the deletion criteria for the policy. Supports one or
+            more of the following attributes:
+                - ``lastDownloaded`` (int): seconds since artefact last
+                  downloaded;
+                - ``lastBlobUpdated`` (int): seconds since last update to
+                  artefact;
     """
     def __init__(self, client, **kwargs):
         self._client = client
@@ -32,7 +32,7 @@ class CleanupPolicy(object):
         returned by this property can
         be converted to JSON for use with the ``nexus3-cli-cleanup-policy``
         groovy script created by the
-        :py:class:`nexuscli.cleanup_policy.collection.CleanupPolicyCollection`
+        :py:class:`~nexuscli.api.cleanup_policy.collection.CleanupPolicyCollection`
         methods.
 
         Example structure and attributes common to all repositories:
@@ -50,7 +50,7 @@ class CleanupPolicy(object):
         Depending on the repository type and format (recipe), other attributes
         will be present.
 
-        :return: repository configuration
+        :return: cleanup policy as a dict
         :rtype: dict
         """
         # TODO: validate format, mode
