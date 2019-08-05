@@ -37,8 +37,8 @@ class Repository:
     :type name: str
     :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
         instance that will be used to perform operations against the Nexus 3
-        service. You must provide this at instantiation or set it before calling
-        any methods that require connectivity to Nexus.
+        service. You must provide this at instantiation or set it before
+        calling any methods that require connectivity to Nexus.
     :type client: nexuscli.nexus_client.NexusClient
     :param recipe: format (recipe) of the new repository. Must be one of
         :py:attr:`RECIPES`. See Nexus documentation for details.
@@ -86,11 +86,12 @@ class Repository:
     @property
     def configuration(self):
         """
-        Repository configuration represented as a python dict. The dict returned
-        by this property can be converted to JSON for use with the
+        Repository configuration represented as a python dict. The dict
+        returned by this property can be converted to JSON for use with the
         ``nexus3-cli-repository-create``
         groovy script created by the
-        :py:meth:`~nexuscli.api.repository.collection.RepositoryCollection.create` method.
+        :py:meth:`~nexuscli.api.repository.collection.RepositoryCollection.create`
+        method.
 
         Example structure and attributes common to all repositories:
 
@@ -190,10 +191,37 @@ class ProxyRepository(Repository):
     :param remote_url: The URL of the repository being proxied, including the
         protocol scheme.
     :type remote_url: str
+    :param auto_block: Auto-block outbound connections on the repository if
+        remote peer is detected as unreachable/unresponsive.
+    :type auto_block: bool
+    :param content_max_age: How long (in minutes) to cache artifacts before
+        rechecking the remote repository. Release repositories should use -1.
+    :type content_max_age: int
+    :param metadata_max_age: How long (in minutes) to cache metadata before
+        rechecking the remote repository.
+    :type metadata_max_age: int
+    :param negative_cache_enabled: Cache responses for content not present in
+        the proxied repository
+    :type negative_cache_enabled: bool
+    :param negative_cache_ttl: How long to cache the fact that a file was not
+        found in the repository (in minutes)
+    :type negative_cache_ttl: int
     :param kwargs: see :class:`Repository`
     """
-    def __init__(self, name, remote_url=None, **kwargs):
+    def __init__(self, name,
+                 remote_url=None,
+                 auto_block=True,
+                 content_max_age=1440,
+                 metadata_max_age=1440,
+                 negative_cache_enabled=True,
+                 negative_cache_ttl=1440,
+                 **kwargs):
         self.remote_url = remote_url
+        self.auto_block = auto_block
+        self.content_max_age = content_max_age
+        self.metadata_max_age = metadata_max_age
+        self.negative_cache_enabled = negative_cache_enabled
+        self.negative_cache_ttl = negative_cache_ttl
 
         super().__init__(name, **kwargs)
 
@@ -207,6 +235,37 @@ class ProxyRepository(Repository):
         if not (parsed_url.scheme and parsed_url.netloc):
             raise ValueError(
                 f'remote_url={self.remote_url} is not a valid URL')
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes'].update({
+            'httpclient': {
+                'blocked': False,
+                'autoBlock': self.auto_block,
+            },
+            'proxy': {
+                'remoteUrl': self.remote_url,
+                'contentMaxAge': self.content_max_age,
+                'metadataMaxAge': self.metadata_max_age,
+            },
+            'negativeCache': {
+                'enabled': self.negative_cache_enabled,
+                'timeToLive': self.negative_cache_ttl,
+            },
+        })
+        repo_config['attributes']['storage'].update({
+            'strictContentTypeValidation': self.strict_content,
+        })
+
+        return repo_config
 
 
 class HostedRepository(Repository):
@@ -233,6 +292,23 @@ class HostedRepository(Repository):
     def __validate_params(self):
         validations.ensure_known(
             'write_policy', self.write_policy, self.WRITE_POLICIES)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes']['storage'].update({
+            'writePolicy': self.write_policy,
+            'strictContentTypeValidation': self.strict_content,
+        })
+
+        return repo_config
 
 
 class MavenRepository(Repository):
@@ -275,6 +351,23 @@ class MavenRepository(Repository):
             'layout_policy', self.layout_policy, self.LAYOUT_POLICIES)
         validations.ensure_known(
             'version_policy', self.version_policy, self.VERSION_POLICIES)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes']['maven'] = {
+            'layoutPolicy': self.layout_policy,
+            'versionPolicy': self.version_policy,
+        }
+
+        return repo_config
 
 
 class MavenHostedRepository(HostedRepository, MavenRepository):

@@ -12,7 +12,8 @@ def upload_file_raw(repository, src_file, dst_dir, dst_file):
     :param src_file: path to the local file to be uploaded.
     :param dst_dir: directory under dst_repo to place file in.
     :param dst_file: destination file name.
-    :raises exception.NexusClientInvalidRepositoryPath: invalid repository path.
+    :raises exception.NexusClientInvalidRepositoryPath: invalid repository
+        path.
     :raises exception.NexusClientAPIError: unknown response from Nexus API.
     """
     if dst_dir is None or dst_dir.startswith(REMOTE_PATH_SEPARATOR):
@@ -58,4 +59,3 @@ def upload_file_yum(repository, src_file, dst_dir, dst_file):
     if response.status_code != 200:
         raise exception.NexusClientAPIError(
             f'Uploading to {repository_path}. Reason: {response.reason}')
-
