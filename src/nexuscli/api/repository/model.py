@@ -3,7 +3,7 @@ from clint.textui import progress
 from urllib.parse import urlparse
 
 from nexuscli import exception
-from nexuscli.api.repository import validations, util
+from nexuscli.api.repository import validations, util, upload
 from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
 
 DEFAULT_RECIPE = 'raw'
@@ -12,7 +12,6 @@ DEFAULT_BLOB_STORE_NAME = 'default'
 DEFAULT_STRICT_CONTENT = False
 
 
-# TODO: use ABC
 class Repository:
     """
     A base Nexus repository.
@@ -36,6 +35,11 @@ class Repository:
 
     :param name: name of the repository.
     :type name: str
+    :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
+        instance that will be used to perform operations against the Nexus 3
+        service. You must provide this at instantiation or set it before calling
+        any methods that require connectivity to Nexus.
+    :type client: nexuscli.nexus_client.NexusClient
     :param recipe: format (recipe) of the new repository. Must be one of
         :py:attr:`RECIPES`. See Nexus documentation for details.
     :type recipe: str
@@ -49,12 +53,14 @@ class Repository:
     :type cleanup_policy: str
     """
     def __init__(self, name,
+                 nexus_client=None,
                  recipe=DEFAULT_RECIPE,
                  blob_store_name=DEFAULT_BLOB_STORE_NAME,
                  strict_content_type_validation=DEFAULT_STRICT_CONTENT,
                  cleanup_policy=None
                  ):
         self.name = name
+        self.nexus_client = nexus_client
         self.recipe = recipe
         self.blob_store_name = blob_store_name
         self.strict_content = strict_content_type_validation
@@ -62,8 +68,117 @@ class Repository:
 
         self.__validate_params()
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}-{self.name}-{self.recipe}'
+
     def __validate_params(self):
         validations.ensure_known('recipe', self.recipe, self.RECIPES)
+
+    @property
+    def recipe_name(self):
+        """
+        The Nexus 3 name for this repository's recipe (format). This is almost
+        always the same as :attr:`name` with ``maven`` being the notable
+        exception.
+        """
+        return self.recipe
+
+    @property
+    def configuration(self):
+        """
+        Repository configuration represented as a python dict. The dict returned
+        by this property can be converted to JSON for use with the
+        ``nexus3-cli-repository-create``
+        groovy script created by the
+        :py:meth:`~nexuscli.api.repository.collection.RepositoryCollection.create` method.
+
+        Example structure and attributes common to all repositories:
+
+        >>> common_configuration = {
+        >>>     'name': 'my-repository',
+        >>>     'online': True,
+        >>>     'recipeName': 'raw',
+        >>>     '_state': 'present',
+        >>>     'attributes': {
+        >>>         'storage': {
+        >>>             'blobStoreName': 'default',
+        >>>         },
+        >>>         'cleanup': {
+        >>>             'policyName': None,
+        >>>         }
+        >>>     }
+        >>> }
+
+        Depending on the repository type and format (recipe), other attributes
+        will be present.
+
+        :return: repository configuration
+        :rtype: dict
+        """
+        repo_config = {
+            'name': self.name,
+            'online': True,
+            'recipeName': self.recipe_name,
+            '_state': 'present',
+            'attributes': {
+                'storage': {
+                    'blobStoreName': self.blob_store_name,
+                },
+            }
+        }
+
+        if self.cleanup_policy is not None:
+            repo_config['attributes']['cleanup'] = {
+                'policyName': self.cleanup_policy}
+
+        return repo_config
+
+    def upload_file(self, src_file, dst_dir, dst_file=None):
+        """
+        Uploads a singe file to the directory and file name specified. If the
+        destination file name isn't given, the source file name is used.
+
+        :param src_file: path to the local file to be uploaded.
+        :param dst_dir: directory under dst_repo to place file in.
+        :param dst_file: destination file name.
+        """
+        if dst_file is None:
+            dst_file = os.path.basename(src_file)
+
+        upload_method_name = f'upload_file_{self.recipe_name}'
+        try:
+            # Find upload method in the upload module using naming convention
+            upload_method = getattr(upload, upload_method_name)
+        except AttributeError:
+            raise NotImplementedError(upload_method_name) from None
+
+        upload_method(self, src_file, dst_dir, dst_file)
+
+    def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
+        """
+        Uploads all files in a directory to the specified destination directory
+        in this repository, honouring options flatten and recurse.
+
+        :param src_dir: path to local directory to be uploaded
+        :param dst_dir: destination directory in dst_repo
+        :param recurse: when True, upload directory recursively.
+        :type recurse: bool
+        :param flatten: when True, the source directory tree isn't replicated
+            on the destination.
+        :return: number of files uploaded
+        :rtype: int
+        """
+        file_set = util.get_files(src_dir, recurse)
+        file_count = len(file_set)
+        file_set = progress.bar(file_set, expected_size=file_count)
+
+        for relative_filepath in file_set:
+            file_path = os.path.join(src_dir, relative_filepath)
+            sub_directory = util.get_upload_subdirectory(
+                            dst_dir, file_path, flatten)
+            self.upload_file(file_path, sub_directory)
+
+        return file_count
 
 
 class ProxyRepository(Repository):
