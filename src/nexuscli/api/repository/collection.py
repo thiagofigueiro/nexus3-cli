@@ -1,13 +1,62 @@
 import json
 
 from nexuscli import exception, nexus_util
-from nexuscli.api.repository.model import LegacyRepository
+from nexuscli.api.repository import model
 
 SCRIPT_NAME_CREATE = 'nexus3-cli-repository-create'
 SCRIPT_NAME_DELETE = 'nexus3-cli-repository-delete'
 
 
-class RepositoryCollection(object):
+def get_repository_class(raw_repo):
+    """
+
+    :param raw_repo:
+    :return:
+    :rtype: type
+    """
+    class_name = raw_repo_to_class_name(raw_repo)
+    for class_ in model.__all__:
+        if class_.__name__ == class_name:
+            return class_
+    raise NotImplementedError(f'{class_name} for {raw_repo}')
+
+
+def raw_repo_to_recipe(raw_repo):
+    recipe = raw_repo['format']
+
+    if recipe == 'maven2':
+        return 'maven'
+
+    return recipe
+
+
+def raw_repo_to_class_name(raw_repo):
+    recipe = raw_repo_to_recipe(raw_repo)
+    class_name = ''
+
+    # The Repository class is the default because it implements most of the
+    # recipes
+    if recipe not in model.Repository.RECIPES:
+        class_name += recipe.title()
+
+    class_name += raw_repo['type'].title()
+
+    class_name += 'Repository'
+
+    return class_name
+
+
+def raw_repo_to_args_kwargs(raw_repo):
+    args = (raw_repo['name'],)
+    kwargs = {'recipe': raw_repo_to_recipe(raw_repo)}
+
+    if raw_repo['type'] == 'proxy':
+        kwargs['remote_url'] = raw_repo['url']
+
+    return args, kwargs
+
+
+class RepositoryCollection:
     """
     A class to manage Nexus 3 repositories.
 
@@ -27,7 +76,7 @@ class RepositoryCollection(object):
 
         :param name: name of the repository wanted
         :type name: str
-        :rtype: LegacyRepository
+        :rtype: nexuscli.api.repository.model.Repository
         :raise exception.NexusClientInvalidRepository: when a repository with
             the given name isn't found.
         """
@@ -36,7 +85,12 @@ class RepositoryCollection(object):
         except IndexError:
             raise exception.NexusClientInvalidRepository(name)
 
-        return LegacyRepository(self._client, **raw_repo)
+        Repository = get_repository_class(raw_repo)
+        # FIXME: use groovy to fetch a matching json object so the conversion
+        #   isn't required
+        args, kwargs = raw_repo_to_args_kwargs(raw_repo)
+
+        return Repository(*args, nexus_client=self._client, **kwargs)
 
     def get_raw_by_name(self, name):
         """
@@ -98,13 +152,13 @@ class RepositoryCollection(object):
 
         :param repository: the instance containing the settings for the
             repository to be created.
-        :type repository: LegacyRepository
+        :type repository: type(repository)Repository
         :raises NexusClientCreateRepositoryError: error creating repository.
         """
-        if not isinstance(repository, LegacyRepository):
-            raise TypeError('repository ({}) must be a Repository'.format(
-                type(repository)
-            ))
+        if not issubclass(type(repository), model.Repository):
+            raise TypeError(f'{repository} has type {type(repository)} but must'
+                            f' be a subclass of Repository')
+
         content = nexus_util.groovy_script(SCRIPT_NAME_CREATE)
         self._client.scripts.create_if_missing(SCRIPT_NAME_CREATE, content)
 
