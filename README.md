@@ -7,6 +7,12 @@ OSS 3](https://www.sonatype.com/download-oss-sonatype).
 [![codecov](https://codecov.io/gh/thiagofigueiro/nexus3-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/thiagofigueiro/nexus3-cli)
 [![Documentation Status](https://readthedocs.org/projects/nexus3-cli/badge/?version=latest)](https://nexus3-cli.readthedocs.io/en/latest/?badge=latest)
 
+**NOTICE**: version 2.0.0 of nexus3-cli includes **breaking changes** and is going to be **released soon**. If your application uses `nexuscli`, I recommend that you:
+* pin your requirements (e.g.: `'nexus3-cli>=1.0.2,<2`); and
+* have a look at the changes on the [2.0.0 branch](https://github.com/thiagofigueiro/nexus3-cli/tree/release/2.0.0) in preparation for the upgrade.
+
+Development and support for 1.0.x versions will stop once 2.0.0 is released.
+
 ## Features
 
 1. Compatible with [Nexus 3 OSS](https://www.sonatype.com/download-oss-sonatype)
