@@ -1,87 +1,101 @@
 import os
 from clint.textui import progress
+from urllib.parse import urlparse
 
-from nexuscli import exception
-from nexuscli.api.repository import validations, util
-from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
+from nexuscli.api.repository import validations, util, upload
+
+DEFAULT_RECIPE = 'raw'
+DEFAULT_WRITE_POLICY = 'ALLOW'
+DEFAULT_BLOB_STORE_NAME = 'default'
+DEFAULT_STRICT_CONTENT = False
 
 
-class Repository(object):
+class Repository:
     """
-    Creates an object representing a Nexus repository with the given
-    format, type and attributes.
+    A base Nexus repository.
 
-    Args:
-        name (str): name of the new repository.
-        format (str): format (recipe) of the new repository. Must be one
-            of :py:data:`nexuscli.repository.validations.KNOWN_FORMATS`.
-        type (str): type of the new repository. Must be one of
-            :py:data:`nexuscli.repository.validations.KNOWN_TYPES`.
-        blob_store_name (str): an existing blob store; 'default' should work
-            on most installations.
-        depth (int): only accepted when ``repo_format='yum'``. The Yum repodata
-            depth. Usually 1.
-        remote_url (str): only accepted when ``repo_type='proxy'``. The URL of
-            the repository being proxied, including the protocol scheme.
-        strict_content_type_validation (bool): only accepted when
-            ``repo_type='hosted'``. Whether to validate file extension against
-            its content type.
-        version_policy (str): only accepted when ``repo_type='hosted'``. Must
-            be one of
-            :py:data:`nexuscli.repository.validations.VERSION_POLICIES`.
-        write_policy (str): only accepted when ``repo_type='hosted'``. Must
-            be one of
-            :py:data:`nexuscli.repository.validations.WRITE_POLICIES`.
-        layout_policy (str): only accepted when ``format='maven'``. Must
-            be one of
-            :py:data:`nexuscli.repository.validations.LAYOUT_POLICIES`.
-        ignore_extra_kwargs (bool): if True, do not raise an exception for
-            unnecessary/extra/invalid kwargs.
+    Nexus 3 repository recipes (formats) supported by this class:
 
-    :param client: the client instance that
-        will be used to perform operations against the Nexus 3 service. You
-        must provide this at instantiation or set it before calling any methods
-        that require connectivity to Nexus.
-    :type client: nexuscli.nexus_client.NexusClient
-    :param kwargs: attributes for the new repository.
-    :return: a Repository instance with the given settings
-    :rtype: Repository
+        - `bower
+          <https://help.sonatype.com/repomanager3/formats/bower-repositories>`_
+        - `npm
+          <https://help.sonatype.com/repomanager3/formats/npm-registry>`_
+        - `nuget
+          <https://help.sonatype.com/repomanager3/formats/nuget-repositories>`_
+        - `pypi
+          <https://help.sonatype.com/repomanager3/formats/pypi-repositories>`_
+        - `raw
+          <https://help.sonatype.com/repomanager3/formats/raw-repositories>`_
+        - `rubygems
+          <https://help.sonatype.com/repomanager3/formats/rubygems-repositories>`_
+
+    :param name: name of the repository.
+    :type name: str
+    :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
+        instance that will be used to perform operations against the Nexus 3
+        service. You must provide this at instantiation or set it before
+        calling any methods that require connectivity to Nexus.
+    :type nexus_client: nexuscli.nexus_client.NexusClient
+    :param recipe: format (recipe) of the new repository. Must be one of
+        :py:attr:`RECIPES`. See Nexus documentation for details.
+    :type recipe: str
+    :param blob_store_name: name of an existing blob store; 'default'
+        should work on most installations.
+    :type blob_store_name: str
+    :param strict_content_type_validation: Whether to validate file
+        extension against its content type.
+    :type strict_content_type_validation: bool
+    :param cleanup_policy: name of an existing repository clean-up policy.
+    :type cleanup_policy: str
     """
-    SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
-    def __init__(self, client, **kwargs):
-        self._client = client
-        self._raw = validations.upcase_policy_args(kwargs)
+    RECIPES = ('bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems')
+    TYPE = None
+
+    def __init__(self, name,
+                 nexus_client=None,
+                 recipe=DEFAULT_RECIPE,
+                 blob_store_name=DEFAULT_BLOB_STORE_NAME,
+                 strict_content_type_validation=DEFAULT_STRICT_CONTENT,
+                 cleanup_policy=None
+                 ):
+        self.name = name
+        self.nexus_client = nexus_client
+        self.recipe = recipe
+        self.blob_store_name = blob_store_name
+        self.strict_content = strict_content_type_validation
+        self.cleanup_policy = cleanup_policy
+
+        self.__validate_params()
 
     def __repr__(self):
-        return 'Repository({self.type}, {self._raw})'.format(self=self)
+        return f'{self.__class__.__name__}-{self.name}-{self.recipe}'
 
-    def _recipe_name(self):
-        repo_format = self._raw['format']
-        if repo_format == 'maven':
-            repo_format = 'maven2'
-        return f'{repo_format}-{self.type}'
+    def __validate_params(self):
+        print('SELF', self, vars(self))
+        validations.ensure_known('recipe', self.recipe, self.RECIPES)
 
     @property
-    def format(self):
-        return self._raw['format']
+    def recipe_name(self):
+        """
+        The Nexus 3 name for this repository's recipe (format). This is almost
+        always the same as :attr:`name` with ``maven`` being the notable
+        exception.
+        """
+        if self.recipe == 'maven':
+            return 'maven2'
 
-    @property
-    def name(self):
-        return self._raw['name']
-
-    @property
-    def type(self):
-        return self._raw['type']
+        return self.recipe
 
     @property
     def configuration(self):
         """
-        Validate the configuration for the Repository and build its
-        representation as a python dict. The dict returned by this property can
-        be converted to JSON for use with the ``nexus3-cli-repository-create``
+        Repository configuration represented as a python dict. The dict
+        returned by this property can be converted to JSON for use with the
+        ``nexus3-cli-repository-create``
         groovy script created by the
-        :py:meth:`nexuscli.repository.RepositoryCollection.create` method.
+        :py:meth:`~nexuscli.api.repository.collection.RepositoryCollection.create`
+        method.
 
         Example structure and attributes common to all repositories:
 
@@ -106,144 +120,176 @@ class Repository(object):
         :return: repository configuration
         :rtype: dict
         """
-        validations.repository_args(self.type, **self._raw)
-        if self.type == 'hosted':
-            return self._configuration_hosted()
-        elif self.type == 'proxy':
-            return self._configuration_proxy()
-        elif self.type == 'group':
-            return self._configuration_group()
-
-        raise RuntimeError(
-            'Unexpected repository type: {}'.format(self.type))
-
-    def _configuration_common(self):
         repo_config = {
-            'name': self._raw['name'],
+            'name': self.name,
             'online': True,
-            'recipeName': self._recipe_name(),
+            'recipeName': f'{self.recipe_name}-{self.TYPE}',
             '_state': 'present',
             'attributes': {
                 'storage': {
-                    'blobStoreName': self._raw['blob_store_name'],
+                    'blobStoreName': self.blob_store_name,
+                    'strictContentTypeValidation': self.strict_content,
                 },
-                'cleanup': {
-                    'policyName': self._raw['cleanup_policy'],
-                }
             }
         }
 
-        return repo_config
-
-    def _configuration_add_maven_attr(self, repo_config):
-        if self._raw['format'] == 'maven':
-            repo_config['attributes']['maven'] = {
-                'versionPolicy': self._raw['version_policy'],
-                'layoutPolicy': self._raw['layout_policy'],
-            }
-
-    def _configuration_hosted(self):
-        repo_config = self._configuration_common()
-        repo_config['attributes']['storage'].update({
-            'writePolicy': self._raw['write_policy'],
-            'strictContentTypeValidation': self._raw[
-                'strict_content_type_validation'],
-
-        })
-
-        self._configuration_add_maven_attr(repo_config)
+        if self.cleanup_policy is not None:
+            repo_config['attributes']['cleanup'] = {
+                'policyName': self.cleanup_policy}
 
         return repo_config
 
-    def _configuration_proxy(self):
-        repo_config = self._configuration_common()
+
+class ProxyRepository(Repository):
+    """
+    A proxy Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param remote_url: The URL of the repository being proxied, including the
+        protocol scheme.
+    :type remote_url: str
+    :param auto_block: Auto-block outbound connections on the repository if
+        remote peer is detected as unreachable/unresponsive.
+    :type auto_block: bool
+    :param content_max_age: How long (in minutes) to cache artifacts before
+        rechecking the remote repository. Release repositories should use -1.
+    :type content_max_age: int
+    :param metadata_max_age: How long (in minutes) to cache metadata before
+        rechecking the remote repository.
+    :type metadata_max_age: int
+    :param negative_cache_enabled: Cache responses for content not present in
+        the proxied repository
+    :type negative_cache_enabled: bool
+    :param negative_cache_ttl: How long to cache the fact that a file was not
+        found in the repository (in minutes)
+    :type negative_cache_ttl: int
+    :param kwargs: see :class:`Repository`
+    """
+
+    TYPE = 'proxy'
+
+    def __init__(self, name,
+                 remote_url=None,
+                 auto_block=True,
+                 content_max_age=1440,
+                 metadata_max_age=1440,
+                 negative_cache_enabled=True,
+                 negative_cache_ttl=1440,
+                 **kwargs):
+        self.remote_url = remote_url
+        self.auto_block = auto_block
+        self.content_max_age = content_max_age
+        self.metadata_max_age = metadata_max_age
+        self.negative_cache_enabled = negative_cache_enabled
+        self.negative_cache_ttl = negative_cache_ttl
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        if not isinstance(self.remote_url, str):
+            raise ValueError('remote_url must be a str')
+
+        parsed_url = urlparse(self.remote_url)
+        if not (parsed_url.scheme and parsed_url.netloc):
+            raise ValueError(
+                f'remote_url={self.remote_url} is not a valid URL')
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
         repo_config['attributes'].update({
             'httpclient': {
                 'blocked': False,
-                'autoBlock': True,
+                'autoBlock': self.auto_block,
             },
             'proxy': {
-                'remoteUrl': self._raw['remote_url'],
-                'contentMaxAge': 1440,
-                'metadataMaxAge': 1440,
+                'remoteUrl': self.remote_url,
+                'contentMaxAge': self.content_max_age,
+                'metadataMaxAge': self.metadata_max_age,
             },
             'negativeCache': {
-              'enabled': True,
-              'timeToLive': 1440,
+                'enabled': self.negative_cache_enabled,
+                'timeToLive': self.negative_cache_ttl,
             },
         })
-        repo_config['attributes']['storage'].update({
-            'strictContentTypeValidation': self._raw[
-                'strict_content_type_validation'],
-        })
-
-        self._configuration_add_maven_attr(repo_config)
 
         return repo_config
 
-    def _configuration_group(self):
-        repo_config = self._configuration_common()
-        repo_config['attributes']['group'] = {
-            'memberNames': self._raw['member_names'],
-        }
 
-        # TODO: accept/validate member_names in kwargs
-        raise NotImplementedError
+class HostedRepository(Repository):
+    """
+    A hosted Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param write_policy: one of :py:attr:`WRITE_POLICIES`. See Nexus
+        documentation for details.
+    :type write_policy: str
+    :param kwargs: see :class:`Repository`
+    """
+    WRITE_POLICIES = ['ALLOW', 'ALLOW_ONCE', 'DENY']
+    """Nexus 3 repository write policies supported by this class."""
+
+    TYPE = 'hosted'
+
+    def __init__(self, name, write_policy=DEFAULT_WRITE_POLICY, **kwargs):
+        self.write_policy = write_policy
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        validations.ensure_known(
+            'write_policy', self.write_policy, self.WRITE_POLICIES)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes']['storage'].update({
+            'writePolicy': self.write_policy,
+            'strictContentTypeValidation': self.strict_content,
+        })
+
+        return repo_config
 
     def upload_file(self, src_file, dst_dir, dst_file=None):
         """
-        Uploads a singe file to this Nexus repository under the directory and
-        file name specified. If the destination file name isn't given, the
-        source file name is used.
+        Uploads a singe file to the directory and file name specified.
 
         :param src_file: path to the local file to be uploaded.
         :param dst_dir: directory under dst_repo to place file in.
-        :param dst_file: destination file name.
+        :param dst_file: destination file name. If not given, the basename of
+            ``src_file`` name is used.
         """
-        # TODO: support all repository formats
-        if self.format not in self.SUPPORTED_FORMATS_FOR_UPLOAD:
-            raise NotImplementedError(
-                'Upload to {} repository not supported'.format(self.format))
-
         if dst_file is None:
             dst_file = os.path.basename(src_file)
 
-        _upload = getattr(self, '_upload_file_' + self.format)
-        _upload(src_file, dst_dir, dst_file)
+        upload_method_name = f'upload_file_{self.recipe_name}'
+        try:
+            # Find upload method in the upload module using naming convention
+            upload_method = getattr(upload, upload_method_name)
+        except AttributeError:
+            raise NotImplementedError(upload_method_name) from None
 
-    def _upload_file_raw(self, src_file, dst_dir, dst_file):
-        """Process upload_file() for raw repositories"""
-        if dst_dir is None or dst_dir.startswith(REMOTE_PATH_SEPARATOR):
-            raise exception.NexusClientInvalidRepositoryPath(
-                'Destination path does not contain a directory, which is '
-                'required by raw repositories')
-
-        params = {'repository': self.name}
-        files = {'raw.asset1': open(src_file, 'rb').read()}
-        data = {
-            'raw.directory': dst_dir,
-            'raw.asset1.filename': dst_file,
-        }
-
-        response = self._client.http_post(
-            'components', files=files, data=data, params=params)
-        if response.status_code != 204:
-            raise exception.NexusClientAPIError(
-                f'Uploading to {self.name}. Reason: {response.reason}')
-
-    def _upload_file_yum(self, src_file, dst_dir, dst_file):
-        """Process upload_file() for yum repositories"""
-        dst_dir = dst_dir or REMOTE_PATH_SEPARATOR
-        repository_path = REMOTE_PATH_SEPARATOR.join(
-            ['repository', self.name, dst_dir, dst_file])
-
-        with open(src_file, 'rb') as fh:
-            response = self._client.http_put(
-                repository_path, data=fh, service_url=self._client.config.url)
-
-        if response.status_code != 200:
-            raise exception.NexusClientAPIError(
-                f'Uploading to {repository_path}. Reason: {response.reason}')
+        upload_method(self, src_file, dst_dir, dst_file)
 
     def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
         """
@@ -270,3 +316,132 @@ class Repository(object):
             self.upload_file(file_path, sub_directory)
 
         return file_count
+
+
+class MavenRepository(Repository):
+    """
+    A base `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param layout_policy: one of :py:attr:`LAYOUT_POLICIES`. See Nexus
+        documentation for details.
+    :param version_policy: one of :py:attr:`VERSION_POLICIES`. See Nexus
+        documentation for details.
+    :param kwargs: see :class:`Repository`
+    """
+    RECIPES = ('maven',)
+
+    LAYOUT_POLICIES = ('PERMISSIVE', 'STRICT')
+    """Maven layout policies"""
+
+    VERSION_POLICIES = ('RELEASE', 'SNAPSHOT', 'MIXED')
+    """Maven version policies"""
+
+    def __init__(self, name,
+                 layout_policy='PERMISSIVE',
+                 version_policy='RELEASE',
+                 **kwargs):
+        self.layout_policy = layout_policy
+        self.version_policy = version_policy
+
+        kwargs.update({'recipe': 'maven'})
+
+        super().__init__(name, **kwargs)
+
+        self.__validate_params()
+
+    def __validate_params(self):
+        validations.ensure_known(
+            'layout_policy', self.layout_policy, self.LAYOUT_POLICIES)
+        validations.ensure_known(
+            'version_policy', self.version_policy, self.VERSION_POLICIES)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes']['maven'] = {
+            'layoutPolicy': self.layout_policy,
+            'versionPolicy': self.version_policy,
+        }
+
+        return repo_config
+
+
+class MavenHostedRepository(HostedRepository, MavenRepository):
+    """
+    A `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    hosted Nexus repository.
+
+    See :class:`HostedRepository` and :class:`MavenRepository`
+    """
+    pass
+
+
+class MavenProxyRepository(MavenRepository, ProxyRepository):
+    """
+    A `Maven
+    <https://help.sonatype.com/repomanager3/formats/maven-repositories#MavenRepositories-MavenRepositoryFormat>`_
+    proxy Nexus repository.
+
+    See :class:`MavenRepository` and :class:`ProxyRepository`
+    """
+    pass
+
+
+class YumRepository(Repository):
+    """
+    A `Yum <https://help.sonatype.com/repomanager3/formats/yum-repositories>`_
+    base Nexus repository.
+
+    :param name: name of the repository.
+    :type name: str
+    :param depth: The Yum ``repodata`` depth. Usually 1.
+    :type depth: int
+    :param kwargs: see :class:`Repository`
+    """
+    RECIPES = ('yum',)
+
+    def __init__(self, name, depth=1, **kwargs):
+        self.depth = depth
+
+        kwargs.update({'recipe': 'yum'})
+
+        super().__init__(name, **kwargs)
+
+
+class YumHostedRepository(HostedRepository, YumRepository):
+    """
+    A `Yum <https://help.sonatype.com/repomanager3/formats/yum-repositories>`_
+    hosted Nexus repository.
+
+    See :class:`HostedRepository` and :class:`YumRepository`
+    """
+    pass
+
+
+class YumProxyRepository(ProxyRepository, YumRepository):
+    """
+    A `Yum <https://help.sonatype.com/repomanager3/formats/yum-repositories>`_
+    proxy Nexus repository.
+
+    See :class:`ProxyRepository` and :class:`YumRepository`
+    """
+    pass
+
+
+__all__ = [
+    Repository, HostedRepository, ProxyRepository,
+    MavenHostedRepository, MavenProxyRepository,
+    YumHostedRepository, YumProxyRepository,
+]

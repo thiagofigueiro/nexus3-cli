@@ -78,15 +78,15 @@ class NexusClient(object):
     @property
     def rest_url(self):
         """
-        Full URL to the Nexus REST API, based on :attr:`config`.
+        Full URL to the Nexus REST API, based on the ``url`` and ``version``
+        from :attr:`config`.
 
-        :return: the URL.
+        :rtype: str
         """
         url = urljoin(self.config.url, '/service/rest/')
         return urljoin(url, self.config.api_version + '/')
 
-    # FIXME: rogue/hidden `service_url` kwarg
-    def http_request(self, method, endpoint, **kwargs):
+    def http_request(self, method, endpoint, service_url=None, **kwargs):
         """
         Performs a HTTP request to the Nexus REST API on the specified
         endpoint.
@@ -95,15 +95,15 @@ class NexusClient(object):
         :type endpoint: str
         :param endpoint: URI path to be appended to the service URL.
         :type endpoint: str
+        :param service_url: override the default URL to use for the request,
+            which is created by joining :attr:`rest_url` and ``endpoint``.
+        :type service_url: str
         :param kwargs: as per :py:func:`requests.request`.
         :rtype: requests.Response
         """
-        try:
-            service_url = kwargs.pop('service_url')
-        except KeyError:
-            service_url = self.rest_url
-
+        service_url = service_url or self.rest_url
         url = urljoin(service_url, endpoint)
+
         try:
             response = requests.request(
                 method=method, auth=self.config.auth, url=url,

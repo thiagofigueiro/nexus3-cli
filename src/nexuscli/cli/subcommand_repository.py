@@ -1,24 +1,29 @@
 """
 Usage:
   nexus3 repository --help
-  nexus3 repository create hosted maven <repo_name>
-         [--blob=<store_name>] [--version=<v_policy>]
-         [--layout=<l_policy>] [--strict-content]
-         [--write=<w_policy>] [--cleanup=<c_policy>]
+  nexus3 repository list
+  nexus3 repository (delete|del) <repo_name> [--force]
   nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
-         <repo_name> [--blob=<store_name>] [--write=<w_policy>]
-        [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create hosted yum <repo_name>
-         [--blob=<store_name>] [--write=<w_policy>]
-         [--depth=<repo_depth>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository create proxy maven <repo_name> <remote_url>
-         [--blob=<store_name>] [--version=<v_policy>]
-         [--layout=<l_policy>] [--strict-content] [--cleanup=<c_policy>]
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
   nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-  nexus3 repository list
-  nexus3 repository (delete|del) <repo_name> [--force]
+  nexus3 repository create hosted maven
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--version=<v_policy>] [--layout=<l_policy>]
+  nexus3 repository create proxy maven
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--version=<v_policy>] [--layout=<l_policy>]
+  nexus3 repository create hosted yum
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--depth=<repo_depth>]
 
 Options:
   -h --help             This screen
@@ -58,38 +63,55 @@ def cmd_list(nexus_client, _):
     return errors.CliReturnCode.SUCCESS.value
 
 
-def _args_to_repo_format(args):
-    # docopt guarantees only one is True
-    for format_name in repository.validations.KNOWN_FORMATS:
-        if args.get(format_name) is True:
-            return format_name
-
-
 def _args_to_repo_type(args):
     # docopt guarantees only one is True
-    for type_name in repository.validations.KNOWN_TYPES:
+    for type_name in ['hosted', 'proxy', 'group']:
         if args.get(type_name) is True:
             return type_name
 
 
+def _args_to_recipe_name(args):
+    for class_ in repository.model.__all__:
+        for recipe_name in class_.RECIPES:
+            if args.get(recipe_name) is True:
+                return recipe_name
+
+
 def cmd_create(nexus_client, args):
     """Performs ``nexus3 repository create`` commands"""
-    r = repository.Repository(
-        nexus_client,
-        type=_args_to_repo_type(args),
-        ignore_extra_kwargs=True,
-        name=args.get('<repo_name>'),
-        format=_args_to_repo_format(args),
-        blob_store_name=args.get('--blob'),
-        depth=int(args.get('--depth')),
-        remote_url=args.get('<remote_url>'),
-        strict_content_type_validation=args.get('--strict-content'),
-        version_policy=args.get('--version'),
-        write_policy=args.get('--write'),
-        layout_policy=args.get('--layout'),
-        cleanup_policy=args.get('--cleanup'),
-    )
+    recipe_name = _args_to_recipe_name(args)
+    repo_type = _args_to_repo_type(args)
+
+    kwargs = {
+        'nexus_client': nexus_client,
+        'recipe': recipe_name,
+        'blob_store_name': args.get('--blob'),
+        'strict_content_type_validation': args.get('--strict-content'),
+        'cleanup_policy': args.get('--cleanup'),
+    }
+
+    # TODO: find better home for these
+    if repo_type == 'hosted':
+        kwargs.update({'write_policy': args.get('--write').upper()})
+
+    if repo_type == 'proxy':
+        kwargs.update({'remote_url': args.get('<remote_url>')})
+
+    if recipe_name == 'yum':
+        kwargs.update({'depth': int(args.get('--depth'))})
+
+    if recipe_name.startswith('maven'):
+        kwargs.update({
+            'version_policy': args.get('--version').upper(),
+            'layout_policy': args.get('--layout').upper()})
+
+    Repository = repository.collection.get_repository_class({
+        'format': recipe_name, 'type': repo_type})
+
+    r = Repository(args.get('<repo_name>'), **kwargs)
+
     nexus_client.repositories.create(r)
+
     return errors.CliReturnCode.SUCCESS.value
 
 

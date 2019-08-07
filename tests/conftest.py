@@ -4,8 +4,9 @@ import time
 from faker import Faker
 from subprocess import check_call
 
-import nexuscli
-import nexuscli.nexus_config
+from nexuscli import cli
+from nexuscli.nexus_client import NexusClient
+from nexuscli.nexus_config import NexusConfig
 
 
 @pytest.fixture
@@ -43,15 +44,15 @@ def docopt_args(faker):
 
 @pytest.fixture(scope='session')
 def nexus_client():
-    config = nexuscli.nexus_config.NexusConfig()
+    config = NexusConfig()
     config.load()
-    client = nexuscli.nexus_client.NexusClient(config=config)
+    client = NexusClient(config=config)
     return client
 
 
 @pytest.helpers.register
 def create_and_inspect(client, argv, expected_repo_name):
-    nexuscli.cli.main(argv=list(filter(None, argv)))
+    cli.main(argv=list(filter(None, argv)))
     repositories = client.repositories.raw_list()
 
     return any(r['name'] == expected_repo_name for r in repositories)
@@ -140,7 +141,7 @@ def nexus_mock_client(mocker, faker):
     mocker.patch('nexuscli.nexus_client.NexusClient.http_request',
                  return_value=ResponseMock())
 
-    client = nexuscli.nexus_client.NexusClient()
+    client = NexusClient()
     client.repositories.refresh()
     return client
 
