@@ -4,7 +4,9 @@ import time
 from faker import Faker
 from subprocess import check_call
 
-import nexuscli
+from nexuscli import cli
+from nexuscli.nexus_client import NexusClient
+from nexuscli.nexus_config import NexusConfig
 
 
 @pytest.fixture
@@ -19,7 +21,7 @@ def docopt_args(faker):
         '--strict-content': False,
         '--version': 'release',
         '<repo_name>': faker.word(),
-        '<script.json>': None,
+        '<script.groovy>': None,
         '<script_name>': None,
         'create': False,
         'hosted': False,
@@ -29,8 +31,8 @@ def docopt_args(faker):
         'npm': False,
         'pypi': False,
         'raw': False,
-        'repo': False,
-        'rm': False,
+        'repository': False,
+        'delete': False,
         'rubygems': False,
         'run': False,
         'script': False,
@@ -42,12 +44,15 @@ def docopt_args(faker):
 
 @pytest.fixture(scope='session')
 def nexus_client():
-    return nexuscli.cli.get_client()
+    config = NexusConfig()
+    config.load()
+    client = NexusClient(config=config)
+    return client
 
 
 @pytest.helpers.register
 def create_and_inspect(client, argv, expected_repo_name):
-    nexuscli.cli.main(argv=list(filter(None, argv)))
+    cli.main(argv=list(filter(None, argv)))
     repositories = client.repositories.raw_list()
 
     return any(r['name'] == expected_repo_name for r in repositories)
@@ -133,10 +138,10 @@ def nexus_mock_client(mocker, faker):
         def json(self):
             return self._json
 
-    mocker.patch('nexuscli.nexus_client.NexusClient._request',
+    mocker.patch('nexuscli.nexus_client.NexusClient.http_request',
                  return_value=ResponseMock())
 
-    client = nexuscli.nexus_client.NexusClient()
+    client = NexusClient()
     client.repositories.refresh()
     return client
 
@@ -196,10 +201,10 @@ def find_file_count(dir_name):
 
 
 @pytest.fixture
-def hosted_raw_repo_empty(tmpdir, faker):
+def hosted_raw_repo_empty(faker):
     """Create an empty hosted raw repository"""
     repo_name = faker.pystr()
-    command = 'nexus3 repo create hosted raw {}'.format(repo_name)
+    command = 'nexus3 repository create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name
 
@@ -216,12 +221,41 @@ def get_ResponseMock():
 
 
 @pytest.fixture
-def client_args(faker, tmpdir):
+def client_args(config_args):
     """Parameters suitable for use with NexusClient()"""
     fixture = {
-        'url': faker.url(),
-        'user': faker.user_name(),
-        'password': faker.password(),
-        'config_path': tmpdir.join(faker.file_name()),
+        'config': config_args,
     }
     return fixture
+
+
+@pytest.fixture
+def config_args(faker, tmpdir):
+    """Parameters suitable for use with NexusConfig()"""
+    fixture = {
+        'api_version': faker.pystr(),
+        'username': faker.user_name(),
+        'password': faker.password(),
+        'url': faker.url(),
+        'x509_verify': faker.pybool(),
+        'config_path': str(tmpdir.join(faker.file_name())),
+    }
+    return fixture
+
+
+@pytest.fixture
+def nexus_raw_repo(nexus_mock_client, faker):
+    repo_name = faker.uri_page()
+    nexus_mock_client.repositories._repositories_json.append({
+        'name': repo_name, 'format': 'raw'})
+
+    return nexus_mock_client.repositories.get_by_name(repo_name)
+
+
+@pytest.fixture
+def nexus_yum_repo(nexus_mock_client, faker):
+    repo_name = faker.uri_page()
+    nexus_mock_client.repositories._repositories_json.append({
+        'name': repo_name, 'format': 'yum'})
+
+    return nexus_mock_client.repositories.get_by_name(repo_name)

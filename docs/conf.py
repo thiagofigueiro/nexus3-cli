@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+import sphinx.ext.apidoc
+
+
+def setup(_):
+    sphinx.ext.apidoc.main('-o . ../src/nexuscli'.split())
+
 
 # -- Project information -----------------------------------------------------
 
@@ -138,10 +144,9 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-# -- Extension configuration -------------------------------------------------
-
 # -- Options for intersphinx extension ---------------------------------------
-
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'docopt': ('https://docopt.readthedocs.io/en/latest/', None),
+    'requests': ('https://2.python-requests.org/en/master/', None),
+}

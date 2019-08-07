@@ -2,45 +2,20 @@
 import pytest
 
 import nexuscli
-from nexuscli import exception, nexus_client
+from nexuscli import exception
+from nexuscli.nexus_client import NexusClient
 
 
-def test_login_config(mocker):
+def test_repositories(mocker):
     """
-    Ensure that the class tries to read the configuration and fetch
-    repositories on instantiation
+    Ensure that the class fetches repositories on instantiation
     """
     mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
 
-    client = nexus_client.NexusClient()
+    client = NexusClient()
 
     nexuscli.nexus_client.RepositoryCollection.assert_called()
     client.repositories.refresh.assert_called_once()
-    client.read_config.assert_called_once()
-
-
-def test_login_params(faker, mocker):
-    """
-    Ensure that the class doesn't try to read the configuration and, instead,
-    uses the provided connection parameters on instantiation.
-    """
-    mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'set_config')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
-
-    x_user = faker.user_name()
-    x_pass = faker.password()
-    x_url = faker.url()
-    x_verify = faker.pybool()
-
-    client = nexus_client.NexusClient(
-        user=x_user, password=x_pass, url=x_url, verify=x_verify)
-
-    nexuscli.nexus_client.RepositoryCollection.assert_called()
-    client.repositories.refresh.assert_called_once()
-    client.read_config.assert_not_called()
-    client.set_config.assert_called_with(x_user, x_pass, x_url, x_verify)
 
 
 @pytest.mark.parametrize(
@@ -81,19 +56,3 @@ def test_split_component_path_errors(
         nexus_mock_client.split_component_path(component_path)
 
     assert x_error in str(e.value)
-
-
-def test_write_config(client_args, mocker):
-    """Ensure values written in config file can be read back"""
-    mocker.patch('nexuscli.nexus_client.RepositoryCollection')
-    mocker.patch.object(nexus_client.NexusClient, 'read_config')
-
-    client = nexus_client.NexusClient(**client_args)
-    client.write_config()
-
-    mocker.patch.object(nexus_client.NexusClient, 'set_config')
-    client_with_config = nexus_client.NexusClient(
-        config_path=client_args['config_path'])
-
-    x_args = (client_args['user'], client_args['password'], client_args['url'])
-    assert client_with_config.set_config.called_with(*x_args)

@@ -7,7 +7,8 @@ Here are some basic operations to get you started. The CLI implementation in
 In all examples below you will need to instantiate a client:
 
 >>> import nexuscli
->>> nexus_client = nexuscli.nexus_client.NexusClient()
+>>> nexus_config = nexuscli.nexus_config.NexusConfig(password='supersecret')
+>>> nexus_client = nexuscli.nexus_client.NexusClient(config=nexus_config)
 >>> # update the local list of repositories on the client
 >>> nexus_client.repositories.refresh()
 >>> # retrieve the list of repositories
@@ -18,8 +19,6 @@ In all examples below you will need to instantiate a client:
  'type': 'hosted',
  'url': 'http://localhost:8081/repository/maven-snapshots'}
 
-Whenever you see ``nexus_client`` being used, remember to copy the first two
-lines of code above as well.
 
 Create a repository
 ^^^^^^^^^^^^^^^^^^^
@@ -49,7 +48,7 @@ Delete a repository
 Upload a file
 ^^^^^^^^^^^^^
 
->>> upload_count = nexus_client.upload(
->>>     '/etc/passwd', 'my-repository/etc/passwd')
+>>> repository = nexus_client.repositories.get_by_name('my-repository')
+>>> upload_count = repository.upload('/etc/passwd', '/etc/passwd')
 >>> print(upload_count)
 1

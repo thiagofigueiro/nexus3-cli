@@ -1,0 +1,2 @@
+# This includes files in the sdist, not bdist. WTF, Python?!
+recursive-include src/nexuscli/api/script/groovy *

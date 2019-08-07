@@ -3,7 +3,7 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '1.0.2'
+package_version = '2.0.0b1'
 
 requires = [
     'clint',
@@ -15,6 +15,7 @@ requires = [
     'future',
     'requests[security]>=2.14.2',
     'six',
+    'texttable'
 ]
 
 test_requires = [
@@ -49,11 +50,18 @@ setup(
         'Topic :: System :: Systems Administration',
         'Topic :: Utilities',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
+    python_requires='>=3.6,<4',
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    package_data={
+        'nexuscli': ['script/groovy/'],
+    },
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'nexus3=nexuscli.cli:main',

@@ -2,10 +2,31 @@
 import hashlib
 import mmap
 import os
+import pkg_resources
 
-from six import string_types
 
-LOG_LEVEL = os.environ.get('LOG_LEVEL', 'WARNING').upper()
+def _resource_filename(resource_name):
+    """wrapper for pkg_resources.resource_filename"""
+    return pkg_resources.resource_filename('nexuscli', resource_name)
+
+
+def groovy_script(script_name):
+    """
+    Returns the content for a groovy script located in the package installation
+    path under script/groovy.
+
+    E.g.: groovy_script('foo') returns the content for the file at
+    ``.../site-packages/nexuscli/script/groovy/foo.groovy``.
+
+    :param script_name: file name of the groovy script; ``.groovy`` is appended
+        to this parameter to form the file name.
+    :return: content for the groovy script
+    :rtype: str
+    """
+    script_path = os.path.join(
+        'api', 'script', 'groovy', f'{script_name}.groovy')
+    script_path = _resource_filename(script_path)
+    return open(script_path).read()
 
 
 def validate_strings(*args):
@@ -20,7 +41,7 @@ def validate_strings(*args):
         bool: True if all arguments are of a string type. False otherwise.
     """
     for arg in args:
-        if not isinstance(arg, string_types):
+        if not isinstance(arg, str):
             return False
 
     return True
@@ -86,9 +107,9 @@ def calculate_hash(hash_name, file_path_or_handle):
 
     :param hash_name: name of the hash algorithm in hashlib
     :type hash_name: str
-    :param file_path_or_handle: source file name (str) or file handle (from
-        open()) for the hash algorithm.
-    :type file_path_or_handle: Union[str, file object]
+    :param file_path_or_handle: source file name (:py:obj:`str`) or file
+        handle (:py:obj:`file-like`) for the hash algorithm.
+    :type file_path_or_handle: str
     :return: the calculated hash
     :rtype: str
     """
@@ -106,3 +127,25 @@ def calculate_hash(hash_name, file_path_or_handle):
     else:
         with open(file_path_or_handle, 'rb') as fd:
             return _hash(fd)
+
+
+def has_same_hash(artefact, filepath):
+    """
+    Checks if a Nexus artefact has the same hash as a local filepath.
+
+    :param artefact:  as returned by
+        :py:meth:`~nexuscli.nexus_client.NexusClient.list_raw`
+    :type artefact: dict
+    :param filepath: local file path
+    :return: True if artefact and filepath have the same hash.
+    :rtype: bool
+    """
+    for hash_name in ['sha1', 'md5']:
+        remote_hash = artefact.get('checksum', {}).get(hash_name)
+        if remote_hash is None:
+            continue
+
+        local_hash = calculate_hash(hash_name, filepath)
+        return local_hash == remote_hash
+
+    return False

@@ -24,8 +24,18 @@ class NexusClientInvalidRepository(Exception):
     pass
 
 
+class NexusClientInvalidCleanupPolicy(Exception):
+    """The given cleanup policy does not exist in Nexus."""
+    pass
+
+
 class NexusClientCreateRepositoryError(Exception):
     """Used when a repository creation operation in Nexus fails."""
+    pass
+
+
+class NexusClientCreateCleanupPolicyError(Exception):
+    """Used when a cleanup policy creation operation in Nexus fails."""
     pass
 
 

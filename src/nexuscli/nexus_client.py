@@ -1,5 +1,3 @@
-from builtins import str as text  # Python 2
-import io
 import json
 import logging
 import os.path
@@ -7,24 +5,15 @@ import py
 import requests
 import sys
 from clint.textui import progress
+from urllib.parse import urljoin
 
-try:
-    from urllib.parse import urljoin  # Python 3
-except ImportError:
-    from urlparse import urljoin      # Python 2
-
-from . import exception, nexus_util
-from .repository import RepositoryCollection
-from .script import ScriptCollection
-
-# Python 2 compatibility
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError  # Python 2
+from nexuscli.nexus_config import NexusConfig
+from nexuscli import exception, nexus_util
+from nexuscli.api.cleanup_policy import CleanupPolicyCollection
+from nexuscli.api.repository import validations, RepositoryCollection
+from nexuscli.api.script import ScriptCollection
 
 LOG = logging.getLogger(__name__)
-SUPPORTED_FORMATS_FOR_UPLOAD = ['raw', 'yum']
 
 
 class NexusClient(object):
@@ -36,75 +25,26 @@ class NexusClient(object):
     if unsuccessful, use defaults.
 
     Args:
-        url (str): URL to Nexus 3 OSS service. Default: :attr:`DEFAULT_URL`.
-        user (str): login for Nexus service at given url. Default:
-            :attr:`DEFAULT_USER`.
-        password (str): password for given login. Default:
-            :attr:`DEFAULT_PASS`.
-        verify (bool): toggle certificate validation. Default:
-            :attr:`DEFAULT_VERIFY`.
-        config_path (str): local file containing configuration above in JSON
-            format with these keys: ``nexus_url``, ``nexus_user`` and
-            ``nexus_pass``. Default: :attr:`CONFIG_PATH`.
-
-    Attributes:
-        base_url (str): as per ``url`` argument of :class:`NexusClient`.
-        config_path (str): as per ``config_path`` argument of
-            :class:`NexusClient`.
+        config (NexusConfig): instance containing the configuration for the
+            Nexus service used by this instance.
     """
-    CONFIG_PATH = os.path.expanduser('~/.nexus-cli')
-    DEFAULT_URL = 'http://localhost:8081'
-    DEFAULT_USER = 'admin'
-    DEFAULT_PASS = 'admin123'
-    DEFAULT_VERIFY = True
-
-    def __init__(self, url=None, user=None, password=None, verify=None,
-                 config_path=None):
-        self.base_url = None
-        self.config_path = config_path or NexusClient.CONFIG_PATH
-        self._auth = None
-        self._api_version = 'v1'
+    def __init__(self, config=None):
+        self.config = config or NexusConfig()
         self._local_sep = os.path.sep
-        self._remote_sep = '/'
+        self._remote_sep = validations.REMOTE_PATH_SEPARATOR
+        self._cleanup_policies = None
         self._repositories = None
         self._scripts = None
         self._verify = None
 
-        if url and user and password:
-            self.set_config(user, password, url, verify)
-        else:
-            self.read_config()
-
         self.repositories.refresh()
-
-    def set_config(self, user, password, base_url, verify):
-        """
-        Configures the Nexus service credentials and base URL. The credentials
-        are stored in a private class attribute and the base URL in
-        :attr:`base_url`.
-
-        Every subsequent operation that requires a request to the Nexus service
-        will use this configuration.
-
-        :param user: as per ``user`` argument of :class:`NexusClient`.
-        :param password: as per ``password`` argument of :class:`NexusClient`.
-        :param base_url: as per ``url`` argument of :class:`NexusClient`.
-        :param verify: as per ``verify`` argument of :class:`NexusClient`.
-        """
-        self._auth = (user, password)
-        self.base_url = base_url
-
-        if verify is None:
-            self._verify = NexusClient.DEFAULT_VERIFY
-        else:
-            self._verify = verify
 
     @property
     def repositories(self):
         """
         Instance of
-        :class:`nexuscli.repository.model.RepositoryCollection`. This will
-        automatically use the existing instance of :class:`NexusClient` to
+        :class:`~nexuscli.api.repository.collection.RepositoryCollection`. This
+        will automatically use the existing instance of :class:`NexusClient` to
         communicate with the Nexus service.
         """
         if self._repositories is None:
@@ -112,10 +52,22 @@ class NexusClient(object):
         return self._repositories
 
     @property
+    def cleanup_policies(self):
+        """
+        Instance of
+        :class:`~nexuscli.api.cleanup_policy.collection.CleanupPolicyCollection`
+        . This will automatically use the existing instance of
+        :class:`NexusClient` to communicate with the Nexus service.
+        """
+        if self._cleanup_policies is None:
+            self._cleanup_policies = CleanupPolicyCollection(client=self)
+        return self._cleanup_policies
+
+    @property
     def scripts(self):
         """
         Instance of
-        :class:`nexuscli.script.model.ScriptCollection`. This will
+        :class:`~nexuscli.api.script.model.ScriptCollection`. This will
         automatically use the existing instance of :class:`NexusClient` to
         communicate with the Nexus service.
         """
@@ -126,90 +78,36 @@ class NexusClient(object):
     @property
     def rest_url(self):
         """
-        Full URL to the Nexus REST API, based on :attr:`base_url`.
+        Full URL to the Nexus REST API, based on the ``url`` and ``version``
+        from :attr:`config`.
 
-        :return: the URL.
+        :rtype: str
         """
-        url = urljoin(self.base_url, '/service/rest/')
-        return urljoin(url, self._api_version + '/')
+        url = urljoin(self.config.url, '/service/rest/')
+        return urljoin(url, self.config.api_version + '/')
 
-    def write_config(self):
+    def http_request(self, method, endpoint, service_url=None, **kwargs):
         """
-        Writes the latest configuration set using :meth:`set_config` to disk
-        under :attr:`config_path`.
-
-        If a file already exists, it will be overwritten. The permission will
-        be set to read/write to the owner only.
-        """
-        nexus_config = py.path.local(self.config_path, expanduser=True)
-        nexus_config.ensure()
-        nexus_config.chmod(0o600)
-        with io.open(nexus_config.strpath, mode='w+', encoding='utf-8') as fh:
-            # If this looks dumb, it's because it needs to work with Python 2
-            fh.write(text(
-                json.dumps({
-                    'nexus_user': self._auth[0],
-                    'nexus_pass': self._auth[1],
-                    'nexus_url': self.base_url,
-                    'nexus_verify': self._verify,
-                }, ensure_ascii=False, indent=4, sort_keys=True)
-            ))
-
-    def read_config(self):
-        """
-        Read the configuration settings from the file specified by
-        :attr:`config_path` and activates them via :meth:`set_config`.
-
-        The configuration file is in JSON format and expects these keys:
-        ``nexus_user``, ``nexus_pass``, ``nexus_url``, ``nexus_verify``.
-
-        If the configuration file is not found, the default settings will be
-        used instead.
-
-        """
-        nexus_config = py.path.local(self.config_path, expanduser=True)
-        config_attrs = {}
-        nexus_defaults = {
-            'nexus_user': NexusClient.DEFAULT_USER,
-            'nexus_pass': NexusClient.DEFAULT_PASS,
-            'nexus_url': NexusClient.DEFAULT_URL,
-            'nexus_verify': NexusClient.DEFAULT_VERIFY}
-        try:
-            with nexus_config.open(mode='r', encoding='utf-8') as fh:
-                config = json.load(fh)
-                for field in nexus_defaults.keys():
-                    if field in config:
-                        config_attrs[field] = config[field]
-                    else:
-                        config_attrs[field] = nexus_defaults[field]
-        except py.error.ENOENT:
-            config_attrs = nexus_defaults
-
-        self.set_config(
-            config_attrs['nexus_user'], config_attrs['nexus_pass'],
-            config_attrs['nexus_url'], config_attrs['nexus_verify'])
-
-    def _request(self, method, endpoint, **kwargs):
-        """
-        Performs a request to the Nexus service URL.
+        Performs a HTTP request to the Nexus REST API on the specified
+        endpoint.
 
         :param method: one of ``get``, ``put``, ``post``, ``delete``.
+        :type endpoint: str
         :param endpoint: URI path to be appended to the service URL.
-        :param kwargs: if ``service_url`` is not provided,
-            :py:property:`self.rest_url` is used by default. All other kwargs
-            are passed-through to ``requests.method``.
-        :return: requests response object
+        :type endpoint: str
+        :param service_url: override the default URL to use for the request,
+            which is created by joining :attr:`rest_url` and ``endpoint``.
+        :type service_url: str
+        :param kwargs: as per :py:func:`requests.request`.
+        :rtype: requests.Response
         """
-        try:
-            service_url = kwargs.pop('service_url')
-        except KeyError:
-            service_url = self.rest_url
-
+        service_url = service_url or self.rest_url
         url = urljoin(service_url, endpoint)
+
         try:
             response = requests.request(
-                method=method, auth=self._auth, url=url, verify=self._verify,
-                **kwargs)
+                method=method, auth=self.config.auth, url=url,
+                verify=self.config.x509_verify, **kwargs)
         except requests.exceptions.ConnectionError as e:
             print(e)
             sys.exit(1)
@@ -220,8 +118,15 @@ class NexusClient(object):
 
         return response
 
-    def _get(self, endpoint):
-        return self._request('get', endpoint, stream=True)
+    def http_get(self, endpoint):
+        """
+        Performs a HTTP GET request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :type endpoint: str
+        :rtype: requests.Response
+        """
+        return self.http_request('get', endpoint, stream=True)
 
     def _get_paginated(self, endpoint, **request_kwargs):
         """
@@ -234,12 +139,12 @@ class NexusClient(object):
         response have been yielded, a new request is made and the process
         repeated.
 
-        :param args: passed verbatim to the _request() method.
         :param request_kwargs: passed verbatim to the _request() method, except
             for the argument needed to paginate requests.
         :return: a generator that yields on response item at a time.
+        :rtype: typing.Iterator[dict]
         """
-        response = self._request('get', endpoint, **request_kwargs)
+        response = self.http_request('get', endpoint, **request_kwargs)
         if response.status_code == 404:
             raise exception.NexusClientAPIError(response.reason)
 
@@ -258,26 +163,50 @@ class NexusClient(object):
 
             request_kwargs['params'].update(
                 {'continuationToken': continuation_token})
-            response = self._request('get', endpoint, **request_kwargs)
+            response = self.http_request('get', endpoint, **request_kwargs)
             content = response.json()
 
-    def _post(self, endpoint, **kwargs):
-        return self._request('post', endpoint, **kwargs)
+    def http_post(self, endpoint, **kwargs):
+        """
+        Performs a HTTP POST request on the given endpoint.
 
-    def _put(self, endpoint, **kwargs):
-        return self._request('put', endpoint, **kwargs)
+        :param endpoint: name of the Nexus REST API endpoint.
+        :type endpoint: str
+        :param kwargs: as per :py:func:`requests.request`.
+        :rtype: requests.Response
+        """
+        return self.http_request('post', endpoint, **kwargs)
 
-    def _delete(self, endpoint, **kwargs):
-        return self._request('delete', endpoint, **kwargs)
+    def http_put(self, endpoint, **kwargs):
+        """
+        Performs a HTTP PUT request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :type endpoint: str
+        :param kwargs: as per :py:func:`requests.request`.
+        :rtype: requests.Response
+        """
+        return self.http_request('put', endpoint, **kwargs)
+
+    def http_delete(self, endpoint, **kwargs):
+        """
+        Performs a HTTP DELETE request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :type endpoint: str
+        :param kwargs: as per :py:func:`requests.request`.
+        :rtype: requests.Response
+        """
+        return self.http_request('delete', endpoint, **kwargs)
 
     def list(self, repository_path):
         """
-        List all the artefacts, recursively, in a given repository_path.
+        List all the artefacts, recursively, in a given ``repository_path``.
 
         :param repository_path: location on the repository service.
-        :param kwargs: implementation-specific arguments.
-        :return: list of artefacts
-        :rtype: list
+        :type repository_path: str
+        :return: artefacts under ``repository_path``.
+        :rtype: typing.Iterator[str]
         """
         for artefact in self.list_raw(repository_path):
             yield artefact.get('path')
@@ -299,7 +228,11 @@ class NexusClient(object):
 
     def list_raw(self, repository_path):
         """
-        As per list but returns a generator of raw Nexus artefact objects
+        As per :meth:`list` but yields raw Nexus artefacts as dicts.
+
+        :param repository_path: location on the repository service.
+        :type repository_path: str
+        :rtype: typing.Iterator[dict]
         """
         repo, directory, filename = self.split_component_path(repository_path)
         path_filter = ''  # matches everything
@@ -392,8 +325,8 @@ class NexusClient(object):
 
         ``repository_name/directory[(/subdir1)...][/|filename]``
 
-        A path ending in ``/`` means it represents a directory; otherwise it
-        represents a filename.
+        A path ending in ``/`` represents a directory; otherwise it represents
+        a filename.
 
             >>> dst0 = 'myrepo0/dir/'
             >>> dst1 = 'myrepo1/dir/subdir/'
@@ -410,138 +343,16 @@ class NexusClient(object):
 
         :param component_path: the Nexus component path, as described above.
         :type component_path: str
-        :return: tuple of (repository_name, directory, filename). If the given
-            component_path doesn't represent a file, filename is set to None.
-        :rtype: tuple
+        :return: tuple of ``(repository_name, directory, filename)``. If the
+            given ``component_path`` doesn't represent a file, then the
+            ``filename`` is set to :py:obj:`None`.
+        :rtype: tuple[str, str, str]
         """
         repository, path_fragments = self._pop_repository(component_path)
         filename = self._pop_filename(component_path, path_fragments)
         directory = self._pop_directory(path_fragments)
 
         return repository, directory, filename
-
-    def _upload_file_raw(self, src_file, dst_repo, dst_dir, dst_file):
-        """Process upload_file() for raw repositories"""
-        if dst_dir is None or dst_dir.startswith(self._remote_sep):
-            raise exception.NexusClientInvalidRepositoryPath(
-                'Destination path does not contain a directory, which is '
-                'required by raw repositories')
-
-        params = {'repository': dst_repo}
-        files = {'raw.asset1': open(src_file, 'rb').read()}
-        data = {
-            'raw.directory': dst_dir,
-            'raw.asset1.filename': dst_file,
-        }
-
-        response = self._post(
-            'components', files=files, data=data, params=params)
-        if response.status_code != 204:
-            raise exception.NexusClientAPIError(
-                'Uploading to {dst_repo}. '
-                'Reason: {response.reason}'.format(**locals()))
-
-    def _upload_file_yum(self, src_file, dst_repo, dst_dir, dst_file):
-        """Process upload_file() for yum repositories"""
-        dst_dir = dst_dir or self._remote_sep
-        repository_path = self._remote_sep.join(
-            ['repository', dst_repo, dst_dir, dst_file])
-
-        with open(src_file, 'rb') as fh:
-            response = self._put(
-                repository_path, data=fh, service_url=self.base_url)
-
-        if response.status_code != 200:
-            raise exception.NexusClientAPIError(
-                'Uploading to {repository_path}. '
-                'Reason: {response.reason}'.format(**locals()))
-
-    def upload_file(self, src_file, dst_repo, dst_dir, dst_file=None):
-        """
-        Uploads a singe file to a Nexus repository under the directory and
-        file name specified. If the destination file name isn't given, the
-        source file name is used.
-
-        :param src_file: path to the local file to be uploaded.
-        :param dst_repo: name of the Nexus repository.
-        :param dst_dir: directory under dst_repo to place file in.
-        :param dst_file: destination file name.
-        """
-        try:
-            repository = self.repositories.get_raw_by_name(dst_repo)
-        except IndexError:
-            raise exception.NexusClientInvalidRepository(dst_repo)
-
-        # TODO: support all repository formats
-        repo_format = repository['format']
-        if repo_format not in SUPPORTED_FORMATS_FOR_UPLOAD:
-            raise NotImplementedError(
-                'Upload to {} repository not supported'.format(repo_format))
-
-        if dst_file is None:
-            dst_file = os.path.basename(src_file)
-
-        _upload = getattr(self, '_upload_file_' + repo_format)
-        _upload(src_file, dst_repo, dst_dir, dst_file)
-
-    def _get_upload_fileset(self, src_dir, recurse=True):
-        """
-        Walks the given directory and collects files to be uploaded. If
-        recurse option is False, only the files on the root of the directory
-        will be returned.
-
-        :param src_dir: location of files
-        :param recurse: If false, only the files on the root of src_dir
-                        are returned
-        :return: file set to be used with upload_directory
-        :rtype: set
-        """
-        source_files = set()
-        for dirname, dirnames, filenames in os.walk(src_dir):
-            if not recurse:
-                del dirnames[:]
-
-            source_files.update(
-                os.path.relpath(os.path.join(dirname, f), src_dir)
-                for f in filenames)
-
-        return source_files
-
-    def _get_upload_subdirectory(self, dst_dir, file_path, flatten=False):
-        # empty dst_dir because most repo formats, aside from raw, allow it
-        sub_directory = dst_dir or ''
-        sep = self._remote_sep
-        if not flatten:
-            dirname = os.path.dirname(file_path)
-            if sub_directory.endswith(sep) or dirname.startswith(sep):
-                sep = ''
-            sub_directory += '{sep}{dirname}'.format(**locals())
-
-        return sub_directory
-
-    def upload_directory(self, src_dir, dst_repo, dst_dir, **kwargs):
-        """
-        Uploads all files in a directory, honouring options flatten and
-        recurse.
-
-        :param src_dir: path to local directory to be uploaded
-        :param dst_repo: destination repository
-        :param dst_dir: destination directory in dst_repo
-        :return: number of files uploaded
-        :rtype: int
-        """
-        file_set = self._get_upload_fileset(
-                            src_dir, kwargs.get('recurse', True))
-        file_count = len(file_set)
-        file_set = progress.bar(file_set, expected_size=file_count)
-
-        for relative_filepath in file_set:
-            file_path = os.path.join(src_dir, relative_filepath)
-            sub_directory = self._get_upload_subdirectory(
-                            dst_dir, file_path, kwargs.get('flatten', False))
-            self.upload_file(file_path, dst_repo, sub_directory)
-
-        return file_count
 
     def _upload_dir_or_file(self, file_or_dir, dst_repo, dst_dir, dst_file,
                             **kwargs):
@@ -555,18 +366,21 @@ class NexusClient(object):
         :param dst_file: destination file name.
         :return: number of files uploaded.
         """
+        repository = self.repositories.get_by_name(dst_repo)
+
         if os.path.isdir(file_or_dir):
-            if dst_file is None:
-                return self.upload_directory(file_or_dir, dst_repo, dst_dir,
-                                             **kwargs)
-            else:
+            src_file = file_or_dir
+            if dst_file is not None:
                 raise exception.NexusClientInvalidRepositoryPath(
                     'Not allowed to upload a directory to a file')
 
-        self.upload_file(file_or_dir, dst_repo, dst_dir, dst_file)
+            return repository.upload_directory(src_file, dst_dir, **kwargs)
+
+        src_dir = file_or_dir
+        repository.upload_file(src_dir, dst_dir, dst_file)
         return 1
 
-    def upload(self, source, destination, **kwargs):
+    def upload(self, source, destination, recurse=True, flatten=False):
         """
         Process an upload. The source must be either a local file name or
         directory. The flatten and recurse options are honoured for
@@ -576,17 +390,22 @@ class NexusClient(object):
         repository name as the first component of the path.
 
         :param source: location of file or directory to be uploaded.
+        :type source: str
         :param destination: destination path in Nexus, including repository
             name and, if required, directory name (e.g. raw repos require a
             directory).
+        :type destination: str
         :param recurse: do not process sub directories for uploads to remote
+        :type recurse: bool
         :param flatten: Flatten directory structure by not reproducing local
                         directory structure remotely
+        :type flatten: bool
         :return: number of files uploaded.
         """
         repo, directory, filename = self.split_component_path(destination)
         upload_count = self._upload_dir_or_file(
-            source, repo, directory, filename, **kwargs)
+            source, repo, directory, filename,
+            recurse=recurse, flatten=flatten)
 
         return upload_count
 
@@ -639,17 +458,8 @@ class NexusClient(object):
             local_absolute_path.ensure(dir=remote_isdir)
         return str(local_absolute_path)
 
-    def _local_hash_matches_remote(
-            self, file_path, remote_hash, hash_name='sha1'):
-        """
-        True if the hash for file_path matches remote_hash for the given
-        algorithm
-        """
-        local_hash = nexus_util.calculate_hash(hash_name, file_path)
-        return local_hash == remote_hash
-
-    def _should_skip_download(
-            self, download_url, download_path, artefact, nocache):
+    @staticmethod
+    def _should_skip_download(download_url, download_path, artefact, nocache):
         """False when nocache is set or local file is out-of-date"""
         if nocache:
             try:
@@ -660,15 +470,10 @@ class NexusClient(object):
                 pass
             return False
 
-        for hash_name in ['sha1', 'md5']:
-            h = artefact.get('checksum', {}).get(hash_name)
-            if h is None:
-                continue
-
-            if self._local_hash_matches_remote(download_path, h, hash_name):
-                LOG.debug('Skipping {download_url} because local copy '
-                          '{download_path} is up-to-date\n'.format(**locals()))
-                return True
+        if nexus_util.has_same_hash(artefact, download_path):
+            LOG.debug(f'Skipping {download_url} because local copy '
+                      f'{download_path} is up-to-date\n')
+            return True
 
         return False
 
@@ -677,26 +482,27 @@ class NexusClient(object):
         file system.
 
         :param download_url: fully-qualified URL to asset being downloaded.
+        :type download_url: str
         :param destination: file or directory location to save downloaded
             asset. Must be an existing directory; any exiting file in this
             location will be overwritten.
+        :type destination: str
         :return:
         """
-        response = self._get(download_url)
+        response = self.http_get(download_url)
 
         if response.status_code != 200:
             sys.stderr.write(response.__dict__)
             raise exception.DownloadError(
-                'Downloading from {download_url}. '
-                'Reason: {response.reason}'.format(**locals()))
+                f'Downloading from {download_url}. '
+                f'Reason: {response.reason}')
 
         with open(destination, 'wb') as fd:
-            LOG.debug('Writing {download_url} to {destination}\n'.format(
-                **locals()))
+            LOG.debug('Writing %s to %s', download_url, destination)
             for chunk in response.iter_content(chunk_size=8192):
                 fd.write(chunk)
 
-    def download(self, source, destination, **kwargs):
+    def download(self, source, destination, flatten=False, nocache=False):
         """Process a download. The source must be a valid Nexus 3
         repository path, including the repository name as the first component
         of the path.
@@ -704,19 +510,24 @@ class NexusClient(object):
         The destination must be a local file name or directory.
 
         If a file name is given as destination, the asset may be renamed. The
-        final destination will depend on self.flatten: when True, the remote
-        path isn't reproduced locally.
+        final destination will depend on ``flatten``.
 
         :param source: location of artefact or directory on the repository
             service.
+        :type source: str
         :param destination: path to the local file or directory.
-        :param flatten: when True, the remote path isn't reproduced locally.
-        :param nocache: Force download of a directory or artefact even if local
-                        copy is available and is up-to-date with the version
-                        available on Nexus.
+        :type destination: str
+        :param flatten: if True, the remote path isn't reproduced locally.
+        :type flatten: bool
+        :param nocache: if True, force download of a directory or artefact,
+                        ignoring an existing local copy. If false, it will not
+                        re-download an existing copy if its checksum matches
+                        the one in Nexus (as determined by
+                        :meth:`nexuscli.nexus_util.has_same_hash`).
+        :type nocache: bool
         :return: number of downloaded files.
+        :rtype: int
         """
-
         download_count = 0
         if source.endswith(self._remote_sep) and \
                 not (destination.endswith('.') or destination.endswith('..')):
@@ -731,11 +542,10 @@ class NexusClient(object):
             download_url = artefact['downloadUrl']
             artefact_path = artefact['path']
             download_path = self._remote_path_to_local(
-                artefact_path, destination, kwargs.get('flatten'))
+                artefact_path, destination, flatten)
 
             if self._should_skip_download(
-                    download_url, download_path,
-                    artefact, kwargs.get('nocache')):
+                    download_url, download_path, artefact, nocache):
                 download_count += 1
                 continue
 
@@ -743,23 +553,23 @@ class NexusClient(object):
                 self.download_file(download_url, download_path)
                 download_count += 1
             except exception.DownloadError:
-                LOG.warning('Error downloading {}\n'.format(download_url))
+                LOG.warning('Error downloading %s', download_url)
                 continue
 
         return download_count
 
-    def delete(self, repository_path, **kwargs):
+    def delete(self, repository_path):
         """
-        Delete artefacts, recursively if repository_path is a directory.
+        Delete artefacts, recursively if ``repository_path`` is a directory.
 
         :param repository_path: location on the repository service.
-        :param kwargs: implementation-specific arguments.
+        :type repository_path: str
         :return: number of deleted files. Negative number for errors.
         :rtype: int
         """
 
         delete_count = 0
-        death_row = self.list_raw(repository_path, **kwargs)
+        death_row = self.list_raw(repository_path)
 
         death_row = progress.bar([a for a in death_row], label='Deleting')
 
@@ -767,9 +577,8 @@ class NexusClient(object):
             id_ = artefact['id']
             artefact_path = artefact['path']
 
-            response = self._delete('assets/{id_}'.format(**locals()))
-            LOG.info(
-                'Deleted: {artefact_path} ({id_})'.format(**locals()))
+            response = self.http_delete(f'assets/{id_}')
+            LOG.info('Deleted: %s (%s)', artefact_path, id_)
             delete_count += 1
             if response.status_code == 404:
                 LOG.warning('File disappeared while deleting')
