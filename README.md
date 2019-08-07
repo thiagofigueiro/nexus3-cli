@@ -114,6 +114,27 @@ For all commands, subcommands and options, run `nexus3 -h`.
 
 See [API documentation](https://nexus3-cli.readthedocs.io/en/latest/api.html).
 
+#### Upgrade from 1.0.x
+
+Version 2.0.0 has significant API changes from 1.0.0. In summary:
+
+- Introduce a `NexusConfig` class to keep the service configuration separate 
+  from the client.
+- `NexusClient` no long accepts configuration keyword arguments; instead it
+  takes a `NexusConfig` instance.
+- Moved all CLI code to the `cli` package and API code to the `api` package.
+- The `Repository` class has been rewritten to make it easier to add support
+  for all repositories. Have a look at the manual pages for 2.x linked above.
+- Repository upload methods have been moved to their own module in
+  `nexuscli.api.repository.upload` to, again, make it easier to support all
+  repositories.
+- Documentation has been reviewed to include new topics and to automatically 
+  include any new classes in the html output that lives in 
+  [read the docs](https://readthedocs.org/projects/nexus3-cli/).
+- Unit tests have been refactored and re-organised to more closely match the
+  `src` structure.
+
+
 ## Development
 
 The automated tests are configured in `.travis.yml`. To run tests locally,
