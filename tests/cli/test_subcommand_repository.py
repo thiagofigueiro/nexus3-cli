@@ -5,6 +5,10 @@ from nexuscli.api import repository
 from nexuscli.cli import subcommand_repository
 
 
+SUPPORTED_FORMATS = set(
+    [recipe for cls in repository.model.__all__ for recipe in cls.RECIPES])
+
+
 def test_list(mocker):
     mocker.patch('nexuscli.cli.subcommand_repository.util.get_client')
     mocker.patch('nexuscli.cli.subcommand_repository.cmd_list')
@@ -18,8 +22,8 @@ def test_list(mocker):
 
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict, c_policy', itertools.product(
-        repository.validations.SUPPORTED_FORMATS,  # format
-        repository.validations.WRITE_POLICIES,  # w_policy
+        SUPPORTED_FORMATS,  # format
+        repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
     ))
@@ -37,9 +41,9 @@ def test_create_hosted(nexus_client, repo_format, w_policy, strict, c_policy):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, w_policy, strict, c_policy', itertools.product(
-        repository.validations.VERSION_POLICIES,  # v_policy
-        repository.validations.LAYOUT_POLICIES,  # l_policy
-        repository.validations.WRITE_POLICIES,  # w_policy
+        repository.model.MavenRepository.VERSION_POLICIES,  # v_policy
+        repository.model.MavenRepository.LAYOUT_POLICIES,  # l_policy
+        repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
     ))
@@ -59,7 +63,7 @@ def test_create_hosted_maven(
 
 @pytest.mark.parametrize(
     'w_policy, depth, strict, c_policy', itertools.product(
-        repository.validations.WRITE_POLICIES,  # w_policy
+        repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         list(range(6)),  # depth
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
@@ -78,7 +82,7 @@ def test_create_hosted_yum(nexus_client, w_policy, depth, strict, c_policy):
 
 @pytest.mark.parametrize(
     'repo_format, strict, c_policy', itertools.product(
-        repository.validations.SUPPORTED_FORMATS,  # format
+        SUPPORTED_FORMATS,  # format
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
     ))
@@ -104,8 +108,8 @@ def test_create_proxy(nexus_client, repo_format, strict, c_policy, faker):
 
 @pytest.mark.parametrize(
     'v_policy, l_policy, strict, c_policy', itertools.product(
-        repository.validations.VERSION_POLICIES,  # v_policy
-        repository.validations.LAYOUT_POLICIES,  # l_policy
+        repository.model.MavenRepository.VERSION_POLICIES,  # v_policy
+        repository.model.MavenRepository.LAYOUT_POLICIES,  # l_policy
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
     ))

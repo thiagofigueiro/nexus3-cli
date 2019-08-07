@@ -3,7 +3,6 @@ import hashlib
 import mmap
 import os
 import pkg_resources
-from six import string_types
 
 
 def _resource_filename(resource_name):
@@ -42,7 +41,7 @@ def validate_strings(*args):
         bool: True if all arguments are of a string type. False otherwise.
     """
     for arg in args:
-        if not isinstance(arg, string_types):
+        if not isinstance(arg, str):
             return False
 
     return True

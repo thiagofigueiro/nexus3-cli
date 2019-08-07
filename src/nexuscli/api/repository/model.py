@@ -72,7 +72,6 @@ class Repository:
         return f'{self.__class__.__name__}-{self.name}-{self.recipe}'
 
     def __validate_params(self):
-        print('SELF', self, vars(self))
         validations.ensure_known('recipe', self.recipe, self.RECIPES)
 
     @property
