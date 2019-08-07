@@ -72,6 +72,7 @@ class Repository:
         return f'{self.__class__.__name__}-{self.name}-{self.recipe}'
 
     def __validate_params(self):
+        print('SELF', self, vars(self))
         validations.ensure_known('recipe', self.recipe, self.RECIPES)
 
     @property
@@ -127,6 +128,7 @@ class Repository:
             'attributes': {
                 'storage': {
                     'blobStoreName': self.blob_store_name,
+                    'strictContentTypeValidation': self.strict_content,
                 },
             }
         }
@@ -136,53 +138,6 @@ class Repository:
                 'policyName': self.cleanup_policy}
 
         return repo_config
-
-    def upload_file(self, src_file, dst_dir, dst_file=None):
-        """
-        Uploads a singe file to the directory and file name specified.
-
-        :param src_file: path to the local file to be uploaded.
-        :param dst_dir: directory under dst_repo to place file in.
-        :param dst_file: destination file name. If not given, the basename of
-            ``src_file`` name is used.
-        """
-        if dst_file is None:
-            dst_file = os.path.basename(src_file)
-
-        upload_method_name = f'upload_file_{self.recipe_name}'
-        try:
-            # Find upload method in the upload module using naming convention
-            upload_method = getattr(upload, upload_method_name)
-        except AttributeError:
-            raise NotImplementedError(upload_method_name) from None
-
-        upload_method(self, src_file, dst_dir, dst_file)
-
-    def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
-        """
-        Uploads all files in a directory to the specified destination directory
-        in this repository, honouring options flatten and recurse.
-
-        :param src_dir: path to local directory to be uploaded
-        :param dst_dir: destination directory in dst_repo
-        :param recurse: when True, upload directory recursively.
-        :type recurse: bool
-        :param flatten: when True, the source directory tree isn't replicated
-            on the destination.
-        :return: number of files uploaded
-        :rtype: int
-        """
-        file_set = util.get_files(src_dir, recurse)
-        file_count = len(file_set)
-        file_set = progress.bar(file_set, expected_size=file_count)
-
-        for relative_filepath in file_set:
-            file_path = os.path.join(src_dir, relative_filepath)
-            sub_directory = util.get_upload_subdirectory(
-                            dst_dir, file_path, flatten)
-            self.upload_file(file_path, sub_directory)
-
-        return file_count
 
 
 class ProxyRepository(Repository):
@@ -267,9 +222,6 @@ class ProxyRepository(Repository):
                 'timeToLive': self.negative_cache_ttl,
             },
         })
-        repo_config['attributes']['storage'].update({
-            'strictContentTypeValidation': self.strict_content,
-        })
 
         return repo_config
 
@@ -317,6 +269,53 @@ class HostedRepository(Repository):
         })
 
         return repo_config
+
+    def upload_file(self, src_file, dst_dir, dst_file=None):
+        """
+        Uploads a singe file to the directory and file name specified.
+
+        :param src_file: path to the local file to be uploaded.
+        :param dst_dir: directory under dst_repo to place file in.
+        :param dst_file: destination file name. If not given, the basename of
+            ``src_file`` name is used.
+        """
+        if dst_file is None:
+            dst_file = os.path.basename(src_file)
+
+        upload_method_name = f'upload_file_{self.recipe_name}'
+        try:
+            # Find upload method in the upload module using naming convention
+            upload_method = getattr(upload, upload_method_name)
+        except AttributeError:
+            raise NotImplementedError(upload_method_name) from None
+
+        upload_method(self, src_file, dst_dir, dst_file)
+
+    def upload_directory(self, src_dir, dst_dir, recurse=True, flatten=False):
+        """
+        Uploads all files in a directory to the specified destination directory
+        in this repository, honouring options flatten and recurse.
+
+        :param src_dir: path to local directory to be uploaded
+        :param dst_dir: destination directory in dst_repo
+        :param recurse: when True, upload directory recursively.
+        :type recurse: bool
+        :param flatten: when True, the source directory tree isn't replicated
+            on the destination.
+        :return: number of files uploaded
+        :rtype: int
+        """
+        file_set = util.get_files(src_dir, recurse)
+        file_count = len(file_set)
+        file_set = progress.bar(file_set, expected_size=file_count)
+
+        for relative_filepath in file_set:
+            file_path = os.path.join(src_dir, relative_filepath)
+            sub_directory = util.get_upload_subdirectory(
+                            dst_dir, file_path, flatten)
+            self.upload_file(file_path, sub_directory)
+
+        return file_count
 
 
 class MavenRepository(Repository):

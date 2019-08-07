@@ -156,8 +156,8 @@ class RepositoryCollection:
         :raises NexusClientCreateRepositoryError: error creating repository.
         """
         if not issubclass(type(repository), model.Repository):
-            raise TypeError(f'{repository} has type {type(repository)} but must'
-                            f' be a subclass of Repository')
+            raise TypeError(f'{repository} has type {type(repository)}'
+                            f' but must be a subclass of Repository')
 
         content = nexus_util.groovy_script(SCRIPT_NAME_CREATE)
         self._client.scripts.create_if_missing(SCRIPT_NAME_CREATE, content)
