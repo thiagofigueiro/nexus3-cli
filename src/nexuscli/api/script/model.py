@@ -28,7 +28,7 @@ class ScriptCollection(object):
         :raises exception.NexusClientAPIError: if the response from the Nexus
             service isn't recognised; i.e.: any HTTP code other than 200, 404.
         """
-        resp = self._client.http_get('script/{}'.format(name))
+        resp = self._client.http_get(f'script/{name}')
         if resp.status_code == 200:
             return resp.json()
         elif resp.status_code == 404:
