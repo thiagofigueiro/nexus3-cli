@@ -128,6 +128,16 @@ class NexusClient(object):
         """
         return self.http_request('get', endpoint, stream=True)
 
+    def http_head(self, endpoint):
+        """
+        Performs a HTTP HEAD request on the given endpoint.
+
+        :param endpoint: name of the Nexus REST API endpoint.
+        :type endpoint: str
+        :rtype: requests.Response
+        """
+        return self.http_request('head', endpoint)
+
     def _get_paginated(self, endpoint, **request_kwargs):
         """
         Performs a GET request using the given args and kwargs. If the response
