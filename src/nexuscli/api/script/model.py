@@ -18,6 +18,24 @@ class ScriptCollection(object):
     def __init__(self, client=None):
         self._client = client
 
+    def exists(self, name):
+        """
+        Check if a script exists.
+
+        :param name: of script to verify existence.
+        :return: True if it exists, false otherwise
+        :rtype: bool
+        :raises exception.NexusClientAPIError: if the response from the Nexus
+            service isn't recognised; i.e.: any HTTP code other than 200, 404.
+        """
+        resp = self._client.http_head(f'script/{name}')
+        if resp.status_code == 200:
+            return True
+        elif resp.status_code == 404:
+            return False
+        else:
+            raise exception.NexusClientAPIError(resp.content)
+
     def get(self, name):
         """
         Get a Nexus 3 script by name.
@@ -28,7 +46,7 @@ class ScriptCollection(object):
         :raises exception.NexusClientAPIError: if the response from the Nexus
             service isn't recognised; i.e.: any HTTP code other than 200, 404.
         """
-        resp = self._client.http_get('script/{}'.format(name))
+        resp = self._client.http_get(f'script/{name}')
         if resp.status_code == 200:
             return resp.json()
         elif resp.status_code == 404:
@@ -59,9 +77,7 @@ class ScriptCollection(object):
 
         Parameters as per :py:meth:`create`.
         """
-        # TODO: use HEAD to avoid downloading whole script
-        script = self.get(name)
-        if script is None:
+        if not self.exists(name):
             self.create(name, content, script_type)
 
     def create(self, script_name, script_content, script_type='groovy'):

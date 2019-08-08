@@ -17,10 +17,3 @@ def ensure_known(target, value, known):
     """
     if value not in known:
         raise ValueError(f'{target}={value} must be one of {known}')
-
-
-def _upcase_values(raw_repo, targets=[]):
-    for key in targets:
-        value = raw_repo.get(key)
-        if value is not None:
-            raw_repo[key] = value.upper()
