@@ -1,6 +1,6 @@
 """Methods to implement upload for specific repository formats (recipes)"""
 from nexuscli import exception
-from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
+from nexuscli.api.validations import REMOTE_PATH_SEPARATOR
 
 
 def upload_file_raw(repository, src_file, dst_dir, dst_file):

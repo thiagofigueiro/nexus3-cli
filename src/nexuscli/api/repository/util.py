@@ -1,6 +1,6 @@
 import os
 
-from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
+from nexuscli.api.validations import REMOTE_PATH_SEPARATOR
 
 
 def get_files(src_dir, recurse=True):

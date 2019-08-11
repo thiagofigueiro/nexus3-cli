@@ -92,6 +92,7 @@ class RepositoryCollection:
 
         return Repository(*args, nexus_client=self._client, **kwargs)
 
+    # FIXME: consistency - rename to get_raw
     def get_raw_by_name(self, name):
         """
         Return the raw dict for the repository called ``name``. Remember to
