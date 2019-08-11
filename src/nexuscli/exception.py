@@ -39,6 +39,11 @@ class NexusClientCreateCleanupPolicyError(Exception):
     pass
 
 
+class NexusClientCreateBlobStoreError(Exception):
+    """BlobStore creation operation in Nexus failed."""
+    pass
+
+
 class DownloadError(Exception):
     """Error retrieving artefact from Nexus service."""
     pass

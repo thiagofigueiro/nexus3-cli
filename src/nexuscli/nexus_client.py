@@ -32,12 +32,25 @@ class NexusClient(object):
         self.config = config or NexusConfig()
         self._local_sep = os.path.sep
         self._remote_sep = validations.REMOTE_PATH_SEPARATOR
+        self._blobstores = None
         self._cleanup_policies = None
         self._repositories = None
         self._scripts = None
         self._verify = None
 
         self.repositories.refresh()
+
+    @property
+    def blobstores(self):
+        """
+        Instance of
+        :class:`~nexuscli.api.blobstore.collection.BlobstoreCollection`. This
+        will automatically use the existing instance of :class:`NexusClient` to
+        communicate with the Nexus service.
+        """
+        if self._blobstores is None:
+            self._blobstores = BlobstoreCollection(client=self)
+        return self._blobstores
 
     @property
     def repositories(self):

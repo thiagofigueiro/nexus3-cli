@@ -2,7 +2,8 @@ import os
 from clint.textui import progress
 from urllib.parse import urlparse
 
-from nexuscli.api.repository import validations, util, upload
+from nexuscli.api import validations
+from nexuscli.api.repository import util, upload
 
 DEFAULT_RECIPE = 'raw'
 DEFAULT_WRITE_POLICY = 'ALLOW'
