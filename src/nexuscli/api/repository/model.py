@@ -418,6 +418,20 @@ class YumRepository(Repository):
 
         super().__init__(name, **kwargs)
 
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+        repo_config["attributes"]["yum"] = {
+            "repodataDepth": self.depth
+        }
+        return repo_config
+
 
 class YumHostedRepository(HostedRepository, YumRepository):
     """
