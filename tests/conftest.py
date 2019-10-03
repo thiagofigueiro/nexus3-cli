@@ -164,13 +164,12 @@ def deep_file_tree(faker, tmpdir):
     yield str(tmpdir), set(fixture)
 
 
-
 @pytest.fixture
 def make_testfile(faker, tmpdir):
     """
-    Yields a tuple(str, str). The first str is the current working directory. The
-    second string contains a file path, relative to the current working dir, where
-    the files exist in the filesystem at the given depth.
+    Yields a tuple(str, str). The 1st str is the current working directory.
+    The 2ns string contains a file path, relative to the current working dir,
+    where the files exist in the filesystem at the given depth.
     """
     filename = None
     with tmpdir.as_cwd():
@@ -178,6 +177,7 @@ def make_testfile(faker, tmpdir):
         tmpdir.join(filename).ensure()
 
     yield str(tmpdir), filename
+
 
 @pytest.helpers.register
 def repo_list(client, repo_name, expected_count, repo_path=None):
