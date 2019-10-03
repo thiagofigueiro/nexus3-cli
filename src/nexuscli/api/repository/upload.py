@@ -12,7 +12,8 @@ def upload_file_raw(repository, src_file, dst_dir, dst_file):
     :param repository: repository instance used to access Nexus 3 service.
     :type repository: nexuscli.api.repository.model.Repository
     :param src_file: path to the local file to be uploaded.
-    :param dst_dir: directory under dst_repo to place file in.
+    :param dst_dir: directory under dst_repo to place file in. When None, 
+        the file is placed under the root of the raw repository
     :param dst_file: destination file name.
     :raises exception.NexusClientInvalidRepositoryPath: invalid repository
         path.
