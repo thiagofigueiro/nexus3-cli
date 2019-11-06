@@ -3,6 +3,7 @@
 
 Usage:
   nexus3 --help
+  nexus3 --version
   nexus3 login
   nexus3 (list|ls) <repository_path>
   nexus3 (upload|up) <from_src> <to_repository> [--flatten] [--norecurse]
@@ -13,6 +14,7 @@ Usage:
 Options:
   -h --help             This screen. For help with sub-commands, run
                         `nexus3 <subcommand> -h`
+  --version             Show the Nexus3 CLI version and exit
   --flatten             Flatten directory structure on `nexus3` transfers
                         [default: False]
   --nocache             Force download even if local copy is up-to-date
@@ -49,6 +51,9 @@ def _find_root_command(arguments):
         if _is_root_command(command):
             if value is True:
                 return f'cmd_{command}'
+
+    if arguments.get('--version'):
+        return 'cmd_version'
 
     # docopt shouldn't allow this to happen
     raise NotImplementedError(f'Command not found in arguments: {arguments}')

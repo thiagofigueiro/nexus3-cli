@@ -1,8 +1,10 @@
 """Handles base/root commands (as opposed to subcommands)"""
 import getpass
 import inflect
+import pkg_resources
 import sys
 import types
+
 from nexuscli import nexus_config
 from nexuscli.nexus_client import NexusClient
 from nexuscli.cli import errors, util
@@ -151,3 +153,8 @@ def cmd_delete(nexus_client, options):
 def cmd_del(*args, **kwargs):
     """Alias for :func:`cmd_delete`"""
     return cmd_delete(*args, **kwargs)
+
+
+def cmd_version(nexus_client, _):
+    version = pkg_resources.require('nexus3-cli')[0].version
+    print(version)
