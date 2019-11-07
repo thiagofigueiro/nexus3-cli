@@ -3,7 +3,7 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '2.0.0'
+package_version = '2.0.1'
 
 requires = [
     'clint',
