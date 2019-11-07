@@ -6,14 +6,6 @@ from nexuscli.api.repository import upload
 SEP = upload.REMOTE_PATH_SEPARATOR  # for shorter lines in the tests
 
 
-@pytest.mark.parametrize('dst_dir', [
-    None, SEP, f'{SEP}anything', f'{SEP}a{SEP}n{SEP}y{SEP}'])
-def test_upload_file_raw_invalid(dst_dir):
-    """Ensure the method raises an exception when dst_dir is invalid"""
-    with pytest.raises(exception.NexusClientInvalidRepositoryPath):
-        upload.upload_file_raw(None, None, dst_dir, None)
-
-
 def test_upload_file_raw_error(mocker, tmpdir, faker):
     """Ensure the method raises an exception when the API response is wrong"""
     dst_dir = upload.REMOTE_PATH_SEPARATOR.join(faker.words())

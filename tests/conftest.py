@@ -164,8 +164,23 @@ def deep_file_tree(faker, tmpdir):
     yield str(tmpdir), set(fixture)
 
 
+@pytest.fixture
+def make_testfile(faker, tmpdir):
+    """
+    Yields a tuple(str, str). The 1st str is the current working directory.
+    The 2ns string contains a file path, relative to the current working dir,
+    where the files exist in the filesystem at the given depth.
+    """
+    filename = None
+    with tmpdir.as_cwd():
+        filename = faker.file_name()
+        tmpdir.join(filename).ensure()
+
+    yield str(tmpdir), filename
+
+
 @pytest.helpers.register
-def repo_list(client, repo_name, expected_count, repo_path):
+def repo_list(client, repo_name, expected_count, repo_path=None):
     """
     Nexus doesn't show uploaded files when you list the contents immediately
     after an upload. This helper retries it 3 times with increasing back-off.
@@ -175,7 +190,8 @@ def repo_list(client, repo_name, expected_count, repo_path):
 
         files = []
         for f in iter(file_list):
-            files.append(f[len(repo_path)+1:])
+            f = f[len(repo_path)+1:] if repo_path else f
+            files.append(f)
 
         return files
 

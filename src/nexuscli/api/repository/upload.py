@@ -1,4 +1,6 @@
 """Methods to implement upload for specific repository formats (recipes)"""
+import os
+
 from nexuscli import exception
 from nexuscli.api.repository.validations import REMOTE_PATH_SEPARATOR
 
@@ -10,16 +12,14 @@ def upload_file_raw(repository, src_file, dst_dir, dst_file):
     :param repository: repository instance used to access Nexus 3 service.
     :type repository: nexuscli.api.repository.model.Repository
     :param src_file: path to the local file to be uploaded.
-    :param dst_dir: directory under dst_repo to place file in.
+    :param dst_dir: directory under dst_repo to place file in. When None,
+        the file is placed under the root of the raw repository
     :param dst_file: destination file name.
     :raises exception.NexusClientInvalidRepositoryPath: invalid repository
         path.
     :raises exception.NexusClientAPIError: unknown response from Nexus API.
     """
-    if dst_dir is None or dst_dir.startswith(REMOTE_PATH_SEPARATOR):
-        raise exception.NexusClientInvalidRepositoryPath(
-            'Destination path does not contain a directory, which is '
-            'required by raw repositories')
+    dst_dir = os.path.normpath(dst_dir or REMOTE_PATH_SEPARATOR)
 
     params = {'repository': repository.name}
     files = {'raw.asset1': open(src_file, 'rb').read()}
