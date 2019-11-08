@@ -427,8 +427,8 @@ class YumRepository(Repository):
         :rtype: str
         """
         repo_config = super().configuration
-        repo_config["attributes"]["yum"] = {
-            "repodataDepth": self.depth
+        repo_config['attributes']['yum'] = {
+            'repodataDepth': self.depth
         }
         return repo_config
 

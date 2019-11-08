@@ -87,9 +87,11 @@ class RepositoryCollection:
 
         Repository = get_repository_class(raw_repo)
         # FIXME: use groovy to fetch a matching json object so the conversion
-        #   isn't required
+        #   isn't required; this would also fix the issue below
         args, kwargs = raw_repo_to_args_kwargs(raw_repo)
 
+        # FIXME: missing yum repo attributes
+        #   https://github.com/thiagofigueiro/nexus3-cli/issues/73
         return Repository(*args, nexus_client=self._client, **kwargs)
 
     def get_raw_by_name(self, name):
