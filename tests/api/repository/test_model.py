@@ -136,3 +136,23 @@ def test_repository_configuration(repo_class, faker):
 
     if repo.TYPE and repo.TYPE == 'proxy':
         assert attributes['proxy']['remoteUrl'] == x_remote_url
+
+
+@pytest.mark.parametrize(
+    'yum_repo',
+    pytest.helpers.yum_repos()
+)
+def test_yum_repository_configuration(yum_repo, faker):
+    x_name = faker.word()
+    x_depth = faker.pyint()
+
+    kwargs = {
+        'depth': x_depth
+    }
+
+    if yum_repo.TYPE == 'proxy':
+        kwargs['remote_url'] = faker.url()
+
+    repo = yum_repo(x_name, **kwargs)
+
+    assert repo.configuration['attributes']['yum']['repodataDepth'] == x_depth
