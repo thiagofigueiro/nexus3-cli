@@ -1,6 +1,6 @@
 import json
 
-from nexuscli import exception, nexus_util
+from nexuscli import exception
 from nexuscli.api.repository import model
 
 SCRIPT_NAME_CREATE = 'nexus3-cli-repository-create'
@@ -144,8 +144,7 @@ class RepositoryCollection:
         :param name: name of the repository to be deleted.
         :type name: str
         """
-        content = nexus_util.groovy_script(SCRIPT_NAME_DELETE)
-        self._client.scripts.create_if_missing(SCRIPT_NAME_DELETE, content)
+        self._client.scripts.create_if_missing(SCRIPT_NAME_DELETE)
         self._client.scripts.run(SCRIPT_NAME_DELETE, data=name)
 
     def create(self, repository):
@@ -161,8 +160,7 @@ class RepositoryCollection:
             raise TypeError(f'{repository} has type {type(repository)}'
                             f' but must be a subclass of Repository')
 
-        content = nexus_util.groovy_script(SCRIPT_NAME_CREATE)
-        self._client.scripts.create_if_missing(SCRIPT_NAME_CREATE, content)
+        self._client.scripts.create_if_missing(SCRIPT_NAME_CREATE)
 
         script_args = json.dumps(repository.configuration)
         resp = self._client.scripts.run(SCRIPT_NAME_CREATE, data=script_args)

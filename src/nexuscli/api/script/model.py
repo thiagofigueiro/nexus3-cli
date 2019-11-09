@@ -1,4 +1,4 @@
-from nexuscli import exception
+from nexuscli import exception, nexus_util
 
 
 class ScriptCollection(object):
@@ -69,14 +69,25 @@ class ScriptCollection(object):
 
         return resp.json()
 
-    def create_if_missing(self, name, content, script_type='groovy'):
+    def create_if_missing(self, name, content=None, script_type='groovy'):
         """
         Creates a script in the Nexus 3 service IFF a script with the same name
         doesn't exist. Equivalent to checking if the script exists with
         :meth:`get` and, if not, creating it with :meth:`create`.
 
-        Parameters as per :py:meth:`create`.
+        :param name: name of script to be created.
+        :type name: str
+        :param content: script code. If not given, the method will use
+            :py:meth:`nexuscli.nexus_util.groovy_script` to read the script
+            code from a local file.
+        :type content: Union[str,NoneType]
+        :param script_type: type of script to be created.
+        :type script_type: str
+        :raises exception.NexusClientAPIError: if the script creation isn't
+            successful; i.e.: any HTTP code other than 204.
         """
+        content = content or nexus_util.groovy_script(name)
+
         if not self.exists(name):
             self.create(name, content, script_type)
 
