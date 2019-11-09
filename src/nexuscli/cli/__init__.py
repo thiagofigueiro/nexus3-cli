@@ -34,6 +34,7 @@ Sub-commands:
   repository      Repository management.
   script          Script management.
 """
+import pkg_resources
 import sys
 from docopt import docopt
 
@@ -51,9 +52,6 @@ def _find_root_command(arguments):
         if _is_root_command(command):
             if value is True:
                 return f'cmd_{command}'
-
-    if arguments.get('--version'):
-        return 'cmd_version'
 
     # docopt shouldn't allow this to happen
     raise NotImplementedError(f'Command not found in arguments: {arguments}')
@@ -96,6 +94,11 @@ def _run_subcommand(arguments, subcommand):
 def main(argv=None):
     """Entrypoint for the setuptools CLI console script"""
     arguments = docopt(__doc__, argv=argv, options_first=True)
+
+    if arguments.get('--version'):
+        print(pkg_resources.get_distribution('nexus3-cli').version)
+        return 0
+
     maybe_subcommand = arguments.get('<subcommand>')
 
     # "root" commands (ie not a subcommand)
