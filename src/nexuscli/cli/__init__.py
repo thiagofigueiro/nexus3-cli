@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-"""Nexus 3 CLI
+"""Nexus 3 CLI.
 
 Usage:
-  nexus3 --help
+  nexus3 --help  # run this to see full list of commands/subcommands
   nexus3 --version
   nexus3 login
   nexus3 (list|ls) <repository_path>
