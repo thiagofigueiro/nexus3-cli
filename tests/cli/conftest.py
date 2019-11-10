@@ -9,4 +9,4 @@ def repo_name(basename, *args):
     name = basename
     for token in args:
         name += f'-{token}'
-    return f'{name}-{faker.random_number()}'
+    return f'{name}-{faker.pystr()}'
