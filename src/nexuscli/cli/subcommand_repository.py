@@ -2,6 +2,7 @@
 Usage:
   nexus3 repository --help
   nexus3 repository list
+  nexus3 repository show <repo_name>
   nexus3 repository (delete|del) <repo_name> [--force]
   nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
          <repo_name>
@@ -38,12 +39,15 @@ Options:
 
 Commands:
   repository create  Create a repository using the format and options provided
-  repository list    List all repositories available on the server
   repository delete  Delete a repository.
+  repository list    List all repositories available on the server
+  repository show    Show the configuration for a repository as JSON.
 """
+import json
 from docopt import docopt
 from texttable import Texttable
 
+from nexuscli import exception
 from nexuscli.api import repository
 from nexuscli.cli import errors, util
 
@@ -126,6 +130,20 @@ def cmd_delete(nexus_client, args):
         util.input_with_default(
             'Press ENTER to confirm deletion', 'ctrl+c to cancel')
     nexus_client.repositories.delete(args.get('<repo_name>'))
+    return errors.CliReturnCode.SUCCESS.value
+
+
+def cmd_show(nexus_client, args):
+    """Performs ``nexus3 repository show"""
+    repo_name = args.get('<repo_name>')
+    try:
+        configuration = nexus_client.repositories.get_raw_by_name(repo_name)
+    except exception.NexusClientInvalidRepository:
+        print(f'Repository not found: {repo_name}')
+        return errors.CliReturnCode.REPOSITORY_NOT_FOUND.value
+
+    print(json.dumps(configuration, indent=2))
+
     return errors.CliReturnCode.SUCCESS.value
 
 
