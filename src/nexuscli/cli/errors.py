@@ -8,4 +8,5 @@ class CliReturnCode(Enum):
     API_ERROR = 2
     INVALID_SUBCOMMAND = 10
     POLICY_NOT_FOUND = 20
+    REPOSITORY_NOT_FOUND = 30
     UNKNOWN_ERROR = 99

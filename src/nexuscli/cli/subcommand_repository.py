@@ -106,7 +106,7 @@ def cmd_create(nexus_client, args):
             'layout_policy': args.get('--layout').upper()})
 
     Repository = repository.collection.get_repository_class({
-        'format': recipe_name, 'type': repo_type})
+        'recipeName': f'{recipe_name}-{repo_type}'})
 
     r = Repository(args.get('<repo_name>'), **kwargs)
 

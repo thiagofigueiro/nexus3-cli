@@ -1,0 +1,15 @@
+{
+  "repositoryName": "maven-releases",
+  "recipeName": "maven2-hosted",
+  "attributes": {
+    "maven": {
+      "versionPolicy": "RELEASE",
+      "layoutPolicy": "STRICT"
+    },
+    "storage": {
+      "writePolicy": "ALLOW_ONCE",
+      "strictContentTypeValidation": false,
+      "blobStoreName": "default"
+    }
+  }
+}

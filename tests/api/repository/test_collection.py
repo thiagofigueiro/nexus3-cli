@@ -1,5 +1,6 @@
 import itertools
 import pytest
+from pprint import pformat
 
 from nexuscli import exception
 from nexuscli.api import repository
@@ -71,55 +72,30 @@ def test_delete(nexus_mock_client, faker, mocker):
         'nexus3-cli-repository-delete', data=x_name)
 
 
-@pytest.mark.parametrize('repo_class', repository.model.__all__)
-def test_raw_repo_to_args_kwargs(repo_class, faker):
-    """Ensure the method creates the correct name for all Repository classes"""
-    kwargs = {}
-    if repo_class.TYPE == 'proxy':
-        kwargs['remote_url'] = faker.url()
+# TODO: test all repos, not just the built-in maven ones
+@pytest.mark.parametrize('x_configuration', pytest.helpers.default_repos())
+@pytest.mark.integration
+def test_get_raw_by_name(x_configuration, nexus_client):
+    """Ensure the method finds and returns a repo configuration by name"""
+    name = x_configuration['repositoryName']
+    configuration = nexus_client.repositories.get_raw_by_name(name)
 
-    repo = repo_class(faker.word(), **kwargs)
-    for recipe in repo.RECIPES:
-        raw_repo = {
-            'name': repo.name,
-            'type': repo.TYPE,
-            'format': recipe,
-            'url': faker.url(),
-        }
+    added, removed, modified, _ = pytest.helpers.compare_dict(
+        configuration, x_configuration)
 
-        args, kwargs = repository.collection.raw_repo_to_args_kwargs(raw_repo)
-
-        assert args == (repo.name,)
-        if hasattr(repo, 'remote_url'):
-            assert kwargs['remote_url'] == raw_repo['url']
+    if added or removed or modified:
+        print(
+            f'added: {pformat(added)}\n'
+            f'removed: {pformat(removed)}\n'
+            f'modified: {pformat(modified)}\n')
+        pytest.fail('Configuration mismatch')
 
 
-def test_get_raw_by_name(nexus_mock_client, faker):
-    """Ensure the method finds and returns a raw repo by name"""
-    nexus = nexus_mock_client
-    x_name = faker.pystr()
-    x_format = faker.pystr()
-    x_values = nexus_mock_client.http_request.return_value._json
-
-    x_repo = pytest.helpers.nexus_repository(x_name, x_format)
-    x_values.append(x_repo)
-
-    nexus.repositories.refresh()
-
-    assert nexus.repositories.get_raw_by_name(x_name) == x_repo
-    assert nexus.repositories.get_raw_by_name(x_name)['name'] == x_name
-    assert nexus.repositories.get_raw_by_name(x_name)['format'] == x_format
-
-
-def test_get_raw_by_name_error(nexus_mock_client, faker):
+@pytest.mark.integration
+def test_get_raw_by_name_error(nexus_client, faker):
     """Ensure the method raises an exception when a repo is not found"""
-    nexus = nexus_mock_client
-    x_name = faker.pystr()
-
-    nexus.repositories.refresh()
-
-    with pytest.raises(IndexError):
-        nexus.repositories.get_raw_by_name(x_name)
+    with pytest.raises(exception.NexusClientInvalidRepository):
+        nexus_client.repositories.get_raw_by_name(faker.pystr())
 
 
 def test_refresh(nexus_mock_client):

@@ -46,6 +46,8 @@ class NexusClient(object):
         :class:`~nexuscli.api.repository.collection.RepositoryCollection`. This
         will automatically use the existing instance of :class:`NexusClient` to
         communicate with the Nexus service.
+
+        :rtype: RepositoryCollection
         """
         if self._repositories is None:
             self._repositories = RepositoryCollection(client=self)
