@@ -61,6 +61,8 @@ class Repository:
                  ):
         self.name = name
         self.nexus_client = nexus_client
+        # TODO: remove this the RECIPES attributes; no longer needed as there's
+        #   a unique class for each recipe/type.
         self.recipe = recipe.lower()
         self.blob_store_name = blob_store_name
         self.strict_content = strict_content_type_validation

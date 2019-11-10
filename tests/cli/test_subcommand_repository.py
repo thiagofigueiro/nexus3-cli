@@ -78,8 +78,7 @@ def test_create_hosted_yum(nexus_client, w_policy, depth, strict, c_policy):
         '--depth={depth} {strict} --cleanup={c_policy}', **locals())
 
     assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
-    # FIXME: https://github.com/thiagofigueiro/nexus3-cli/issues/73
-    # assert nexus_client.repositories.get_by_name(repo_name).depth == depth
+    assert nexus_client.repositories.get_by_name(repo_name).depth == depth
 
 
 @pytest.mark.parametrize(
