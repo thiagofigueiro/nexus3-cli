@@ -176,7 +176,11 @@ class NexusClient(object):
             request_kwargs['params'].update(
                 {'continuationToken': continuation_token})
             response = self.http_request('get', endpoint, **request_kwargs)
-            content = response.json()
+
+            try:
+                content = response.json()
+            except json.decoder.JSONDecodeError:
+                raise exception.NexusClientAPIError(response.content)
 
     def http_post(self, endpoint, **kwargs):
         """
