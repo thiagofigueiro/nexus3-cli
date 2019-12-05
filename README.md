@@ -8,16 +8,11 @@ OSS 3](https://www.sonatype.com/download-oss-sonatype).
 [![codecov](https://codecov.io/gh/thiagofigueiro/nexus3-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/thiagofigueiro/nexus3-cli)
 [![Documentation Status](https://readthedocs.org/projects/nexus3-cli/badge/?version=latest)](https://nexus3-cli.readthedocs.io/en/latest/?badge=latest)
 
-**NOTICE**: version 2.0.0 of nexus3-cli has been released and it includes **breaking changes**. If your application uses `nexuscli` and was affected, you should:
-
-* pin your requirements (e.g.: `'nexus3-cli>=1.0.2,<2`); and
-* have a look at the changes on the [2.0.0 branch](https://github.com/thiagofigueiro/nexus3-cli/tree/release/2.0.0) in preparation for the upgrade.
-
-Development and support for 1.0.x versions will no longer be provided (at least not by me - I'm happy to review contributions for 1.x).
 
 ## Features
 
 1. Compatible with [Nexus 3 OSS](https://www.sonatype.com/download-oss-sonatype)
+   1. [Nexus versions tested](https://github.com/thiagofigueiro/nexus3-cli/blob/master/.travis.yml#L3)
 1. Python API and command-line support
 1. Artefact management: list, delete, bulk upload and download.
 1. Repository management:
@@ -144,6 +139,11 @@ Version 2.0.0 has significant API changes from 1.0.0. In summary:
   [read the docs](https://readthedocs.org/projects/nexus3-cli/).
 * Unit tests have been refactored and re-organised to more closely match the
   `src` structure.
+
+If you need to stay on versoin 1.0.x for some reason, you can pin your
+requirements (e.g.: `'nexus3-cli>=1.0.2,<2`). Note that I will no longer
+support 1.0.x, although I'm happy to review contributions.
+
 
 ## Development
 
