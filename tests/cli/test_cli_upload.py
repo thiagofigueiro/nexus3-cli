@@ -1,5 +1,8 @@
+import itertools
 import os
 import pytest
+
+from nexuscli import cli
 
 
 @pytest.mark.integration
@@ -44,3 +47,27 @@ def test_upload_root(nexus_client, make_testfile, faker):
     file_set = pytest.helpers.repo_list(nexus_client, repo_name, 1)
 
     assert file_set == set([src_file])
+
+
+@pytest.mark.parametrize('upload,flatten,norecurse', itertools.product(
+    ['up', 'upload'],
+    [[], ['--flatten']],
+    [[], ['--norecurse']]
+))
+def test_upload(upload, flatten, norecurse, nexus_mock_client, faker, mocker):
+    """
+    Ensure all accepted variations of the upload command result in the
+    cmd_upload method being called.
+    https://github.com/thiagofigueiro/nexus3-cli/issues/76
+    """
+    mocker.patch(
+        'nexuscli.cli.util.get_client', return_value=nexus_mock_client)
+    mock_cmd_upload = mocker.patch('nexuscli.cli.root_commands.cmd_upload')
+
+    source = faker.file_path()
+    destination = faker.file_path()
+    argv = [upload, source, destination] + flatten + norecurse
+
+    cli.main(argv=argv)
+
+    mock_cmd_upload.assert_called_once()

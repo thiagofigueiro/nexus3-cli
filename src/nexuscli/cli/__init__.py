@@ -35,7 +35,7 @@ Sub-commands:
 """
 import pkg_resources
 import sys
-from docopt import docopt
+from docopt import docopt, DocoptExit
 
 from nexuscli.cli import errors, util
 
@@ -92,7 +92,12 @@ def _run_subcommand(arguments, subcommand):
 
 def main(argv=None):
     """Entrypoint for the setuptools CLI console script"""
-    arguments = docopt(__doc__, argv=argv, options_first=True)
+    try:
+        arguments = docopt(__doc__, argv=argv)
+    except DocoptExit:
+        # FIXME: it's time to ditch docopt for something that supports
+        #   subcommands natively
+        arguments = docopt(__doc__, argv=argv, options_first=True)
 
     if arguments.get('--version'):
         print(pkg_resources.get_distribution('nexus3-cli').version)
