@@ -1,4 +1,5 @@
 import os
+import semver
 from clint.textui import progress
 from urllib.parse import urlparse
 
@@ -8,6 +9,10 @@ DEFAULT_RECIPE = 'raw'
 DEFAULT_WRITE_POLICY = 'ALLOW'
 DEFAULT_BLOB_STORE_NAME = 'default'
 DEFAULT_STRICT_CONTENT = False
+
+# https://issues.sonatype.org/browse/NEXUS-19525
+# https://github.com/thiagofigueiro/nexus3-cli/issues/77
+CLEANUP_SET_MIN_VERSION = semver.VersionInfo(3, 19, 0)
 
 
 class Repository:
@@ -66,7 +71,7 @@ class Repository:
         self.recipe = recipe.lower()
         self.blob_store_name = blob_store_name
         self.strict_content = strict_content_type_validation
-        self.cleanup_policy = cleanup_policy
+        self._cleanup_policy = cleanup_policy
 
         self.__validate_params()
 
@@ -87,6 +92,28 @@ class Repository:
             return 'maven2'
 
         return self.recipe
+
+    def _cleanup_uses_set(self):
+        # In case Sonatype changes the version string format, default to the
+        # new behaviour as there should be more people using newer versions
+        if self.nexus_client.server_version is None:
+            return True
+
+        # When the breaking API change was introduced
+        if self.nexus_client.server_version >= CLEANUP_SET_MIN_VERSION:
+            return True
+
+        return False
+
+    @property
+    def cleanup_policy(self):
+        """
+        Groovy-formatted value for the cleanup/policy attribute.
+        """
+        if self._cleanup_uses_set():
+            return [self._cleanup_policy]
+        else:
+            return self._cleanup_policy
 
     @property
     def configuration(self):
@@ -134,7 +161,8 @@ class Repository:
             }
         }
 
-        if self.cleanup_policy is not None:
+        # we want 'x' or ['x'] but not None or [None]
+        if self.cleanup_policy and any(self.cleanup_policy):
             repo_config['attributes']['cleanup'] = {
                 'policyName': self.cleanup_policy}
 

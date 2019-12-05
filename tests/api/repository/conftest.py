@@ -6,9 +6,9 @@ from nexuscli.api import repository
 
 
 @pytest.fixture
-def repository_collection(mocker):
+def repository_collection(mock_nexus_client):
     """A RepositoryCollection with the nexus_client mocked"""
-    fixture = repository.RepositoryCollection(client=mocker.Mock())
+    fixture = repository.RepositoryCollection(client=mock_nexus_client)
     return fixture
 
 

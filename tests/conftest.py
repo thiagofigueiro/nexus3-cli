@@ -42,6 +42,13 @@ def docopt_args(faker):
     return args
 
 
+@pytest.fixture
+def mock_nexus_client(mocker):
+    fixture = mocker.Mock()
+    fixture.server_version = None
+    return fixture
+
+
 @pytest.fixture(scope='session')
 def nexus_client():
     config = NexusConfig()
