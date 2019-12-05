@@ -1,7 +1,7 @@
 import json
 import logging
-import os.path
-import py
+import os
+import pathlib
 import requests
 import sys
 from clint.textui import progress
@@ -30,7 +30,7 @@ class NexusClient(object):
     """
     def __init__(self, config=None):
         self.config = config or NexusConfig()
-        self._local_sep = os.path.sep
+        self._local_sep = os.sep
         self._remote_sep = validations.REMOTE_PATH_SEPARATOR
         self._cleanup_policies = None
         self._repositories = None
@@ -463,12 +463,13 @@ class NexusClient(object):
                 local_relative = os.path.join(
                     local_relative_dir, dst_file_name)
 
-        destination_path = py.path.local(local_dst)
-        local_absolute_path = destination_path.join(local_relative)
+        destination_path = pathlib.Path(local_dst)
+        local_path = destination_path.joinpath(local_relative)
 
         if create:
-            local_absolute_path.ensure(dir=remote_isdir)
-        return str(local_absolute_path)
+            nexus_util.ensure_exists(local_path, is_dir=remote_isdir)
+
+        return local_path.absolute()
 
     @staticmethod
     def _should_skip_download(download_url, download_path, artefact, nocache):

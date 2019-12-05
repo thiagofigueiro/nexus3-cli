@@ -149,3 +149,19 @@ def has_same_hash(artefact, filepath):
         return local_hash == remote_hash
 
     return False
+
+
+def ensure_exists(path, is_dir=False):
+    """
+    Ensures a path exists.
+
+    :param path: the path to ensure
+    :type path: pathlib.Path
+    :param is_dir: whether the path is a directory.
+    :type is_dir: bool
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if is_dir:
+        path.mkdir(exist_ok=True)
+    else:
+        path.touch()
