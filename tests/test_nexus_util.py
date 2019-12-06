@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import itertools
 import pytest
 
@@ -82,3 +81,15 @@ def test_has_same_hash(hash_name, match, mocker, faker):
 def test_has_same_hash_empty():
     """Ensure method returns false when artefact has no checksum entries"""
     assert not nexus_util.has_same_hash({}, 'any')
+
+
+@pytest.mark.parametrize('is_dir', [True, False])
+def test_ensure_exists(is_dir, tmp_path, faker):
+    """Ensure method calls the right combination of mkdir/touch"""
+    path = tmp_path.joinpath(faker.word())
+
+    nexus_util.ensure_exists(path, is_dir=is_dir)
+
+    assert path.exists()
+    assert is_dir == path.is_dir()
+    assert is_dir != path.is_file()

@@ -69,13 +69,13 @@ def test__remote_path_to_local(
     # add cwd to expected result as the fixture gives it as relative but the
     # method always returns an absolute path
     if x_local_path.find('_TMP_') == 0:
-        x_local_path = x_local_path.replace('_TMP_', str(tmpdir) + os.path.sep)
+        x_local_path = x_local_path.replace('_TMP_', str(tmpdir) + os.sep)
 
     with tmpdir.as_cwd():
         local_path = nexus._remote_path_to_local(
             remote, destination, FLATTEN, create=False)
 
-    assert local_path == os.path.realpath(x_local_path)
+    assert str(local_path) == x_local_path
 
 
 @pytest.mark.parametrize('is_dst_dir, flatten',
@@ -138,7 +138,7 @@ def test_download_tree(
     file_set_uploaded = pytest.helpers.repo_list(
                             nexus_client, repo, count_uploaded, path)
 
-    download_dest = '{}{}{}'.format(str(tmpdir), os.path.sep, dest_dir_end)
+    download_dest = '{}{}{}'.format(str(tmpdir), os.sep, dest_dir_end)
     source_path = f'{repo}/{dst_dir}'
     count_downloaded = nexus_client.download(
             source_path, download_dest, flatten=flatten, nocache=nocache)
