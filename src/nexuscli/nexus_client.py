@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 import requests
+import semver
 import sys
 from clint.textui import progress
 from urllib.parse import urljoin
@@ -32,12 +33,43 @@ class NexusClient(object):
         self.config = config or NexusConfig()
         self._local_sep = os.sep
         self._remote_sep = validations.REMOTE_PATH_SEPARATOR
+        self._server_version = None
         self._cleanup_policies = None
         self._repositories = None
         self._scripts = None
         self._verify = None
 
         self.repositories.refresh()
+
+    @property
+    def server_version(self):
+        """
+        Parse the Server header from a Nexus request response and return
+        as version information. The method expects the header Server to be
+        present and formatted as, e.g., 'Nexus/3.19.1-01 (OSS)'
+
+        :return: the parsed version. If it can't be determined, return None.
+        :rtype: Union[None,semver.VersionInfo]
+        """
+        if self._server_version is None:
+            response = self.http_get(self.config.url)
+
+            if response.status_code != 200:
+                raise exception.NexusClientAPIError(response.reason)
+
+            server = response.headers.get('Server')
+
+            if server is None:
+                return None
+
+            try:
+                maybe_semver = server.split(' ')[0].split('/')[1].split('-')[0]
+                version = semver.parse_version_info(maybe_semver)
+            except (IndexError, ValueError):
+                return None
+
+            self._server_version = version
+        return self._server_version
 
     @property
     def repositories(self):
@@ -176,7 +208,11 @@ class NexusClient(object):
             request_kwargs['params'].update(
                 {'continuationToken': continuation_token})
             response = self.http_request('get', endpoint, **request_kwargs)
-            content = response.json()
+
+            try:
+                content = response.json()
+            except json.decoder.JSONDecodeError:
+                raise exception.NexusClientAPIError(response.content)
 
     def http_post(self, endpoint, **kwargs):
         """

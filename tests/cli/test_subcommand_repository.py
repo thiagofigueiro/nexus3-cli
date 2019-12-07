@@ -25,7 +25,7 @@ def test_list(mocker):
         SUPPORTED_FORMATS,  # format
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
+        ['', '--cleanup=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
 def test_create_hosted(nexus_client, repo_format, w_policy, strict, c_policy):
@@ -34,7 +34,7 @@ def test_create_hosted(nexus_client, repo_format, w_policy, strict, c_policy):
         'hosted', repo_format, w_policy, strict, c_policy)
     argv = pytest.helpers.create_argv(
         'repository create hosted {repo_format} {repo_name} '
-        '--write={w_policy} {strict} --cleanup={c_policy}', **locals())
+        '--write={w_policy} {strict} {c_policy}', **locals())
 
     assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 

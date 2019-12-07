@@ -17,9 +17,11 @@ def test_create_repository_error(repository_collection, mocker):
     Ensure the incorrect response from Nexus results in the expected exception
     """
     mocker.patch('json.dumps')
+    dummy_repo = repository.Repository(
+        'dummy', nexus_client=repository_collection._client)
 
     with pytest.raises(exception.NexusClientCreateRepositoryError):
-        repository_collection.create(repository.Repository('dummy'))
+        repository_collection.create(dummy_repo)
 
 
 @pytest.mark.parametrize('repo_class, response', itertools.product(

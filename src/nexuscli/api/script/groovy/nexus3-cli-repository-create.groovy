@@ -22,7 +22,7 @@ def createRepository(Repository repo) {
     try {
         repository.createRepository(conf)
     }
-    catch (Exception e){
+    catch (Exception e) {
         return e
     }
 
@@ -46,6 +46,20 @@ def createConfiguration(Repository repo){
         online: getOnline(repo),
         attributes: repo.properties.get("attributes")
         )
+
+    // https://github.com/thiagofigueiro/nexus3-cli/issues/77
+    try {
+        policy_name = conf.attributes.cleanup.policyName
+        log.info("policy name is ${policy_name.getClass()}")
+        if (policy_name.getClass() == java.util.ArrayList) {
+            Set set = new HashSet(policy_name)
+            conf.attributes.cleanup.policyName = set
+            log.info("Converted to ${set.getClass()}")
+        }
+    }
+    catch (java.lang.NullPointerException e) {
+        log.info("No cleanup policy provided; that's ok.")
+    }
 
     return conf
 }

@@ -1,7 +1,8 @@
 import itertools
 import pytest
+from semver import VersionInfo
 
-from nexuscli.api.repository.model import upload
+from nexuscli.api.repository import model
 
 
 @pytest.mark.parametrize(
@@ -80,8 +81,8 @@ def test_upload_directory(repo_class, recurse, flatten, mocker, faker):
     Ensure the method calls upload_file with parameters based on the quantity
     of files in a given directory.
     """
-    src_dir = upload.REMOTE_PATH_SEPARATOR.join(faker.words())
-    dst_dir = upload.REMOTE_PATH_SEPARATOR.join(faker.words())
+    src_dir = model.upload.REMOTE_PATH_SEPARATOR.join(faker.words())
+    dst_dir = model.upload.REMOTE_PATH_SEPARATOR.join(faker.words())
     x_subdirectory = faker.pystr()
     x_file_path = faker.pystr()
 
@@ -109,7 +110,7 @@ def test_upload_directory(repo_class, recurse, flatten, mocker, faker):
 @pytest.mark.parametrize(
     'repo_class',
     pytest.helpers.repositories_by_type(['hosted', 'proxy', 'group']))
-def test_repository_configuration(repo_class, faker):
+def test_repository_configuration(repo_class, mock_nexus_client, faker):
     x_name = faker.word()
     x_cleanup_policy = faker.word()
     x_blob_store_name = faker.word()
@@ -117,6 +118,7 @@ def test_repository_configuration(repo_class, faker):
     x_strict = faker.pybool()
 
     kwargs = {
+        'nexus_client': mock_nexus_client,
         'cleanup_policy': x_cleanup_policy,
         'blob_store_name': x_blob_store_name,
         'strict_content_type_validation': x_strict,
@@ -130,7 +132,7 @@ def test_repository_configuration(repo_class, faker):
     attributes = configuration['attributes']
 
     assert configuration['name'] == x_name
-    assert attributes['cleanup']['policyName'] == x_cleanup_policy
+    assert attributes['cleanup']['policyName'] == [x_cleanup_policy]
     assert attributes['storage']['blobStoreName'] == x_blob_store_name
     assert attributes['storage']['strictContentTypeValidation'] == x_strict
 
@@ -142,11 +144,12 @@ def test_repository_configuration(repo_class, faker):
     'yum_repo',
     pytest.helpers.yum_repos()
 )
-def test_yum_repository_configuration(yum_repo, faker):
+def test_yum_repository_configuration(yum_repo, mock_nexus_client, faker):
     x_name = faker.word()
     x_depth = faker.pyint()
 
     kwargs = {
+        'nexus_client': mock_nexus_client,
         'depth': x_depth
     }
 
@@ -156,3 +159,24 @@ def test_yum_repository_configuration(yum_repo, faker):
     repo = yum_repo(x_name, **kwargs)
 
     assert repo.configuration['attributes']['yum']['repodataDepth'] == x_depth
+
+
+@pytest.mark.parametrize('version,xpolicy', [
+    (None, lambda x: [x]),
+    (model.CLEANUP_SET_MIN_VERSION, lambda x: [x]),
+    (VersionInfo(0, 0, 0), lambda x: x)
+])
+def test_cleanup_policy(version, xpolicy, mocker, mock_nexus_client, faker):
+    """
+    From CLEANUP_SET_MIN_VERSION, Nexus takes a set of policy names instead
+    of a single policy. Ensure the method returns the right type according to
+    the version.
+    https://github.com/thiagofigueiro/nexus3-cli/issues/77
+    """
+    policy = faker.word()
+
+    mock_nexus_client.server_version = version
+    repository = model.Repository(
+        'myrepo', nexus_client=mock_nexus_client, cleanup_policy=policy)
+
+    assert repository.cleanup_policy == xpolicy(policy)

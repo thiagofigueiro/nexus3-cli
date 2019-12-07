@@ -13,6 +13,7 @@ requires = [
     'inflect',
     'future',
     'requests[security]>=2.14.2',
+    'semver',
     'six',
     'texttable'
 ]

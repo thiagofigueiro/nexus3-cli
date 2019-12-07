@@ -231,7 +231,7 @@ class RepositoryCollection:
 
         :param repository: the instance containing the settings for the
             repository to be created.
-        :type repository: type(repository)Repository
+        :type repository: Repository
         :raises NexusClientCreateRepositoryError: error creating repository.
         """
         if not issubclass(type(repository), model.Repository):
