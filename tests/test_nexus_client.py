@@ -4,8 +4,8 @@ import requests
 
 import nexuscli
 from nexuscli import exception
-from nexuscli.nexus_client import NexusClient, NexusConfig
-from nexuscli.nexus_config import DEFAULTS
+from nexuscli.nexus_client import NexusClient
+from nexuscli.nexus_config import DEFAULTS, NexusConfig
 
 
 def test_repositories(mocker):
