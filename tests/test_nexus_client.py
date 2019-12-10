@@ -5,6 +5,7 @@ import requests
 import nexuscli
 from nexuscli import exception
 from nexuscli.nexus_client import NexusClient, NexusConfig
+from nexuscli.nexus_config import DEFAULTS
 
 
 def test_repositories(mocker):
@@ -83,6 +84,6 @@ def test_nexus_context_path(url, expected_base, mocker):
 
     NexusClient(NexusConfig(url=url))
     requests.request.assert_called_once_with(
-        auth=(nexus_config.DEFAULTS['username'], nexus_config.DEFAULTS['password']), method='get', stream=True,
-        url=(expected_base + 'service/rest/v1/repositories'),
+        auth=(DEFAULTS['username'], DEFAULTS['password']), method='get',
+        stream=True, url=(expected_base + 'service/rest/v1/repositories'),
         verify=True)
