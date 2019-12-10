@@ -16,9 +16,9 @@ class CleanupPolicy(object):
         mode (str): 'delete'
         criteria (dict): the deletion criteria for the policy. Supports one or
             more of the following attributes:
-                - ``lastDownloaded`` (int): seconds since artefact last
+                - ``lastDownloaded`` (int): days since artefact last
                   downloaded;
-                - ``lastBlobUpdated`` (int): seconds since last update to
+                - ``lastBlobUpdated`` (int): days since last update to
                   artefact;
     """
     def __init__(self, client, **kwargs):
