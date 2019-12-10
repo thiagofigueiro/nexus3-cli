@@ -83,6 +83,6 @@ def test_nexus_context_path(url, expected_base, mocker):
 
     NexusClient(NexusConfig(url=url))
     requests.request.assert_called_once_with(
-        auth=('admin', 'admin123'), method='get', stream=True,
+        auth=(nexus_config.DEFAULTS['username'], nexus_config.DEFAULTS['password']), method='get', stream=True,
         url=(expected_base + 'service/rest/v1/repositories'),
         verify=True)
