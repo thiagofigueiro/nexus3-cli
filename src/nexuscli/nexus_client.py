@@ -143,8 +143,7 @@ class NexusClient(object):
                 method=method, auth=self.config.auth, url=url,
                 verify=self.config.x509_verify, **kwargs)
         except requests.exceptions.ConnectionError as e:
-            print(e)
-            sys.exit(1)
+            raise exception.NexusClientConnectionError(str(e))
 
         if response.status_code == 401:
             raise exception.NexusClientInvalidCredentials(
