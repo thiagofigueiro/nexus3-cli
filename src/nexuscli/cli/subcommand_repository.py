@@ -151,4 +151,10 @@ def main(argv=None):
     """Entrypoint for ``nexus3 repository`` subcommand."""
     arguments = docopt(__doc__, argv=argv)
     command_method = util.find_cmd_method(arguments, globals())
-    return command_method(util.get_client(), arguments)
+
+    # TODO: generic implementation in src/nexuscli/cli/__init__.py
+    try:
+        return command_method(util.get_client(), arguments)
+    except exception.NexusClientConnectionError as e:
+        print(f'Connection error: {e}')
+        return errors.CliReturnCode.CONNECTION_ERROR.value
