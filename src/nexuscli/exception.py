@@ -3,6 +3,11 @@ class NexusClientAPIError(Exception):
     pass
 
 
+class NexusClientConnectionError(Exception):
+    """Generic network connector error."""
+    pass
+
+
 class NexusClientInvalidCredentials(Exception):
     """
     Login credentials not accepted by Nexus service. Usually the result of a
