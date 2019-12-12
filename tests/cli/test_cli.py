@@ -23,10 +23,11 @@ def test_list(nexus_client, faker):
 
     has_created = pytest.helpers.create_and_inspect(
         nexus_client, argv_create, repo_name)
+
     exit_code = cli.main(argv=list(filter(None, argv_list)))
 
     assert has_created
-    assert exit_code == 0
+    assert exit_code == cli.errors.CliReturnCode.SUCCESS.value
 
 
 @pytest.mark.integration

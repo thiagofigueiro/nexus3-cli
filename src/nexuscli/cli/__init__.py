@@ -37,6 +37,7 @@ import pkg_resources
 import sys
 from docopt import docopt, DocoptExit
 
+from nexuscli import exception
 from nexuscli.cli import errors, util
 
 
@@ -105,9 +106,18 @@ def main(argv=None):
 
     maybe_subcommand = arguments.get('<subcommand>')
 
-    # "root" commands (ie not a subcommand)
-    if maybe_subcommand is None:
-        return _run_root_commands(arguments)
+    exit_code = errors.CliReturnCode.UNKNOWN_ERROR.value
+    try:
+        # "root" commands (ie not a subcommand)
+        if maybe_subcommand is None:
+            exit_code = _run_root_commands(arguments)
+        else:
+            # subcommands
+            exit_code = _run_subcommand(arguments, maybe_subcommand)
 
-    # subcommands
-    return _run_subcommand(arguments, maybe_subcommand)
+    except exception.NexusClientBaseError as e:
+        print(f'{e.cli_return_code.name}: {e}')
+        exit_code = e.cli_return_code.value
+
+    finally:
+        return exit_code
