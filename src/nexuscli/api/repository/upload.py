@@ -33,7 +33,8 @@ def upload_file_raw(repository, src_file, dst_dir, dst_file):
 
     if response.status_code != 204:
         raise exception.NexusClientAPIError(
-            f'Uploading to {repository.name}. Reason: {response.reason}')
+            f'Uploading to {repository.name}. Reason: {response.reason} '
+            f'Status code: {response.status_code} Text: {response.text}')
 
 
 def upload_file_yum(repository, src_file, dst_dir, dst_file):
@@ -58,4 +59,5 @@ def upload_file_yum(repository, src_file, dst_dir, dst_file):
 
     if response.status_code != 200:
         raise exception.NexusClientAPIError(
-            f'Uploading to {repository_path}. Reason: {response.reason}')
+            f'Uploading to {repository_path}. Reason: {response.reason} '
+            f'Status code: {response.status_code} Text: {response.text}')

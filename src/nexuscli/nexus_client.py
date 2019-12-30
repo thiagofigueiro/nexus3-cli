@@ -117,7 +117,7 @@ class NexusClient(object):
 
         :rtype: str
         """
-        url = urljoin(self.config.url, '/service/rest/')
+        url = urljoin(self.config.url, 'service/rest/')
         return urljoin(url, self.config.api_version + '/')
 
     def http_request(self, method, endpoint, service_url=None, **kwargs):
