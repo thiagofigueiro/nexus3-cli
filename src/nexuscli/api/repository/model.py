@@ -33,7 +33,8 @@ class Repository:
           <https://help.sonatype.com/repomanager3/formats/raw-repositories>`_
         - `rubygems
           <https://help.sonatype.com/repomanager3/formats/rubygems-repositories>`_
-
+        - `docker
+          <https://help.sonatype.com/repomanager3/formats/docker-registry>`_
     :param name: name of the repository.
     :type name: str
     :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
@@ -54,7 +55,15 @@ class Repository:
     :type cleanup_policy: str
     """
 
-    RECIPES = ('bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems')
+    RECIPES = (
+        'bower',
+        'npm',
+        'nuget',
+        'pypi',
+        'raw',
+        'rubygems',
+        'docker',
+    )
     TYPE = None
 
     def __init__(self, name,
@@ -205,6 +214,9 @@ class ProxyRepository(Repository):
                  metadata_max_age=1440,
                  negative_cache_enabled=True,
                  negative_cache_ttl=1440,
+                 remote_auth_type=None,
+                 remote_username=None,
+                 remote_password=None,
                  **kwargs):
         self.remote_url = remote_url
         self.auto_block = auto_block
@@ -212,6 +224,9 @@ class ProxyRepository(Repository):
         self.metadata_max_age = metadata_max_age
         self.negative_cache_enabled = negative_cache_enabled
         self.negative_cache_ttl = negative_cache_ttl
+        self.remote_username = remote_username
+        self.remote_password = remote_password
+        self.remote_auth_type = remote_auth_type
 
         super().__init__(name, **kwargs)
 
@@ -252,6 +267,14 @@ class ProxyRepository(Repository):
             },
         })
 
+        if self.remote_auth_type == 'username':
+            repo_config['attributes']['httpclient'].update({
+                'authentication': {
+                    'type': self.remote_auth_type,
+                    'username': self.remote_username,
+                    'password': self.remote_password
+                }
+            })
         return repo_config
 
 
@@ -532,6 +555,106 @@ class RubygemsProxyRepository(ProxyRepository):
     pass
 
 
+class DockerRepository(Repository):
+    RECIPES = ('docker',)
+
+    def __init__(self, name,
+                 http_port=8084,
+                 https_port=8085,
+                 v1_enabled=False,
+                 force_basic_auth=False,
+                 **kwargs):
+        self.https_port = https_port
+        self.http_port = http_port
+        self.v1_enabled = v1_enabled
+        self.force_basic_auth = force_basic_auth
+        kwargs.update({'recipe': 'docker'})
+        super().__init__(name, **kwargs)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        repo_config['attributes'].update({
+            'docker': {
+                'httpPort': self.http_port,
+                'httpsPort': self.https_port,
+                'v1Enabled': self.v1_enabled,
+                'forceBasicAuth': self.force_basic_auth
+            }
+        })
+
+        return repo_config
+
+
+class DockerHostedRepository(HostedRepository, DockerRepository):
+    pass
+
+
+class DockerProxyRepository(ProxyRepository, DockerRepository):
+    INDEX_TYPES = ('REGISTRY', 'HUB', 'CUSTOM')
+
+    def __init__(self, name,
+                 index_type='REGISTRY',
+                 use_trust_store_for_index_access=False,
+                 index_url="https://index.docker.io/",
+                 **kwargs):
+        self.index_type = index_type
+
+        validations.ensure_known(
+            'index_type',
+            self.index_type,
+            self.INDEX_TYPES
+        )
+
+        self.use_trust_store_for_index_access =\
+            use_trust_store_for_index_access
+        self.index_url = index_url
+        super().__init__(name, **kwargs)
+
+    @property
+    def configuration(self):
+        """
+        As per :py:obj:`Repository.configuration` but specific to this
+        repository recipe and type.
+
+        :rtype: str
+        """
+        repo_config = super().configuration
+
+        if self.index_type == 'REGISTRY':
+            repo_config['attributes'].update({
+                'dockerProxy': {
+                    'indexType': self.index_type
+                },
+            })
+        if self.index_type == 'HUB':
+            repo_config['attributes'].update({
+                'dockerProxy': {
+                    'indexType': self.index_type,
+                    "useTrustStoreForIndexAccess":
+                        self.use_trust_store_for_index_access
+
+                },
+            })
+        if self.index_type == 'CUSTOM':
+            repo_config['attributes'].update({
+                'dockerProxy': {
+                    'indexType': self.index_type,
+                    "useTrustStoreForIndexAccess":
+                        self.use_trust_store_for_index_access,
+                    "indexUrl": self.index_url,
+                },
+            })
+        return repo_config
+
+
 __all__ = [
     Repository, HostedRepository, ProxyRepository,
     BowerHostedRepository, BowerProxyRepository,
@@ -542,4 +665,5 @@ __all__ = [
     RawHostedRepository, RawProxyRepository,
     RubygemsHostedRepository, RubygemsProxyRepository,
     YumHostedRepository, YumProxyRepository,
+    DockerHostedRepository, DockerProxyRepository,
 ]
