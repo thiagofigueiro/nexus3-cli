@@ -4,13 +4,15 @@ Usage:
   nexus3 repository list
   nexus3 repository show <repo_name>
   nexus3 repository (delete|del) <repo_name> [--force]
-  nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems)
+  nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems|docker)
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
          [--write=<w_policy>]
   nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--remote_auth_type=<remote_auth_type>]
+         [--remote_username=<username>] [--remote_password=<password>]
   nexus3 repository create hosted maven
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
@@ -20,22 +22,48 @@ Usage:
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
          [--version=<v_policy>] [--layout=<l_policy>]
+         [--remote_auth_type=<remote_auth_type>]
+         [--remote_username=<username>] [--remote_password=<password>]
   nexus3 repository create hosted yum
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
          [--write=<w_policy>]
          [--depth=<repo_depth>]
+  nexus3 repository create proxy docker
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--v1_enabled]
+         [--force_basic_auth]
+         [--index_type=<index_type>]
+         [--http_port=<http_port>]
+         [--https_port=<https_port>]
+         [--remote_auth_type=<remote_auth_type>]
+         [--remote_username=<username>] [--remote_password=<password>]
+  nexus3 repository create hosted docker
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--v1_enabled]
+         [--force_basic_auth]
+         [--http_port=<http_port>]
+         [--https_port=<https_port>]
 
 Options:
-  -h --help             This screen
-  --blob=<store_name>   Use this blob with new repository  [default: default]
-  --depth=<repo_depth>  Depth (0-5) where repodata folder(s) exist [default: 0]
-  --layout=<l_policy>   Accepted: strict, permissive [default: strict]
-  --strict-content      Enable strict content type validation
-  --version=<v_policy>  Accepted: release, snapshot, mixed [default: release]
-  --write=<w_policy>    Accepted: allow, allow_once, deny [default: allow_once]
-  --cleanup=<c_policy>  Accepted: an existing Cleanup Policy name
-  -f --force            Do not ask for confirmation before deleting
+  -h --help                             This screen  # noqa: E501
+  --blob=<store_name>                   Use this blob with new repository  [default: default]
+  --depth=<repo_depth>                  Depth (0-5) where repodata folder(s) exist [default: 0]
+  --layout=<l_policy>                   Accepted: strict, permissive [default: strict]
+  --strict-content                      Enable strict content type validation
+  --version=<v_policy>                  Accepted: release, snapshot, mixed [default: release]
+  --write=<w_policy>                    Accepted: allow, allow_once, deny [default: allow_once]
+  --cleanup=<c_policy>                  Accepted: an existing Cleanup Policy name
+  -f --force                            Do not ask for confirmation before deleting
+  --v1_enabled                          Enable v1 registry [default: False]
+  --index_type=<index_type>             Accepted: registry, hub, custom [default: registry]
+  --force_basic_auth                    Force to use basic authentication against this docker repo
+  --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
+  --remote_username=<remote_username>   Remote username
+  --remote_password=<remote_password>   Remote password
 
 Commands:
   repository create  Create a repository using the format and options provided
@@ -99,7 +127,17 @@ def cmd_create(nexus_client, args):
         kwargs.update({'write_policy': args.get('--write').upper()})
 
     if repo_type == 'proxy':
-        kwargs.update({'remote_url': args.get('<remote_url>')})
+        kwargs.update({'remote_url': args.get('<remote_url>'),
+                       'remote_auth_type': args.get('--remote_auth_type'),
+                       'remote_username': args.get('--remote_username'),
+                       'remote_password': args.get('--remote_password')
+                       })
+
+        if recipe_name == 'docker':
+            kwargs.update({'index_type': args.get('--index_type').upper(),
+                           'use_trust_store_for_index_access':
+                               args.get('--use_trust_store_for_index_access'),
+                           'index_url': args.get('--index_url')})
 
     if recipe_name == 'yum':
         kwargs.update({'depth': int(args.get('--depth'))})
@@ -108,6 +146,12 @@ def cmd_create(nexus_client, args):
         kwargs.update({
             'version_policy': args.get('--version').upper(),
             'layout_policy': args.get('--layout').upper()})
+
+    if recipe_name == 'docker':
+        kwargs.update({'http_port': args.get('--http_port'),
+                       'https_port': args.get('--https_port'),
+                       'v1_enabled': args.get('--v1_enabled'),
+                       'force_basic_auth': args.get('--force_basic_auth')})
 
     Repository = repository.collection.get_repository_class({
         'recipeName': f'{recipe_name}-{repo_type}'})
