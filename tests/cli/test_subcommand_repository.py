@@ -106,7 +106,6 @@ def test_create_proxy(nexus_client, repo_format, strict,
     repo_name = pytest.helpers.repo_name(
         'proxy', repo_format, strict, c_policy,
         remote_auth_type[0])
-    print(repo_name)
     argv = pytest.helpers.create_argv(
         'repository create proxy {repo_format} {repo_name} {remote_url} '
         '{strict} --cleanup={c_policy} '
@@ -142,7 +141,6 @@ def test_create_proxy_maven(
     repo_name = pytest.helpers.repo_name(
         'proxy-maven', v_policy, l_policy, strict, c_policy,
         remote_auth_type[0])
-    print(repo_name)
     argv = pytest.helpers.create_argv(
         'repository create proxy maven {repo_name} {remote_url} '
         '--layout={l_policy} --version={v_policy} {strict} '
@@ -183,7 +181,6 @@ def test_create_proxy_docker(
         'proxy-docker', v1_enabled, force_basic_auth,
         index_type, strict, c_policy,
         remote_auth_type[0])
-    print(repo_name)
     argv = pytest.helpers.create_argv(
         'repository create proxy docker {repo_name} {remote_url} '
         '{v1_enabled} {force_basic_auth} --index_type={index_type} '
@@ -194,6 +191,78 @@ def test_create_proxy_docker(
 
     assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
+
+@pytest.mark.parametrize(
+    'flat, w_policy, '
+    'strict, c_policy, remote_auth_type', itertools.product(
+        ['', '--flat'],  # flat
+        repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
+        ['', '--strict-content'],  # strict
+        [None, 'Some'],  # c_policy
+        [(None, None, None),  # remote_auth_type
+         ('username', 'username', 'password')],
+    ))
+@pytest.mark.integration
+def test_create_proxy_apt(nexus_client, flat,
+                           strict, w_policy, c_policy, remote_auth_type, faker):
+    """
+    nexus3 repository create proxy apt
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--remote_auth_type=<remote_auth_type>]
+         [--remote_username=<username>] [--remote_password=<password>]
+         [--flat] --distribution=<distribution>
+    """
+    distribution = faker.pystr()
+    strict_name = strict[2:8]
+    repo_name = pytest.helpers.repo_name(
+        'hosted-apt', distribution, flat
+        strict, c_policy)
+
+    argv = pytest.helpers.create_argv(
+        'repository create hosted apt {repo_name} '
+        '--gpg={gpg} '
+        '--passphrase={passphrase} --distribution={distribution} '
+        '{strict} --cleanup={c_policy} '
+        '--write={w_policy} ', **locals())
+
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+
+@pytest.mark.parametrize(
+    'gpg, passphrase, '
+    'w_policy, strict, c_policy', itertools.product(
+        ['tests/fixtures/apt/Release.gpg'],  # gpg
+        [None, 'a'],  # passphrase
+        repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
+        ['', '--strict-content'],  # strict
+        [None, 'Some'],  # c_policy
+    ))
+@pytest.mark.integration
+def test_create_hosted_apt(nexus_client, gpg, passphrase,
+                           w_policy, strict, c_policy, faker):
+    """
+    nexus3 repository create hosted apt
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>] --gpg=<gpg-file>
+         [--passphrase=passphrase] --distribution=<distribution>
+    """
+    distribution = faker.pystr()
+    gpg_random = faker.pystr()
+    strict_name = strict[2:8]
+    repo_name = pytest.helpers.repo_name(
+        'hosted-apt', gpg_random, distribution,
+        strict, c_policy)
+
+    argv = pytest.helpers.create_argv(
+        'repository create hosted apt {repo_name} '
+        '--gpg={gpg} '
+        '--passphrase={passphrase} --distribution={distribution} '
+        '{strict} --cleanup={c_policy} '
+        '--write={w_policy} ', **locals())
+
+    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
 @pytest.mark.integration
 def test_del(nexus_client):

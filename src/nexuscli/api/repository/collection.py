@@ -104,6 +104,13 @@ def _add_yum_kwargs(kwargs, attributes):
     # TODO: support yum deploy policy
     # kwargs['TODO'] = attributes['yum']['deployPolicy']
 
+def _add_apt_kwargs(kwargs, attributes):
+    if 'aptSigning' in attributes:
+        kwargs['passphrase']=attributes['aptSigning']['passphrase']
+        kwargs['keypair']=attributes['aptSigning']['keypair']
+    if 'apt' in attributes:
+        kwargs['passphrase']=attributes['apt']['distribution']
+        kwargs['flat']=attributes['apt']['flat']
 
 def _add_hosted_kwargs(kwargs, attributes):
     kwargs['write_policy'] = attributes['storage']['writePolicy']
@@ -131,6 +138,9 @@ def _repository_args_kwargs(raw_configuration):
 
     if _recipe_name(raw_configuration) == 'Yum':
         _add_yum_kwargs(kwargs, attributes)
+
+    if _recipe_name(raw_configuration) == 'Apt':
+        _add_apt_kwargs(kwargs, attributes)
 
     # TODO: support Group
     if _recipe_type(raw_configuration) == 'Proxy':
