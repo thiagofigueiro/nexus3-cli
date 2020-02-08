@@ -683,7 +683,7 @@ class AptRepository(Repository):
 
 class AptHostedRepository(AptRepository, HostedRepository):
     def __init__(self, name,
-                 gpg='Empty',
+                 gpg='Release.key',
                  passphrase=None,
                  **kwargs):
         self.gpg = gpg
@@ -714,7 +714,7 @@ class AptProxyRepository(AptRepository, ProxyRepository):
     @property
     def configuration(self):
         repo_config = super().configuration
-        
+
         repo_config['attributes']['apt']['flat'] = self.flat
 
         return repo_config

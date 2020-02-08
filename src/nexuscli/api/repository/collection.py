@@ -104,13 +104,15 @@ def _add_yum_kwargs(kwargs, attributes):
     # TODO: support yum deploy policy
     # kwargs['TODO'] = attributes['yum']['deployPolicy']
 
+
 def _add_apt_kwargs(kwargs, attributes):
     if 'aptSigning' in attributes:
-        kwargs['passphrase']=attributes['aptSigning']['passphrase']
-        kwargs['keypair']=attributes['aptSigning']['keypair']
+        kwargs['passphrase'] = attributes['aptSigning']['passphrase']
+        kwargs['keypair'] = attributes['aptSigning']['keypair']
     if 'apt' in attributes:
-        kwargs['passphrase']=attributes['apt']['distribution']
-        kwargs['flat']=attributes['apt']['flat']
+        kwargs['passphrase'] = attributes['apt']['distribution']
+        kwargs['flat'] = attributes['apt']['flat']
+
 
 def _add_hosted_kwargs(kwargs, attributes):
     kwargs['write_policy'] = attributes['storage']['writePolicy']
@@ -162,6 +164,7 @@ class RepositoryCollection:
             must provide this at instantiation or set it before calling any
             methods that require connectivity to Nexus.
     """
+
     def __init__(self, client=None):
         self._client = client
         self._repositories_json = None

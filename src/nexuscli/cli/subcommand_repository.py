@@ -50,15 +50,15 @@ Usage:
     nexus3 repository create hosted apt
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>] [--gpg=<gpg-file-path>] 
-         [--passphrase=passphrase] [--distribution=<distribution>] 
+         [--write=<w_policy>] [--gpg=<gpg-file-path>]
+         [--passphrase=passphrase] [--distribution=<distribution>]
     nexus3 repository create proxy apt
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>] 
+         [--write=<w_policy>]
          [--remote_auth_type=<remote_auth_type>]
          [--remote_username=<username>] [--remote_password=<password>]
-         [--flat] [--distribution=<distribution>] 
+         [--flat] [--distribution=<distribution>]
 
 Options:
   -h --help                             This screen  # noqa: E501
@@ -129,7 +129,7 @@ def cmd_create(nexus_client, args):
     """Performs ``nexus3 repository create`` commands"""
     recipe_name = _args_to_recipe_name(args)
     repo_type = _args_to_repo_type(args)
-    
+
     kwargs = {
         'nexus_client': nexus_client,
         'recipe': recipe_name,
@@ -171,12 +171,12 @@ def cmd_create(nexus_client, args):
 
     if recipe_name == 'apt':
         kwargs.update({'distribution': args.get('--distribution')})
-        
+
         if repo_type == 'hosted':
-            #TODO maybe generage the gpg key?
+            # TODO maybe generage the gpg key?
             kwargs.update({'gpg': args.get('--gpg'),
                            'passphrase': args.get('--passphrase')})
-        
+
         if repo_type == 'proxy':
             kwargs.update({'flat': args.get('--flat')})
 

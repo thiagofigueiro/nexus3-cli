@@ -203,7 +203,7 @@ def test_create_proxy_docker(
     ))
 @pytest.mark.integration
 def test_create_proxy_apt(nexus_client, flat,
-                           strict, c_policy, remote_auth_type, faker):
+                          strict, c_policy, remote_auth_type, faker):
     """
     nexus3 repository create proxy apt
          <repo_name> <remote_url>
@@ -229,10 +229,11 @@ def test_create_proxy_apt(nexus_client, flat,
 
     assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
 
+
 @pytest.mark.parametrize(
     'gpg, passphrase, '
     'w_policy, strict, c_policy', itertools.product(
-        ['tests/fixtures/apt/Release.gpg'],  # gpg
+        ['tests/fixtures/apt/Release.key'],  # gpg
         [None, 'a'],  # passphrase
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
@@ -263,6 +264,7 @@ def test_create_hosted_apt(nexus_client, gpg, passphrase,
         '--write={w_policy} ', **locals())
 
     assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+
 
 @pytest.mark.integration
 def test_del(nexus_client):
