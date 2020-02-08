@@ -1,6 +1,5 @@
 """
 Usage:
-  nexus3 repository --help
   nexus3 repository list
   nexus3 repository show <repo_name>
   nexus3 repository (delete|del) <repo_name> [--force]
@@ -49,8 +48,7 @@ Usage:
          [--https_port=<https_port>]
 
 Options:
-  -h --help                             This screen  # noqa: E501
-  --blob=<store_name>                   Use this blob with new repository  [default: default]
+  --blob=<store_name>                   Use this blob with new repository  [default: default]  # noqa: E501
   --depth=<repo_depth>                  Depth (0-5) where repodata folder(s) exist [default: 0]
   --layout=<l_policy>                   Accepted: strict, permissive [default: strict]
   --strict-content                      Enable strict content type validation

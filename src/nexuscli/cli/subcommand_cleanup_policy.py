@@ -1,12 +1,10 @@
 """
 Usage:
-  nexus3 cleanup_policy --help
   nexus3 cleanup_policy create <policy_name> [--format=<format>]
          [--downloaded=<days>] [--updated=<days>]
   nexus3 cleanup_policy list
 
 Options:
-  -h --help             This screen
   --format=<format>     Accepted: all or a repository format [default: all]
   --downloaded=<days>   Cleanup criteria; last downloaded in this many days.
   --updated=<days>      Cleanup criteria; last updated in this many days.
