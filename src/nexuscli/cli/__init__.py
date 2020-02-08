@@ -88,7 +88,15 @@ def _run_subcommand(arguments, subcommand):
         print(__doc__)
         sys.exit(errors.CliReturnCode.INVALID_SUBCOMMAND.value)
 
-    return subcommand_method(argv)
+    try:
+        return subcommand_method(argv)
+    except DocoptExit:
+        # Show help for the subcommand. The exception instance also has the
+        # the help but we can't use it because it won't have the `-h` details.
+        # This is because `-h` is handled by the first call to docopt, in main.
+        # FIXME: docopt is now more work than it's worth it
+        print(subcommand_module.__doc__)
+        return exception.CliReturnCode.SUBCOMMAND_ERROR.value
 
 
 def main(argv=None):

@@ -1,13 +1,11 @@
 """
 Usage:
-  nexus3 script --help
   nexus3 script create <script_name> <script_path> [--script_type=<type>]
   nexus3 script list
   nexus3 script run <script_name> [<script_args>]
   nexus3 script (delete|del) <script_name>
 
 Options:
-  -h --help             This screen
   --script_type=<type>  Script type [default: groovy]
 
 Commands:
