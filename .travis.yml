@@ -11,6 +11,7 @@ before_install:
   - docker pull sonatype/nexus3:$NEXUS_VERSION
   - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3:$NEXUS_VERSION
   - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
+  - cp -f tests/fixtures/apt/Release.key ./Release.key
 language: python
 python:
   - '3.6'

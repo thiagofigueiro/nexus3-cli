@@ -50,15 +50,15 @@ Usage:
     nexus3 repository create hosted apt
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>] --gpg=<gpg-file-path> 
-         [--passphrase=passphrase] --distribution=<distribution> 
+         [--write=<w_policy>] [--gpg=<gpg-file-path>] 
+         [--passphrase=passphrase] [--distribution=<distribution>] 
     nexus3 repository create proxy apt
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
          [--write=<w_policy>] 
          [--remote_auth_type=<remote_auth_type>]
          [--remote_username=<username>] [--remote_password=<password>]
-         [--flat] --distribution=<distribution> 
+         [--flat] [--distribution=<distribution>] 
 
 Options:
   -h --help                             This screen  # noqa: E501
@@ -76,8 +76,8 @@ Options:
   --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
   --remote_username=<remote_username>   Remote username
   --remote_password=<remote_password>   Remote password
-  --gpg=<gpg-file-path>                 gpg file [default: Empty]
-  --passphrase=<passphrase>             passphrase for the given gpg
+  --gpg=<gpg-file-path>                 gpg file [default: Release.key]
+  --passphrase=<passphrase>             passphrase for the given gpg [default: not-a-passphrase]
   --distribution=<distribution>         filter distributions [default: buster]
   --flat                                flat repository [default: False]
 
@@ -173,6 +173,7 @@ def cmd_create(nexus_client, args):
         kwargs.update({'distribution': args.get('--distribution')})
         
         if repo_type == 'hosted':
+            #TODO maybe generage the gpg key?
             kwargs.update({'gpg': args.get('--gpg'),
                            'passphrase': args.get('--passphrase')})
         
