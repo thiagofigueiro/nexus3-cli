@@ -35,6 +35,8 @@ class Repository:
           <https://help.sonatype.com/repomanager3/formats/rubygems-repositories>`_
         - `docker
           <https://help.sonatype.com/repomanager3/formats/docker-registry>`_
+        - `apt
+          <https://help.sonatype.com/repomanager3/formats/apt-repositories>`_
     :param name: name of the repository.
     :type name: str
     :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
@@ -712,7 +714,7 @@ class AptProxyRepository(AptRepository, ProxyRepository):
     @property
     def configuration(self):
         repo_config = super().configuration
-
+        
         repo_config['attributes']['apt']['flat'] = self.flat
 
         return repo_config
