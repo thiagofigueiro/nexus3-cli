@@ -1,8 +1,5 @@
 """
 Usage:
-  nexus3 repository list
-  nexus3 repository show <repo_name>
-  nexus3 repository (delete|del) <repo_name> [--force]
   nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems|docker)
          <repo_name>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
@@ -67,7 +64,6 @@ Options:
   --version=<v_policy>                  Accepted: release, snapshot, mixed [default: release]
   --write=<w_policy>                    Accepted: allow, allow_once, deny [default: allow_once]
   --cleanup=<c_policy>                  Accepted: an existing Cleanup Policy name
-  -f --force                            Do not ask for confirmation before deleting
   --v1_enabled                          Enable v1 registry [default: False]
   --index_type=<index_type>             Accepted: registry, hub, custom [default: registry]
   --force_basic_auth                    Force to use basic authentication against this docker repo
@@ -81,12 +77,8 @@ Options:
 
 Commands:
   repository create  Create a repository using the format and options provided
-  repository delete  Delete a repository.
-  repository list    List all repositories available on the server
-  repository show    Show the configuration for a repository as JSON.
 """
 import json
-from docopt import docopt
 from texttable import Texttable
 
 from nexuscli import exception
@@ -94,7 +86,7 @@ from nexuscli.api import repository
 from nexuscli.cli import util
 
 
-def cmd_list(nexus_client, _):
+def cmd_list(nexus_client):
     """Performs ``nexus3 repository list``"""
     repositories = nexus_client.repositories.raw_list()
 
@@ -188,23 +180,15 @@ def cmd_create(nexus_client, args):
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_del(*args, **kwargs):
-    """Alias for :func:`cmd_delete`"""
-    return cmd_delete(*args, **kwargs)
-
-
-def cmd_delete(nexus_client, args):
+def cmd_delete(nexus_client, repository_name):
     """Performs ``nexus3 repository delete``"""
-    if not args.get('--force'):
-        util.input_with_default(
-            'Press ENTER to confirm deletion', 'ctrl+c to cancel')
-    nexus_client.repositories.delete(args.get('<repo_name>'))
+    nexus_client.repositories.delete(repository_name)
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_show(nexus_client, args):
+def cmd_show(nexus_client, repository_name):
     """Performs ``nexus3 repository show"""
-    repo_name = args.get('<repo_name>')
+    repo_name = repository_name
     try:
         configuration = nexus_client.repositories.get_raw_by_name(repo_name)
     except exception.NexusClientInvalidRepository:
@@ -216,9 +200,12 @@ def cmd_show(nexus_client, args):
     return exception.CliReturnCode.SUCCESS.value
 
 
-def main(argv=None):
+def main(ctx, *args, **kwargs):
+    print('sub repository ctx', ctx)
+    print('sub repository args', args)
+    print('sub repository kwargs', kwargs)
     """Entrypoint for ``nexus3 repository`` subcommand."""
-    arguments = docopt(__doc__, argv=argv)
-    command_method = util.find_cmd_method(arguments, globals())
-
-    return command_method(util.get_client(), arguments)
+    # arguments = docopt(__doc__, argv=argv)
+    # command_method = util.find_cmd_method(arguments, globals())
+    #
+    # return command_method(util.get_client(), arguments)

@@ -1,37 +1,24 @@
-from enum import Enum
+from click import ClickException
+from nexuscli.cli.errors import CliReturnCode
 
 
-class CliReturnCode(Enum):
-    """Error codes returned by :py:mod:`nexuscli.cli`"""
-    SUCCESS = 0
-    NO_FILES = 1
-    API_ERROR = 2
-    CONNECTION_ERROR = 3
-    DOWNLOAD_ERROR = 4
-    INVALID_CREDENTIALS = 5
-    INVALID_SUBCOMMAND = 10
-    SUBCOMMAND_ERROR = 11
-    POLICY_NOT_FOUND = 20
-    REPOSITORY_NOT_FOUND = 30
-    UNKNOWN_ERROR = 99
+class NexusClientBaseError(ClickException):
+    exit_code = CliReturnCode.UNKNOWN_ERROR.value
 
-
-class NexusClientBaseError(Exception):
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.UNKNOWN_ERROR
-
-    def __init__(self, *args, cli_return_code=None):
-        super().__init__(*args)
-        self.cli_return_code = cli_return_code or self.DEFAULT_CLI_RETURN_CODE
+    # TODO: add error message; e.g.:
+    # nexus_error = CliReturnCode.UNKNOWN_ERROR
+    # def __init__(self, message):
+    #     super().__init__(self.nexus_error.message)
 
 
 class NexusClientAPIError(NexusClientBaseError):
     """Unexpected response from Nexus service."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.API_ERROR
+    exit_code = CliReturnCode.API_ERROR.value
 
 
 class NexusClientConnectionError(NexusClientBaseError):
     """Generic network connector error."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.CONNECTION_ERROR
+    exit_code = CliReturnCode.CONNECTION_ERROR.value
 
 
 class NexusClientInvalidCredentials(NexusClientBaseError):
@@ -39,7 +26,7 @@ class NexusClientInvalidCredentials(NexusClientBaseError):
     Login credentials not accepted by Nexus service. Usually the result of a
     HTTP 401 response.
     """
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.INVALID_CREDENTIALS
+    exit_code = CliReturnCode.INVALID_CREDENTIALS.value
 
 
 class NexusClientInvalidRepositoryPath(NexusClientBaseError):
@@ -52,24 +39,24 @@ class NexusClientInvalidRepositoryPath(NexusClientBaseError):
 
 class NexusClientInvalidRepository(NexusClientBaseError):
     """The given repository does not exist in Nexus."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.REPOSITORY_NOT_FOUND
+    exit_code = CliReturnCode.REPOSITORY_NOT_FOUND.value
 
 
 class NexusClientInvalidCleanupPolicy(NexusClientBaseError):
     """The given cleanup policy does not exist in Nexus."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.SUBCOMMAND_ERROR
+    exit_code = CliReturnCode.SUBCOMMAND_ERROR.value
 
 
 class NexusClientCreateRepositoryError(NexusClientBaseError):
     """Used when a repository creation operation in Nexus fails."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.SUBCOMMAND_ERROR
+    exit_code = CliReturnCode.SUBCOMMAND_ERROR.value
 
 
 class NexusClientCreateCleanupPolicyError(NexusClientBaseError):
     """Used when a cleanup policy creation operation in Nexus fails."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.SUBCOMMAND_ERROR
+    exit_code = CliReturnCode.SUBCOMMAND_ERROR.value
 
 
 class DownloadError(NexusClientBaseError):
     """Error retrieving artefact from Nexus service."""
-    DEFAULT_CLI_RETURN_CODE = CliReturnCode.DOWNLOAD_ERROR
+    exit_code = CliReturnCode.DOWNLOAD_ERROR.value

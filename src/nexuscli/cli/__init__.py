@@ -1,131 +1,150 @@
-"""Nexus 3 CLI.
-
-Usage:
-  nexus3 --help  # run this to see full list of commands/subcommands
-  nexus3 --version
-  nexus3 login
-  nexus3 (list|ls) <repository_path>
-  nexus3 (upload|up) <from_src> <to_repository> [--flatten] [--norecurse]
-  nexus3 (download|dl) <from_repository> <to_dst> [--flatten] [--nocache]
-  nexus3 (delete|del) <repository_path>
-  nexus3 <subcommand> [<arguments>...]
-
-Options:
-  -h --help             This screen. For help with sub-commands, run
-                        `nexus3 <subcommand> -h`
-  --version             Show the Nexus3 CLI version and exit
-  --flatten             Flatten directory structure on `nexus3` transfers
-                        [default: False]
-  --nocache             Force download even if local copy is up-to-date
-                        [default: False]
-  --norecurse           Don't process subdirectories on `nexus3 up` transfers
-                        [default: False]
-
-Commands:
-  login         Test login and save credentials to ~/.nexus-cli
-  list          List all files within a path in the repository
-  upload        Upload file(s) to designated repository
-  download      Download an artefact or a directory to local file system
-  delete        Delete artefact(s) from repository
-
-Sub-commands:
-  cleanup_policy  Cleanup Policy management.
-  repository      Repository management.
-  script          Script management.
-"""
+import click
 import pkg_resources
-import sys
-from docopt import docopt, DocoptExit
+from nexuscli.cli import (
+    errors, root_commands, util, subcommand_repository,
+    subcommand_cleanup_policy, subcommand_script)
 
-from nexuscli import exception
-from nexuscli.cli import util
-
-
-def _is_root_command(maybe):
-    if maybe.startswith('-') or maybe.startswith('<'):
-        return False
-    return True
+PACKAGE_VERSION = pkg_resources.get_distribution('nexus3-cli').version
+HELP_OPTIONS = dict(help_option_names=['-h', '--help'])
 
 
-def _find_root_command(arguments):
-    for command, value in arguments.items():
-        if _is_root_command(command):
-            if value is True:
-                return f'cmd_{command}'
-
-    # docopt shouldn't allow this to happen
-    raise NotImplementedError(f'Command not found in arguments: {arguments}')
+# TODO: auto_envvar_prefix='NEXUS_CLI' for username, password etc
+@click.group(cls=util.AliasedGroup, context_settings=HELP_OPTIONS)
+@click.version_option(version=PACKAGE_VERSION, message='%(version)s')
+def nexus_cli():
+    pass
 
 
-def _run_root_commands(arguments):
-    # root commands are handled by methods named `root_commands.cmd_COMMAND`,
-    # where COMMAND is the first argument given by the user
-    from nexuscli.cli import root_commands
-    command_method = getattr(root_commands, _find_root_command(arguments))
-
-    # don't show "missing config" error when the user is creating a config
-    client = None
-    if not arguments['login']:
-        client = util.get_client()
-
-    return command_method(client, arguments)
-
-
-def _run_subcommand(arguments, subcommand):
-    # subcommands are handled by methods named `subcommand_MODULE.cmd_COMMAND`,
-    # where MODULE is subcommand name and COMMAND is the first argument given
-    # by the user
-    from nexuscli.cli import (subcommand_cleanup_policy,
-                              subcommand_repository,
-                              subcommand_script)
-
-    argv = [arguments['<subcommand>']] + arguments['<arguments>']
-
-    try:
-        subcommand_module = globals()[f'subcommand_{subcommand}']
-        subcommand_method = getattr(subcommand_module, 'main')
-    except KeyError:
-        print(__doc__)
-        sys.exit(exception.CliReturnCode.INVALID_SUBCOMMAND.value)
-
-    try:
-        return subcommand_method(argv)
-    except DocoptExit:
-        # Show help for the subcommand. The exception instance also has the
-        # the help but we can't use it because it won't have the `-h` details.
-        # This is because `-h` is handled by the first call to docopt, in main.
-        # FIXME: docopt is now more work than it's worth it
-        print(subcommand_module.__doc__)
-        return exception.CliReturnCode.SUBCOMMAND_ERROR.value
+#############################################################################
+# root commands
+@nexus_cli.command()
+# TODO: @click.option('--password', '-P', prompt=True, hide_input=True,
+#               confirmation_prompt=True)
+#   --username etc
+def login():
+    """
+    Login to Nexus server, saving settings to ~/.nexus-cli
+    """
+    root_commands.cmd_login()
 
 
-def main(argv=None):
-    """Entrypoint for the setuptools CLI console script"""
-    try:
-        arguments = docopt(__doc__, argv=argv)
-    except DocoptExit:
-        # FIXME: it's time to ditch docopt for something that supports
-        #   subcommands natively
-        arguments = docopt(__doc__, argv=argv, options_first=True)
+@nexus_cli.command(name='list')
+@click.argument('repository_path')
+@util.with_nexus_client
+def list_(ctx: click.Context, repository_path):
+    """
+    List all files within REPOSITORY_PATH.
 
-    if arguments.get('--version'):
-        print(pkg_resources.get_distribution('nexus3-cli').version)
-        return 0
+    REPOSITORY_PATH must start with a repository name.
+    """
+    root_commands.cmd_list(ctx.obj, repository_path)
 
-    maybe_subcommand = arguments.get('<subcommand>')
 
-    exit_code = exception.CliReturnCode.UNKNOWN_ERROR.value
-    try:
-        # "root" commands (ie not a subcommand)
-        if maybe_subcommand is None:
-            exit_code = _run_root_commands(arguments)
-        else:
-            # subcommands
-            exit_code = _run_subcommand(arguments, maybe_subcommand)
+@nexus_cli.command()
+@click.argument('repository_path')
+@util.with_nexus_client
+def delete(ctx: click.Context, repository_path):
+    """
+    Recursively delete all files under REPOSITORY_PATH.
 
-    except exception.NexusClientBaseError as e:
-        print(f'{e.cli_return_code.name}: {e}')
-        exit_code = e.cli_return_code.value
+    REPOSITORY_PATH must start with a repository name.
+    """
+    root_commands.cmd_delete(ctx.obj, repository_path)
 
-    finally:
-        return exit_code
+
+@nexus_cli.command()
+@click.argument('src')
+@click.argument('dest')
+@click.option('--flatten/--no-flatten', default=False,
+              help='Flatten DEST directory structure')
+@click.option('--recurse/--no-recurse', default=True,
+              help='Process all SRC subdirectories')
+@util.with_nexus_client
+def upload(ctx: click.Context, src, dest, flatten, recurse):
+    """
+    Upload local SRC to remote DEST.  If either argument ends with a `/`, it's
+    assumed to be a directory.
+
+    DEST must start with a repository name and optionally be followed by the
+    path where SRC is to be uploaded to.
+    """
+    root_commands.cmd_upload(ctx.obj, src, dest, flatten, recurse)
+
+
+@nexus_cli.command()
+@click.argument('src')
+@click.argument('dest')
+@click.option('--flatten/--no-flatten', default=False,
+              help='Flatten DEST directory structure')
+@click.option('--cache/--no-cache', default=True,
+              help='Do not download if a local copy is already up-to-date')
+@util.with_nexus_client
+def download(ctx: click.Context, src, dest, flatten, cache):
+    """
+    Download remote SRC to local DEST.  If either argument ends with a `/`,
+    it's assumed to be a directory.
+
+    SRC must start with a repository name and optionally be followed by a path
+    to be downloaded.
+    """
+    root_commands.cmd_download(ctx.obj, src, dest, flatten, not cache)
+
+
+#############################################################################
+# repository sub-commands
+@nexus_cli.group(cls=util.AliasedGroup)
+def repository():
+    """
+    Manage repositories
+    """
+    pass
+
+
+@repository.command(name='list')
+@util.with_nexus_client
+def repository_list(ctx: click.Context):
+    """
+    List all repositories
+    """
+    subcommand_repository.cmd_list(ctx.obj)
+
+
+@repository.command(name='show')
+@click.argument('repository_name')
+@util.with_nexus_client
+def repository_show(ctx: click.Context, repository_name):
+    """
+    Show the configuration for REPOSITORY_NAME as JSON.
+    """
+    subcommand_repository.cmd_show(ctx.obj, repository_name)
+
+
+@repository.command(name='delete')
+@click.argument('repository_name')
+@click.confirmation_option()
+@util.with_nexus_client
+def repository_show(ctx: click.Context, repository_name):
+    """
+    Delete REPOSITORY_NAME (but not its blobstore).
+    """
+    subcommand_repository.cmd_delete(ctx.obj, repository_name)
+
+
+#############################################################################
+# cleanup_policy sub-commands
+@nexus_cli.group(cls=util.AliasedGroup)
+def cleanup_policy():
+    """
+    Manage clean-up policies
+    """
+    pass
+
+
+#############################################################################
+# script sub-commands
+@nexus_cli.group(cls=util.AliasedGroup)
+def script():
+    """
+    Manage scripts
+    """
+    pass

@@ -1,3 +1,5 @@
+import click
+import functools
 import os
 import sys
 from subprocess import CalledProcessError
@@ -11,6 +13,45 @@ try:
     TTY_MAX_WIDTH = int(TTY_MAX_WIDTH)
 except (ValueError, CalledProcessError):
     TTY_MAX_WIDTH = 80
+
+
+class AliasedGroup(click.Group):
+    """
+    Implements execution of the first partial match for a command. Fails with a
+    message if there are no unique matches.
+
+    See: https://click.palletsprojects.com/en/7.x/advanced/#command-aliases
+    """
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        matches = [x for x in self.list_commands(ctx)
+                   if x.startswith(cmd_name)]
+        if not matches:
+            return None
+        elif len(matches) == 1:
+            return click.Group.get_command(self, ctx, matches[0])
+        ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
+
+
+def with_nexus_client(click_command):
+    @functools.wraps(click_command)
+    @click.pass_context
+    def inner(ctx: click.Context, **kwargs):
+        ctx.obj = get_client()
+
+        # TODO: better way to do this?
+        # if args and kwargs:
+        #     return click_command(ctx, args, kwargs)
+        # elif args:
+        #     return click_command(ctx, args)
+        # elif kwargs:
+        return click_command(ctx, **kwargs)
+        # else:
+        #     return click_command(ctx)
+
+    return inner
 
 
 def find_cmd_method(arguments, methods):

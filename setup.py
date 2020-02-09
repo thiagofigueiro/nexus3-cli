@@ -3,18 +3,17 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '2.3.1'
+package_version = '2.2.1'
 
 requires = [
+    'click>=7.0.0,<8',
     'clint',
-    'docopt',
     'future',
     'faker',
     'inflect',
     'future',
     'requests[security]>=2.14.2',
     'semver',
-    'six',
     'texttable'
 ]
 
@@ -64,7 +63,7 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'nexus3=nexuscli.cli:main',
+            'nexus3=nexuscli.cli:nexus_cli',
         ],
     },
     extras_require={'test': test_requires},
