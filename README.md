@@ -21,11 +21,12 @@ OSS 3](https://www.sonatype.com/download-oss-sonatype).
    1. Content type validation, version and write policy.
    1. Delete.
 1. Groovy script management: list, upload, delete, run.
+1. Clean-up policy management: create, list.
 
 The actions above are performed using the Nexus REST API if the endpoint is
 available, otherwise a groovy script is used.
 
-Please note that some Nexus 3 features are not currently supporter. Assistance
+Please note that some Nexus 3 features are not currently supported. Assistance
 implementing missing support is very welcome. Please have a look at the
 [issues](https://github.com/thiagofigueiro/nexus3-cli/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
 and [contribution guidelines](https://github.com/thiagofigueiro/nexus3-cli/blob/develop/CONTRIBUTING.md).
