@@ -3,7 +3,7 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '2.2.1'
+package_version = '3.0.0'
 
 requires = [
     'click>=7.0.0,<8',
@@ -43,7 +43,7 @@ setup(
     tests_require=test_requires,
     license='MIT',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Topic :: System :: Systems Administration',
