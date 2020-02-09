@@ -89,32 +89,32 @@ def _cmd_up_down_errors(count, action):
         sys.exit(exception.CliReturnCode.API_ERROR.value)
 
 
-def cmd_upload(nexus_client, source, destination, flatten, recurse):
+def cmd_upload(nexus_client, src=None, dst=None, flatten=None, recurse=None):
     """Performs ``nexus3 upload``"""
-    sys.stderr.write(f'Uploading {source} to {destination}\n')
+    sys.stderr.write(f'Uploading {src} to {dst}\n')
 
     upload_count = nexus_client.upload(
-        source, destination, flatten=flatten, recurse=recurse)
+        src, dst, flatten=flatten, recurse=recurse)
 
     _cmd_up_down_errors(upload_count, 'upload')
 
     file = PLURAL('file', upload_count)
-    sys.stderr.write(f'Uploaded {upload_count} {file} to {destination}\n')
+    sys.stderr.write(f'Uploaded {upload_count} {file} to {dst}\n')
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_download(nexus_client, source, destination, flatten, nocache):
+def cmd_download(nexus_client, src=None, dst=None, flatten=None, cache=None):
     """Performs ``nexus3 download``"""
-    sys.stderr.write(f'Downloading {source} to {destination}\n')
+    sys.stderr.write(f'Downloading {src} to {dst}\n')
 
     download_count = nexus_client.download(
-        source, destination, flatten=flatten, nocache=nocache)
+        src, dst, flatten=flatten, nocache=not cache)
 
     _cmd_up_down_errors(download_count, 'download')
 
     file_word = PLURAL('file', download_count)
     sys.stderr.write(
-        f'Downloaded {download_count} {file_word} to {destination}\n')
+        f'Downloaded {download_count} {file_word} to {dst}\n')
     return exception.CliReturnCode.SUCCESS.value
 
 

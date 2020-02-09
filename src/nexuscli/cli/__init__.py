@@ -6,6 +6,21 @@ from nexuscli.cli import (
 
 PACKAGE_VERSION = pkg_resources.get_distribution('nexus3-cli').version
 HELP_OPTIONS = dict(help_option_names=['-h', '--help'])
+REPOSITORY_COMMON_OPTIONS = [
+    click.option('--blob-store-name', default='default',
+                  help='Blobstore name to use with new repository'),
+    click.option('--strict-content/--no-strict-content', default=False,
+                  help='Toggle strict content type validation'),
+    click.option('--cleanup-policy',
+                  help='Name of existing clean-up policy to use'),
+]
+REPOSITORY_COMMON_HOSTED_OPTIONS = [
+    click.argument('repository_name'),
+    click.option(
+        '--write-policy', help='Write policy to use', default='allow',
+        type=click.Choice(['allow', 'allow_once', 'deny'],
+                          case_sensitive=False))
+] + REPOSITORY_COMMON_OPTIONS
 
 
 # TODO: auto_envvar_prefix='NEXUS_CLI' for username, password etc
@@ -23,7 +38,7 @@ def nexus_cli():
 #   --username etc
 def login():
     """
-    Login to Nexus server, saving settings to ~/.nexus-cli
+    Login to Nexus server, saving settings to ~/.nexus-cli.
     """
     root_commands.cmd_login()
 
@@ -54,32 +69,32 @@ def delete(ctx: click.Context, repository_path):
 
 @nexus_cli.command()
 @click.argument('src')
-@click.argument('dest')
+@click.argument('dst')
 @click.option('--flatten/--no-flatten', default=False,
-              help='Flatten DEST directory structure')
+              help='Flatten DST directory structure')
 @click.option('--recurse/--no-recurse', default=True,
               help='Process all SRC subdirectories')
 @util.with_nexus_client
-def upload(ctx: click.Context, src, dest, flatten, recurse):
+def upload(ctx: click.Context, **kwargs):
     """
-    Upload local SRC to remote DEST.  If either argument ends with a `/`, it's
+    Upload local SRC to remote DST.  If either argument ends with a `/`, it's
     assumed to be a directory.
 
     DEST must start with a repository name and optionally be followed by the
     path where SRC is to be uploaded to.
     """
-    root_commands.cmd_upload(ctx.obj, src, dest, flatten, recurse)
+    root_commands.cmd_upload(ctx.obj, **kwargs)
 
 
 @nexus_cli.command()
 @click.argument('src')
-@click.argument('dest')
+@click.argument('dst')
 @click.option('--flatten/--no-flatten', default=False,
               help='Flatten DEST directory structure')
 @click.option('--cache/--no-cache', default=True,
               help='Do not download if a local copy is already up-to-date')
 @util.with_nexus_client
-def download(ctx: click.Context, src, dest, flatten, cache):
+def download(ctx: click.Context, **kwargs):
     """
     Download remote SRC to local DEST.  If either argument ends with a `/`,
     it's assumed to be a directory.
@@ -87,7 +102,7 @@ def download(ctx: click.Context, src, dest, flatten, cache):
     SRC must start with a repository name and optionally be followed by a path
     to be downloaded.
     """
-    root_commands.cmd_download(ctx.obj, src, dest, flatten, not cache)
+    root_commands.cmd_download(ctx.obj, **kwargs)
 
 
 #############################################################################
@@ -95,7 +110,7 @@ def download(ctx: click.Context, src, dest, flatten, cache):
 @nexus_cli.group(cls=util.AliasedGroup)
 def repository():
     """
-    Manage repositories
+    Manage repositories.
     """
     pass
 
@@ -104,7 +119,7 @@ def repository():
 @util.with_nexus_client
 def repository_list(ctx: click.Context):
     """
-    List all repositories
+    List all repositories.
     """
     subcommand_repository.cmd_list(ctx.obj)
 
@@ -123,7 +138,7 @@ def repository_show(ctx: click.Context, repository_name):
 @click.argument('repository_name')
 @click.confirmation_option()
 @util.with_nexus_client
-def repository_show(ctx: click.Context, repository_name):
+def repository_delete(ctx: click.Context, repository_name):
     """
     Delete REPOSITORY_NAME (but not its blobstore).
     """
@@ -131,11 +146,104 @@ def repository_show(ctx: click.Context, repository_name):
 
 
 #############################################################################
+# repository create sub-commands
+@repository.group(cls=util.AliasedGroup, name='create')
+def repository_create():
+    """
+    Create a repository.
+    """
+    pass
+
+
+@repository_create.command(
+    cls=util.mapped_commands({
+        'recipe': [
+            'bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'docker'],
+        'maven': ['maven']
+    }),
+    name='hosted')
+def repository_create_hosted():
+    """
+    Created a hosted repository.
+    """
+    pass
+
+
+@repository_create_hosted.command(name='recipe')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@util.with_nexus_client
+def repository_create_hosted_recipe(ctx: click.Context, **kwargs):
+    """
+    Create a hosted repository.
+    """
+    # when we're called from another recipe (docker, maven), we want to use
+    # their name because our own `info_name` will be `recipe`.
+    recipe = ctx.info_name
+    if ctx.parent.info_name != 'hosted':
+        recipe = ctx.parent.info_name
+
+    kwargs.update({
+        'write_policy': kwargs['write_policy'].upper(),
+        'recipe': recipe,
+    })
+
+    subcommand_repository.cmd_create(ctx, repo_type='hosted', **kwargs)
+
+
+@repository_create_hosted.command(name='maven')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@click.option(
+    '--version-policy', help='Version policy to use', default='release',
+    type=click.Choice(['release', 'snapshot', 'mixed'],
+                      case_sensitive=False))
+@click.option(
+    '--layout-policy', help='Layout policy to use', default='strict',
+    type=click.Choice(['strict', 'permissive'],
+                      case_sensitive=False))
+@util.with_nexus_client
+def repository_create_hosted_maven(ctx: click.Context, **kwargs):
+    """
+    Create a hosted maven repository.
+    """
+    kwargs.update({
+        'layout_policy': kwargs['layout_policy'].upper(),
+        'version_policy': kwargs['version_policy'].upper(),
+    })
+
+    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+
+
+# TODO: use mapped_commands instead of click.Choice
+@repository_create.command(name='proxy')
+@click.argument(
+    'recipe', metavar='RECIPE',
+    type=click.Choice([
+        'bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'yum'],
+        case_sensitive=False))
+@click.argument('repository_name')
+@click.argument('remote_url')
+@util.add_options(REPOSITORY_COMMON_OPTIONS)
+@click.option('--remote-auth-type',
+              help='Only username is supported',
+              type=click.Choice(['username'], case_sensitive=False))
+@click.option('--remote-username',
+              help='Username for remote URL')
+@click.option('--remote-password',
+              help='Password for remote URL')
+@util.with_nexus_client
+def repository_create_hosted(ctx: click.Context, **kwargs):
+    """
+    Create a proxy repository of type RECIPE.
+    """
+    subcommand_repository.cmd_create(ctx, **kwargs)
+
+
+#############################################################################
 # cleanup_policy sub-commands
 @nexus_cli.group(cls=util.AliasedGroup)
 def cleanup_policy():
     """
-    Manage clean-up policies
+    Manage clean-up policies.
     """
     pass
 
@@ -145,6 +253,6 @@ def cleanup_policy():
 @nexus_cli.group(cls=util.AliasedGroup)
 def script():
     """
-    Manage scripts
+    Manage scripts.
     """
     pass

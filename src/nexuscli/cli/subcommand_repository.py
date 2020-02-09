@@ -1,19 +1,5 @@
 """
 Usage:
-  nexus3 repository create hosted (bower|npm|nuget|pypi|raw|rubygems|docker)
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>]
-  nexus3 repository create proxy (bower|npm|nuget|pypi|raw|rubygems|yum)
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--remote_auth_type=<remote_auth_type>]
-         [--remote_username=<username>] [--remote_password=<password>]
-  nexus3 repository create hosted maven
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>]
-         [--version=<v_policy>] [--layout=<l_policy>]
   nexus3 repository create proxy maven
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
@@ -115,49 +101,45 @@ def _args_to_recipe_name(args):
                 return recipe_name
 
 
-def cmd_create(nexus_client, args):
+# def cmd_create(ctx, repository_name=None, strict_content=None, **kwargs):
+def cmd_create(ctx, repo_type=None, repository_name=None, strict_content=None, **kwargs):
     """Performs ``nexus3 repository create`` commands"""
-    recipe_name = _args_to_recipe_name(args)
-    repo_type = _args_to_repo_type(args)
+    nexus_client = ctx.obj
+    # repo_type = ctx.info_name
 
-    kwargs = {
+    kwargs.update({
         'nexus_client': nexus_client,
-        'recipe': recipe_name,
-        'blob_store_name': args.get('--blob'),
-        'strict_content_type_validation': args.get('--strict-content'),
-        'cleanup_policy': args.get('--cleanup'),
-    }
+        'strict_content_type_validation': strict_content,
+    })
+    print('kwargs inside', kwargs)
 
     # TODO: find better home for these
-    if repo_type == 'hosted':
-        kwargs.update({'write_policy': args.get('--write').upper()})
-
-    if repo_type == 'proxy':
-        kwargs.update({'remote_url': args.get('<remote_url>'),
-                       'remote_auth_type': args.get('--remote_auth_type'),
-                       'remote_username': args.get('--remote_username'),
-                       'remote_password': args.get('--remote_password')
-                       })
-
-        if recipe_name == 'docker':
-            kwargs.update({'index_type': args.get('--index_type').upper(),
-                           'use_trust_store_for_index_access':
-                               args.get('--use_trust_store_for_index_access'),
-                           'index_url': args.get('--index_url')})
-
-    if recipe_name == 'yum':
-        kwargs.update({'depth': int(args.get('--depth'))})
-
-    if recipe_name.startswith('maven'):
-        kwargs.update({
-            'version_policy': args.get('--version').upper(),
-            'layout_policy': args.get('--layout').upper()})
-
-    if recipe_name == 'docker':
-        kwargs.update({'http_port': args.get('--http_port'),
-                       'https_port': args.get('--https_port'),
-                       'v1_enabled': args.get('--v1_enabled'),
-                       'force_basic_auth': args.get('--force_basic_auth')})
+    # if repo_type == 'proxy':
+    #     kwargs.update({'remote_url': args.get('<remote_url>'),
+    #                    'remote_auth_type': args.get('--remote_auth_type'),
+    #                    'remote_username': args.get('--remote_username'),
+    #                    'remote_password': args.get('--remote_password')
+    #                    })
+    #
+    #     if recipe == 'docker':
+    #         kwargs.update({'index_type': args.get('--index_type').upper(),
+    #                        'use_trust_store_for_index_access':
+    #                            args.get('--use_trust_store_for_index_access'),
+    #                        'index_url': args.get('--index_url')})
+    #
+    # if recipe == 'yum':
+    #     kwargs.update({'depth': int(args.get('--depth'))})
+    #
+    # if recipe.startswith('maven'):
+    #     kwargs.update({
+    #         'version_policy': args.get('--version').upper(),
+    #         'layout_policy': args.get('--layout').upper()})
+    #
+    # if recipe == 'docker':
+    #     kwargs.update({'http_port': args.get('--http_port'),
+    #                    'https_port': args.get('--https_port'),
+    #                    'v1_enabled': args.get('--v1_enabled'),
+    #                    'force_basic_auth': args.get('--force_basic_auth')})
 
     if recipe_name == 'apt':
         kwargs.update({'distribution': args.get('--distribution')})
@@ -171,9 +153,9 @@ def cmd_create(nexus_client, args):
             kwargs.update({'flat': args.get('--flat')})
 
     Repository = repository.collection.get_repository_class({
-        'recipeName': f'{recipe_name}-{repo_type}'})
+        'recipeName': f'{kwargs["recipe"]}-{repo_type}'})
 
-    r = Repository(args.get('<repo_name>'), **kwargs)
+    r = Repository(repository_name, **kwargs)
 
     nexus_client.repositories.create(r)
 

@@ -54,6 +54,34 @@ def with_nexus_client(click_command):
     return inner
 
 
+def add_options(options):
+    def _add_options(func):
+        for option in reversed(options):
+            func = option(func)
+        return func
+    return _add_options
+
+
+def mapped_commands(command_map: dict):
+    """
+    TODO: document command_map format
+
+    :param command_map:
+    :return:
+    """
+    class CommandGroup(click.Group):
+        def get_command(self, ctx, cmd_name):
+            for real_command, aliases in command_map.items():
+                if cmd_name in aliases:
+                    return click.Group.get_command(self, ctx, real_command)
+            return None
+
+        def list_commands(self, ctx):
+            return [a for b in command_map.values() for a in b]
+
+    return CommandGroup
+
+
 def find_cmd_method(arguments, methods):
     """
     Helper to find the corresponding python method for a CLI command.
