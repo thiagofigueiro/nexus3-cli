@@ -17,7 +17,7 @@ OSS 3](https://www.sonatype.com/download-oss-sonatype).
 1. Artefact management: list, delete, bulk upload and download.
 1. Repository management:
    1. Create hosted and proxy.
-   1. Create bower, maven, npm, nuget, pypi, raw, rubygems, yum.
+   1. Create apt, bower, docker, maven, npm, nuget, pypi, raw, rubygems, yum.
    1. Content type validation, version and write policy.
    1. Delete.
 1. Groovy script management: list, upload, delete, run.

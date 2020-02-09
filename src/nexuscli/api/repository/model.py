@@ -35,6 +35,8 @@ class Repository:
           <https://help.sonatype.com/repomanager3/formats/rubygems-repositories>`_
         - `docker
           <https://help.sonatype.com/repomanager3/formats/docker-registry>`_
+        - `apt
+          <https://help.sonatype.com/repomanager3/formats/apt-repositories>`_
     :param name: name of the repository.
     :type name: str
     :param nexus_client: the :class:`~nexuscli.nexus_client.NexusClient`
@@ -63,6 +65,7 @@ class Repository:
         'raw',
         'rubygems',
         'docker',
+        'apt',
     )
     TYPE = None
 
@@ -364,7 +367,7 @@ class HostedRepository(Repository):
         for relative_filepath in file_set:
             file_path = os.path.join(src_dir, relative_filepath)
             sub_directory = util.get_upload_subdirectory(
-                            dst_dir, file_path, flatten)
+                dst_dir, file_path, flatten)
             self.upload_file(file_path, sub_directory)
 
         return file_count
@@ -655,6 +658,68 @@ class DockerProxyRepository(ProxyRepository, DockerRepository):
         return repo_config
 
 
+class AptRepository(Repository):
+    RECIPES = ('apt',)
+
+    def __init__(self, name,
+                 distribution='bionic',
+                 **kwargs):
+        self.distribution = distribution
+        kwargs.update({'recipe': 'apt'})
+        super().__init__(name, **kwargs)
+
+    @property
+    def configuration(self):
+        repo_config = super().configuration
+
+        repo_config['attributes'].update({
+            'apt': {
+                'distribution': self.distribution,
+            }
+        })
+
+        return repo_config
+
+
+class AptHostedRepository(AptRepository, HostedRepository):
+    def __init__(self, name,
+                 gpg='public.gpg.key',
+                 passphrase=None,
+                 **kwargs):
+        self.gpg = gpg
+        self.passphrase = passphrase
+        super().__init__(name, **kwargs)
+
+    @property
+    def configuration(self):
+        repo_config = super().configuration
+        with open(self.gpg, 'r') as gpg_file:
+            repo_config['attributes'].update({
+                'aptSigning': {
+                    'keypair': gpg_file.read(),
+                    'passphrase': self.passphrase
+                }
+            })
+
+        return repo_config
+
+
+class AptProxyRepository(AptRepository, ProxyRepository):
+    def __init__(self, name,
+                 flat=False,
+                 **kwargs):
+        self.flat = flat
+        super().__init__(name, **kwargs)
+
+    @property
+    def configuration(self):
+        repo_config = super().configuration
+
+        repo_config['attributes']['apt']['flat'] = self.flat
+
+        return repo_config
+
+
 __all__ = [
     Repository, HostedRepository, ProxyRepository,
     BowerHostedRepository, BowerProxyRepository,
@@ -666,4 +731,5 @@ __all__ = [
     RubygemsHostedRepository, RubygemsProxyRepository,
     YumHostedRepository, YumProxyRepository,
     DockerHostedRepository, DockerProxyRepository,
+    AptHostedRepository, AptProxyRepository
 ]

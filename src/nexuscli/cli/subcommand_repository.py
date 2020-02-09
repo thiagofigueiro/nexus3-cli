@@ -46,6 +46,18 @@ Usage:
          [--force_basic_auth]
          [--http_port=<http_port>]
          [--https_port=<https_port>]
+    nexus3 repository create hosted apt
+         <repo_name>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>] [--gpg=<gpg-file-path>]
+         [--passphrase=passphrase] [--distribution=<distribution>]
+    nexus3 repository create proxy apt
+         <repo_name> <remote_url>
+         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
+         [--write=<w_policy>]
+         [--remote_auth_type=<remote_auth_type>]
+         [--remote_username=<username>] [--remote_password=<password>]
+         [--flat] [--distribution=<distribution>]
 
 Options:
   --blob=<store_name>                   Use this blob with new repository  [default: default]  # noqa: E501
@@ -62,6 +74,10 @@ Options:
   --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
   --remote_username=<remote_username>   Remote username
   --remote_password=<remote_password>   Remote password
+  --gpg=<gpg-file-path>                 gpg file [default: ./public.gpg.key]
+  --passphrase=<passphrase>             passphrase for the given gpg [default: ]
+  --distribution=<distribution>         filter distributions [default: buster]
+  --flat                                flat repository [default: False]
 
 Commands:
   repository create  Create a repository using the format and options provided
@@ -150,6 +166,17 @@ def cmd_create(nexus_client, args):
                        'https_port': args.get('--https_port'),
                        'v1_enabled': args.get('--v1_enabled'),
                        'force_basic_auth': args.get('--force_basic_auth')})
+
+    if recipe_name == 'apt':
+        kwargs.update({'distribution': args.get('--distribution')})
+
+        if repo_type == 'hosted':
+            # TODO maybe generage the gpg key?
+            kwargs.update({'gpg': args.get('--gpg'),
+                           'passphrase': args.get('--passphrase')})
+
+        if repo_type == 'proxy':
+            kwargs.update({'flat': args.get('--flat')})
 
     Repository = repository.collection.get_repository_class({
         'recipeName': f'{recipe_name}-{repo_type}'})
