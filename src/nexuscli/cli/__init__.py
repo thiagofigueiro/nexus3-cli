@@ -1,5 +1,8 @@
 import click
 import pkg_resources
+
+from nexuscli.api.repository.model import (
+    DockerRepository, MavenRepository, Repository, YumRepository)
 from nexuscli.cli import (
     errors, root_commands, util, subcommand_repository,
     subcommand_cleanup_policy, subcommand_script)
@@ -157,10 +160,9 @@ def repository_create():
 
 @repository_create.command(
     cls=util.mapped_commands({
-        'recipe': [
-            'bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'docker'],
-        'maven': ['maven'],
-        'yum': ['yum'],
+        'recipe': Repository.RECIPES,
+        'maven': MavenRepository.RECIPES,
+        'yum': YumRepository.RECIPES,
     }),
     name='hosted')
 def repository_create_hosted():

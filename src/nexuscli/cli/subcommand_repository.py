@@ -80,25 +80,14 @@ def cmd_list(nexus_client):
     return exception.CliReturnCode.SUCCESS.value
 
 
-def _args_to_repo_type(args):
-    # docopt guarantees only one is True
-    for type_name in ['hosted', 'proxy', 'group']:
-        if args.get(type_name) is True:
-            return type_name
-
-
-def _args_to_recipe_name(args):
-    for class_ in repository.model.__all__:
-        for recipe_name in class_.RECIPES:
-            if args.get(recipe_name) is True:
-                return recipe_name
-
-
-# def cmd_create(ctx, repository_name=None, strict_content=None, **kwargs):
-def cmd_create(ctx, repo_type=None, repository_name=None, strict_content=None, **kwargs):
+def cmd_create(ctx,
+               repo_type=None,
+               repository_name=None,
+               strict_content=None,
+               **kwargs):
     """Performs ``nexus3 repository create`` commands"""
     nexus_client = ctx.obj
-    # repo_type = ctx.info_name
+    recipe = kwargs["recipe"]
 
     kwargs.update({
         'nexus_client': nexus_client,
@@ -146,7 +135,7 @@ def cmd_create(ctx, repo_type=None, repository_name=None, strict_content=None, *
             kwargs.update({'flat': args.get('--flat')})
 
     Repository = repository.collection.get_repository_class({
-        'recipeName': f'{kwargs["recipe"]}-{repo_type}'})
+        'recipeName': f'{recipe}-{repo_type}'})
 
     r = Repository(repository_name, **kwargs)
 
@@ -171,16 +160,4 @@ def cmd_show(nexus_client, repository_name):
         return exception.CliReturnCode.REPOSITORY_NOT_FOUND.value
 
     print(json.dumps(configuration, indent=2))
-
     return exception.CliReturnCode.SUCCESS.value
-
-
-def main(ctx, *args, **kwargs):
-    print('sub repository ctx', ctx)
-    print('sub repository args', args)
-    print('sub repository kwargs', kwargs)
-    """Entrypoint for ``nexus3 repository`` subcommand."""
-    # arguments = docopt(__doc__, argv=argv)
-    # command_method = util.find_cmd_method(arguments, globals())
-    #
-    # return command_method(util.get_client(), arguments)
