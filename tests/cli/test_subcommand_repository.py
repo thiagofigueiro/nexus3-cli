@@ -233,7 +233,7 @@ def test_create_proxy_apt(nexus_client, flat,
 @pytest.mark.parametrize(
     'gpg, passphrase, '
     'w_policy, strict, c_policy', itertools.product(
-        ['tests/fixtures/apt/Release.key'],  # gpg
+        ['tests/fixtures/apt/public.gpg.key'],  # gpg
         [None, 'a'],  # passphrase
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict

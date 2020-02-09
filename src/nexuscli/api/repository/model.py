@@ -683,7 +683,7 @@ class AptRepository(Repository):
 
 class AptHostedRepository(AptRepository, HostedRepository):
     def __init__(self, name,
-                 gpg='Release.key',
+                 gpg='public.gpg.key',
                  passphrase=None,
                  **kwargs):
         self.gpg = gpg

@@ -76,8 +76,8 @@ Options:
   --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
   --remote_username=<remote_username>   Remote username
   --remote_password=<remote_password>   Remote password
-  --gpg=<gpg-file-path>                 gpg file [default: Release.key]
-  --passphrase=<passphrase>             passphrase for the given gpg [default: not-a-passphrase]
+  --gpg=<gpg-file-path>                 gpg file [default: ./public.gpg.key]
+  --passphrase=<passphrase>             passphrase for the given gpg [default: ]
   --distribution=<distribution>         filter distributions [default: buster]
   --flat                                flat repository [default: False]
 
