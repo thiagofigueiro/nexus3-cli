@@ -159,7 +159,8 @@ def repository_create():
     cls=util.mapped_commands({
         'recipe': [
             'bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'docker'],
-        'maven': ['maven']
+        'maven': ['maven'],
+        'yum': ['yum'],
     }),
     name='hosted')
 def repository_create_hosted():
@@ -210,6 +211,19 @@ def repository_create_hosted_maven(ctx: click.Context, **kwargs):
         'version_policy': kwargs['version_policy'].upper(),
     })
 
+    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+
+
+@repository_create_hosted.command(name='yum')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@click.option(
+    '--depth', help='Depth where repodata folder(s) exist', default=0,
+    type=click.IntRange(min=0, max=5, clamp=False))
+@util.with_nexus_client
+def repository_create_hosted_yum(ctx: click.Context, **kwargs):
+    """
+    Create a hosted maven repository.
+    """
     ctx.invoke(repository_create_hosted_recipe, **kwargs)
 
 

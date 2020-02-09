@@ -6,11 +6,6 @@ Usage:
          [--version=<v_policy>] [--layout=<l_policy>]
          [--remote_auth_type=<remote_auth_type>]
          [--remote_username=<username>] [--remote_password=<password>]
-  nexus3 repository create hosted yum
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>]
-         [--depth=<repo_depth>]
   nexus3 repository create proxy docker
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
@@ -44,8 +39,6 @@ Usage:
 
 Options:
   --blob=<store_name>                   Use this blob with new repository  [default: default]  # noqa: E501
-  --depth=<repo_depth>                  Depth (0-5) where repodata folder(s) exist [default: 0]
-  --layout=<l_policy>                   Accepted: strict, permissive [default: strict]
   --strict-content                      Enable strict content type validation
   --version=<v_policy>                  Accepted: release, snapshot, mixed [default: release]
   --write=<w_policy>                    Accepted: allow, allow_once, deny [default: allow_once]
