@@ -211,13 +211,13 @@ def repository_create():
 #############################################################################
 # repository create hosted sub-commands
 @repository_create.command(
+    name='hosted',
     cls=util.mapped_commands({
         'docker': model.DockerRepository.RECIPES,
         'maven': model.MavenRepository.RECIPES,
         'recipe': model.Repository.RECIPES,
         'yum': model.YumRepository.RECIPES,
-    }),
-    name='hosted')
+    }))
 def repository_create_hosted():
     """
     Created a hosted repository.
@@ -290,13 +290,13 @@ def repository_create_hosted_docker(ctx: click.Context, **kwargs):
 #############################################################################
 # repository create proxy sub-commands
 @repository_create.command(
+    name='proxy',
     cls=util.mapped_commands({
         'docker': model.DockerProxyRepository.RECIPES,
         'maven': model.MavenProxyRepository.RECIPES,
         'recipe': model.ProxyRepository.RECIPES,
         'yum': model.YumProxyRepository.RECIPES,
-    }),
-    name='proxy')
+    }))
 def repository_create_proxy():
     """
     Create a proxy repository.

@@ -1,5 +1,4 @@
 """Handles base/root commands (as opposed to subcommands)"""
-import click
 import getpass
 import inflect
 import sys
@@ -54,6 +53,8 @@ def cmd_login():
     try:
         NexusClient(config=config)
     except exception.NexusClientInvalidCredentials:
+        # the regular message tells the user to try to login, which is what
+        # they just did now, so override the msg
         raise exception.NexusClientInvalidCredentials('Invalid credentials')
 
     sys.stderr.write(f'\nLogin successful.\n')
