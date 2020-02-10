@@ -1,5 +1,7 @@
 import os
+import pathlib
 import pytest
+import shutil
 import time
 from faker import Faker
 from subprocess import check_call
@@ -7,6 +9,26 @@ from subprocess import check_call
 from nexuscli import cli
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_config import NexusConfig
+
+
+APT_GPG_KEY_PATH = pathlib.Path('tests/fixtures/apt/public.gpg.key')
+
+
+@pytest.fixture
+def apt_gpg_key_path():
+    return APT_GPG_KEY_PATH
+
+
+@pytest.fixture
+def gpg_key_as_cwd(apt_gpg_key_path, tmp_path: pathlib.Path):
+    shutil.copy(apt_gpg_key_path, tmp_path)
+    old_path = pathlib.Path.cwd()
+    os.chdir(tmp_path)
+
+    try:
+        yield
+    finally:
+        os.chdir(old_path)
 
 
 @pytest.fixture
