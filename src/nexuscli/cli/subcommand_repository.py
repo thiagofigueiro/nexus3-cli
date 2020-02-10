@@ -1,11 +1,5 @@
 """
 Usage:
-  nexus3 repository create proxy maven
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--version=<v_policy>] [--layout=<l_policy>]
-         [--remote_auth_type=<remote_auth_type>]
-         [--remote_username=<username>] [--remote_password=<password>]
   nexus3 repository create proxy docker
          <repo_name> <remote_url>
          [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
