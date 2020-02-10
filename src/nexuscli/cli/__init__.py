@@ -1,8 +1,7 @@
 import click
 import pkg_resources
 
-from nexuscli.api.repository.model import (
-    DockerRepository, MavenRepository, Repository, YumRepository)
+from nexuscli.api.repository import model
 from nexuscli.cli import (
     errors, root_commands, util, subcommand_repository,
     subcommand_cleanup_policy, subcommand_script)
@@ -160,10 +159,10 @@ def repository_create():
 
 @repository_create.command(
     cls=util.mapped_commands({
-        'docker': DockerRepository.RECIPES,
-        'maven': MavenRepository.RECIPES,
-        'recipe': Repository.RECIPES,
-        'yum': YumRepository.RECIPES,
+        'docker': model.DockerRepository.RECIPES,
+        'maven': model.MavenRepository.RECIPES,
+        'recipe': model.Repository.RECIPES,
+        'yum': model.YumRepository.RECIPES,
     }),
     name='hosted')
 def repository_create_hosted():
@@ -173,6 +172,16 @@ def repository_create_hosted():
     pass
 
 
+def _create_repository(ctx, repo_type, **kwargs):
+    # every repository recipe needs these
+    kwargs.update({
+        'write_policy': kwargs['write_policy'].upper(),
+        'recipe': ctx.info_name,
+    })
+
+    subcommand_repository.cmd_create(ctx, repo_type=repo_type, **kwargs)
+
+
 @repository_create_hosted.command(name='recipe')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
 @util.with_nexus_client
@@ -180,18 +189,7 @@ def repository_create_hosted_recipe(ctx: click.Context, **kwargs):
     """
     Create a hosted repository.
     """
-    # when we're called from another recipe (docker, maven), we want to use
-    # their name because our own `info_name` will be `recipe`.
-    recipe = ctx.info_name
-    if ctx.parent.info_name != 'hosted':
-        recipe = ctx.parent.info_name
-
-    kwargs.update({
-        'write_policy': kwargs['write_policy'].upper(),
-        'recipe': recipe,
-    })
-
-    subcommand_repository.cmd_create(ctx, repo_type='hosted', **kwargs)
+    _create_repository(ctx, 'hosted', **kwargs)
 
 
 @repository_create_hosted.command(name='maven')
@@ -213,8 +211,7 @@ def repository_create_hosted_maven(ctx: click.Context, **kwargs):
         'layout_policy': kwargs['layout_policy'].upper(),
         'version_policy': kwargs['version_policy'].upper(),
     })
-
-    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+    _create_repository(ctx, 'hosted', **kwargs)
 
 
 @repository_create_hosted.command(name='yum')
@@ -227,7 +224,7 @@ def repository_create_hosted_yum(ctx: click.Context, **kwargs):
     """
     Create a hosted yum repository.
     """
-    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+    _create_repository(ctx, 'hosted', **kwargs)
 
 
 @repository_create_hosted.command(name='docker')
@@ -244,16 +241,25 @@ def repository_create_hosted_docker(ctx: click.Context, **kwargs):
     """
     Create a hosted docker repository.
     """
-    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+    _create_repository(ctx, 'hosted', **kwargs)
 
 
-# TODO: use mapped_commands instead of click.Choice
-@repository_create.command(name='proxy')
-@click.argument(
-    'recipe', metavar='RECIPE',
-    type=click.Choice([
-        'bower', 'npm', 'nuget', 'pypi', 'raw', 'rubygems', 'yum'],
-        case_sensitive=False))
+@repository_create.command(
+    cls=util.mapped_commands({
+        'docker': model.DockerProxyRepository.RECIPES,
+        'maven': model.MavenProxyRepository.RECIPES,
+        'recipe': model.ProxyRepository.RECIPES,
+        'yum': model.YumProxyRepository.RECIPES,
+    }),
+    name='proxy')
+def repository_create_proxy():
+    """
+    Create a proxy repository.
+    """
+    pass
+
+
+@repository_create_proxy.command(name='recipe')
 @click.argument('repository_name')
 @click.argument('remote_url')
 @util.add_options(REPOSITORY_COMMON_OPTIONS)
@@ -265,11 +271,15 @@ def repository_create_hosted_docker(ctx: click.Context, **kwargs):
 @click.option('--remote-password',
               help='Password for remote URL')
 @util.with_nexus_client
-def repository_create_hosted(ctx: click.Context, **kwargs):
+def repository_create_proxy_recipe(ctx: click.Context, **kwargs):
     """
-    Create a proxy repository of type RECIPE.
+    Create a proxy repository.
     """
-    subcommand_repository.cmd_create(ctx, **kwargs)
+    # kwargs.update({
+    #     'write_policy': kwargs['write_policy'].upper(),
+    #     'recipe': recipe,
+    # })
+    _create_repository(ctx, 'proxy', **kwargs)
 
 
 #############################################################################
