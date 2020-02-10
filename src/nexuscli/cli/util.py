@@ -87,28 +87,6 @@ def rename_keys(mydict: dict, rename_map: dict):
             del mydict[current_name]
 
 
-def find_cmd_method(arguments, methods):
-    """
-    Helper to find the corresponding python method for a CLI command.
-
-    Suitable python methods must be named ``cmd_COMMAND``, where `COMMAND` is
-    the CLI command and ``cmd_`` is a hard-coded prefix.
-
-    :param arguments: the return of :py:func:`docopt.docopt`.
-    :param methods: the return value from `globals()`, as-is
-    :return: the python method corresponding to the given CLI command. None if
-        no suitable method is found.
-    :rtype: Union[callable, None]
-    """
-    methods = dict(methods)
-    for name, method in methods.items():
-        if name.startswith('cmd_'):
-            maybe_command = name[4:]  # strip `cmd_`
-            if arguments.get(maybe_command):
-                return method
-    return None
-
-
 def get_client():
     """
     Returns a Nexus Client instance. Prints a warning if a configuration file

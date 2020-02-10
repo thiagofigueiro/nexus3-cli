@@ -11,7 +11,7 @@ from nexuscli.cli import util
 
 
 PLURAL = inflect.engine().plural
-YESNO_OPTIONS = {
+YESNO_OPTIONS = {  # TODO: replace with Click boolean on CLI
     "true": True, "t": True, "yes": True, "y": True,
     "false": False, "f": False, "no": False, "n": False,
 }

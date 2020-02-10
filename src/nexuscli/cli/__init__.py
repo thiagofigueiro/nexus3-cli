@@ -3,7 +3,7 @@ import pkg_resources
 
 from nexuscli.api.repository import model
 from nexuscli.cli import (
-    errors, root_commands, util, subcommand_repository,
+    root_commands, util, subcommand_repository,
     subcommand_cleanup_policy, subcommand_script)
 
 PACKAGE_VERSION = pkg_resources.get_distribution('nexus3-cli').version
