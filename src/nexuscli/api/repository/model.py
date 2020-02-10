@@ -64,8 +64,6 @@ class Repository:
         'pypi',
         'raw',
         'rubygems',
-        'docker',
-        'apt',
     )
     TYPE = None
 

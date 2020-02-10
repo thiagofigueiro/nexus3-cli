@@ -38,20 +38,11 @@ class AliasedGroup(click.Group):
 def with_nexus_client(click_command):
     @functools.wraps(click_command)
     @click.pass_context
-    def inner(ctx: click.Context, **kwargs):
+    def command(ctx: click.Context, **kwargs):
         ctx.obj = get_client()
-
-        # TODO: better way to do this?
-        # if args and kwargs:
-        #     return click_command(ctx, args, kwargs)
-        # elif args:
-        #     return click_command(ctx, args)
-        # elif kwargs:
         return click_command(ctx, **kwargs)
-        # else:
-        #     return click_command(ctx)
 
-    return inner
+    return command
 
 
 def add_options(options):

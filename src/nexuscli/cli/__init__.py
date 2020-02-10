@@ -160,8 +160,9 @@ def repository_create():
 
 @repository_create.command(
     cls=util.mapped_commands({
-        'recipe': Repository.RECIPES,
+        'docker': DockerRepository.RECIPES,
         'maven': MavenRepository.RECIPES,
+        'recipe': Repository.RECIPES,
         'yum': YumRepository.RECIPES,
     }),
     name='hosted')
@@ -224,7 +225,24 @@ def repository_create_hosted_maven(ctx: click.Context, **kwargs):
 @util.with_nexus_client
 def repository_create_hosted_yum(ctx: click.Context, **kwargs):
     """
-    Create a hosted maven repository.
+    Create a hosted yum repository.
+    """
+    ctx.invoke(repository_create_hosted_recipe, **kwargs)
+
+
+@repository_create_hosted.command(name='docker')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@click.option(
+    '--v1-enabled/--no-v1-enabled', help='Enable v1 registry', default=False)
+@click.option(
+    '--force-basic-auth/--no-force-basic-auth',
+    help='Force use of basic authentication', default=False)
+@click.option('--http-port', type=click.INT, help='Port for HTTP service')
+@click.option('--https-port', type=click.INT, help='Port for HTTPS service')
+@util.with_nexus_client
+def repository_create_hosted_docker(ctx: click.Context, **kwargs):
+    """
+    Create a hosted docker repository.
     """
     ctx.invoke(repository_create_hosted_recipe, **kwargs)
 

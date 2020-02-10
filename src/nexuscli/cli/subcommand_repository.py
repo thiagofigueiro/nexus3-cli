@@ -16,36 +16,9 @@ Usage:
          [--https_port=<https_port>]
          [--remote_auth_type=<remote_auth_type>]
          [--remote_username=<username>] [--remote_password=<password>]
-  nexus3 repository create hosted docker
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>]
-         [--v1_enabled]
-         [--force_basic_auth]
-         [--http_port=<http_port>]
-         [--https_port=<https_port>]
-    nexus3 repository create hosted apt
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>] [--gpg=<gpg-file-path>]
-         [--passphrase=passphrase] [--distribution=<distribution>]
-    nexus3 repository create proxy apt
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>]
-         [--remote_auth_type=<remote_auth_type>]
-         [--remote_username=<username>] [--remote_password=<password>]
-         [--flat] [--distribution=<distribution>]
 
 Options:
-  --blob=<store_name>                   Use this blob with new repository  [default: default]  # noqa: E501
-  --strict-content                      Enable strict content type validation
-  --version=<v_policy>                  Accepted: release, snapshot, mixed [default: release]
-  --write=<w_policy>                    Accepted: allow, allow_once, deny [default: allow_once]
-  --cleanup=<c_policy>                  Accepted: an existing Cleanup Policy name
-  --v1_enabled                          Enable v1 registry [default: False]
   --index_type=<index_type>             Accepted: registry, hub, custom [default: registry]
-  --force_basic_auth                    Force to use basic authentication against this docker repo
   --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
   --remote_username=<remote_username>   Remote username
   --remote_password=<remote_password>   Remote password
@@ -108,20 +81,6 @@ def cmd_create(ctx,
     #                        'use_trust_store_for_index_access':
     #                            args.get('--use_trust_store_for_index_access'),
     #                        'index_url': args.get('--index_url')})
-    #
-    # if recipe == 'yum':
-    #     kwargs.update({'depth': int(args.get('--depth'))})
-    #
-    # if recipe.startswith('maven'):
-    #     kwargs.update({
-    #         'version_policy': args.get('--version').upper(),
-    #         'layout_policy': args.get('--layout').upper()})
-    #
-    # if recipe == 'docker':
-    #     kwargs.update({'http_port': args.get('--http_port'),
-    #                    'https_port': args.get('--https_port'),
-    #                    'v1_enabled': args.get('--v1_enabled'),
-    #                    'force_basic_auth': args.get('--force_basic_auth')})
 
     if recipe_name == 'apt':
         kwargs.update({'distribution': args.get('--distribution')})
