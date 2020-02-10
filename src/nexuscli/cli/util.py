@@ -73,6 +73,20 @@ def mapped_commands(command_map: dict):
     return CommandGroup
 
 
+def upcase_values(mydict: dict, keys=[]):
+    for key in keys:
+        value = mydict.get(key)
+        if value is not None:
+            mydict[key] = value.upper()
+
+
+def rename_keys(mydict: dict, rename_map: dict):
+    for current_name, new_name in rename_map.items():
+        if mydict.get(current_name) is not None:
+            mydict[new_name] = mydict[current_name]
+            del mydict[current_name]
+
+
 def find_cmd_method(arguments, methods):
     """
     Helper to find the corresponding python method for a CLI command.

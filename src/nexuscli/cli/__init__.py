@@ -174,9 +174,14 @@ def repository_create_hosted():
 
 def _create_repository(ctx, repo_type, **kwargs):
     # every repository recipe needs these
-    kwargs.update({
-        'write_policy': kwargs['write_policy'].upper(),
-        'recipe': ctx.info_name,
+    kwargs['recipe'] = ctx.info_name
+    util.upcase_values(
+        kwargs, ['layout_policy', 'version_policy', 'write_policy', ])
+
+    # these CLI options were shortened for user convenience; fix them now
+    util.rename_keys(kwargs, {
+        'negative_cache': 'negative_cache_enabled',
+        'strict_content': 'strict_content_type_validation',
     })
 
     subcommand_repository.cmd_create(ctx, repo_type=repo_type, **kwargs)
@@ -207,10 +212,6 @@ def repository_create_hosted_maven(ctx: click.Context, **kwargs):
     """
     Create a hosted maven repository.
     """
-    kwargs.update({
-        'layout_policy': kwargs['layout_policy'].upper(),
-        'version_policy': kwargs['version_policy'].upper(),
-    })
     _create_repository(ctx, 'hosted', **kwargs)
 
 
@@ -260,25 +261,34 @@ def repository_create_proxy():
 
 
 @repository_create_proxy.command(name='recipe')
-@click.argument('repository_name')
-@click.argument('remote_url')
+@click.argument('repository-name')
+@click.argument('remote-url')
 @util.add_options(REPOSITORY_COMMON_OPTIONS)
-@click.option('--remote-auth-type',
-              help='Only username is supported',
-              type=click.Choice(['username'], case_sensitive=False))
-@click.option('--remote-username',
-              help='Username for remote URL')
-@click.option('--remote-password',
-              help='Password for remote URL')
+@click.option(
+    '--auto-block/--no-auto-block', default=True,
+    help='Disable outbound connections on remote-url access errors')
+@click.option(
+    '--negative-cache/--no-negative-cache', default=True,
+    help='Whether to cache responses for content missing in the remote-url')
+@click.option(
+    '--negative-cache-ttl', type=click.INT, default=1440,
+    help='Cache time in minutes')
+@click.option(
+    '--content-max-age', type=click.INT, default=1440,
+    help='Maximum age of cached artefacts')
+@click.option(
+    '--metadata-max-age', type=click.INT, default=1440,
+    help='Maximum age of cached artefacts metadata')
+@click.option(
+    '--remote-auth-type', help='Only username is supported',
+    type=click.Choice(['username'], case_sensitive=False))
+@click.option('--remote-username', help='Username for remote URL')
+@click.option('--remote-password', help='Password for remote URL')
 @util.with_nexus_client
 def repository_create_proxy_recipe(ctx: click.Context, **kwargs):
     """
     Create a proxy repository.
     """
-    # kwargs.update({
-    #     'write_policy': kwargs['write_policy'].upper(),
-    #     'recipe': recipe,
-    # })
     _create_repository(ctx, 'proxy', **kwargs)
 
 

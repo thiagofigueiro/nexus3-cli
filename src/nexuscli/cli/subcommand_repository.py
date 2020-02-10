@@ -53,29 +53,14 @@ def cmd_list(nexus_client):
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_create(ctx,
-               repo_type=None,
-               repository_name=None,
-               strict_content=None,
-               **kwargs):
+def cmd_create(ctx, repo_type=None, repository_name=None, **kwargs):
     """Performs ``nexus3 repository create`` commands"""
     nexus_client = ctx.obj
     recipe = kwargs["recipe"]
+    kwargs['nexus_client'] = nexus_client
 
-    kwargs.update({
-        'nexus_client': nexus_client,
-        'strict_content_type_validation': strict_content,
-    })
     print('kwargs inside', kwargs)
 
-    # TODO: find better home for these
-    # if repo_type == 'proxy':
-    #     kwargs.update({'remote_url': args.get('<remote_url>'),
-    #                    'remote_auth_type': args.get('--remote_auth_type'),
-    #                    'remote_username': args.get('--remote_username'),
-    #                    'remote_password': args.get('--remote_password')
-    #                    })
-    #
     #     if recipe == 'docker':
     #         kwargs.update({'index_type': args.get('--index_type').upper(),
     #                        'use_trust_store_for_index_access':
