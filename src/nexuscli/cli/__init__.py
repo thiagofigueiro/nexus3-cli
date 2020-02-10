@@ -62,6 +62,19 @@ REPOSITORY_COMMON_MAVEN_OPTIONS = [
                           case_sensitive=False)),
 ]
 
+REPOSITORY_COMMON_DOCKER_OPTIONS = [
+    click.option(
+        '--v1-enabled/--no-v1-enabled', default=False,
+        help='Enable v1 registry'),
+    click.option(
+        '--force-basic-auth/--no-force-basic-auth', default=False,
+        help='Force use of basic authentication'),
+    click.option(
+        '--http-port', type=click.INT, help='Port for HTTP service'),
+    click.option(
+        '--https-port', type=click.INT, help='Port for HTTPS service'),
+]
+
 
 # TODO: auto_envvar_prefix='NEXUS_CLI' for username, password etc
 @click.group(cls=util.AliasedGroup, context_settings=HELP_OPTIONS)
@@ -216,12 +229,14 @@ def _create_repository(ctx, repo_type, **kwargs):
     # every repository recipe needs these
     kwargs['recipe'] = ctx.info_name
     util.upcase_values(
-        kwargs, ['layout_policy', 'version_policy', 'write_policy', ])
+        kwargs, ['index_type', 'layout_policy', 'version_policy',
+                 'write_policy'])
 
     # these CLI options were shortened for user convenience; fix them now
     util.rename_keys(kwargs, {
         'negative_cache': 'negative_cache_enabled',
         'strict_content': 'strict_content_type_validation',
+        'trust_store': 'use_trust_store_for_index_access',
     })
 
     subcommand_repository.cmd_create(ctx, repo_type=repo_type, **kwargs)
@@ -263,13 +278,7 @@ def repository_create_hosted_yum(ctx: click.Context, **kwargs):
 
 @repository_create_hosted.command(name='docker')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
-@click.option(
-    '--v1-enabled/--no-v1-enabled', help='Enable v1 registry', default=False)
-@click.option(
-    '--force-basic-auth/--no-force-basic-auth',
-    help='Force use of basic authentication', default=False)
-@click.option('--http-port', type=click.INT, help='Port for HTTP service')
-@click.option('--https-port', type=click.INT, help='Port for HTTPS service')
+@util.add_options(REPOSITORY_COMMON_DOCKER_OPTIONS)
 @util.with_nexus_client
 def repository_create_hosted_docker(ctx: click.Context, **kwargs):
     """
@@ -312,6 +321,26 @@ def repository_create_proxy_recipe(ctx: click.Context, **kwargs):
 def repository_create_proxy_maven(ctx: click.Context, **kwargs):
     """
     Create a maven proxy repository.
+    """
+    _create_repository(ctx, 'proxy', **kwargs)
+
+
+@repository_create_proxy.command(name='docker')
+@util.add_options(REPOSITORY_COMMON_PROXY_OPTIONS)
+@util.add_options(REPOSITORY_COMMON_DOCKER_OPTIONS)
+@click.option(
+    '--index-type', help='Docker index type', default='registry',
+    type=click.Choice(['registry', 'hub', 'custom'],
+                      case_sensitive=False))
+# TODO: enforce requirement
+@click.option('--index-url', help='Required for --index-type custom')
+@click.option(
+    '--trust-store/--no-trust-store', default=False,
+    help='Required for --index-type hub or custom')
+@util.with_nexus_client
+def repository_create_proxy_docker(ctx: click.Context, **kwargs):
+    """
+    Create a docker proxy repository.
     """
     _create_repository(ctx, 'proxy', **kwargs)
 

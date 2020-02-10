@@ -1,29 +1,3 @@
-"""
-Usage:
-  nexus3 repository create proxy docker
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--v1_enabled]
-         [--force_basic_auth]
-         [--index_type=<index_type>]
-         [--http_port=<http_port>]
-         [--https_port=<https_port>]
-         [--remote_auth_type=<remote_auth_type>]
-         [--remote_username=<username>] [--remote_password=<password>]
-
-Options:
-  --index_type=<index_type>             Accepted: registry, hub, custom [default: registry]
-  --remote_auth_type=<remote_auth_type> Accepted: username [default: None]
-  --remote_username=<remote_username>   Remote username
-  --remote_password=<remote_password>   Remote password
-  --gpg=<gpg-file-path>                 gpg file [default: ./public.gpg.key]
-  --passphrase=<passphrase>             passphrase for the given gpg [default: ]
-  --distribution=<distribution>         filter distributions [default: buster]
-  --flat                                flat repository [default: False]
-
-Commands:
-  repository create  Create a repository using the format and options provided
-"""
 import json
 from texttable import Texttable
 
@@ -52,25 +26,6 @@ def cmd_create(ctx, repo_type=None, repository_name=None, **kwargs):
     nexus_client = ctx.obj
     recipe = kwargs["recipe"]
     kwargs['nexus_client'] = nexus_client
-
-    print('kwargs inside', kwargs)
-
-    #     if recipe == 'docker':
-    #         kwargs.update({'index_type': args.get('--index_type').upper(),
-    #                        'use_trust_store_for_index_access':
-    #                            args.get('--use_trust_store_for_index_access'),
-    #                        'index_url': args.get('--index_url')})
-
-    if recipe_name == 'apt':
-        kwargs.update({'distribution': args.get('--distribution')})
-
-        if repo_type == 'hosted':
-            # TODO maybe generage the gpg key?
-            kwargs.update({'gpg': args.get('--gpg'),
-                           'passphrase': args.get('--passphrase')})
-
-        if repo_type == 'proxy':
-            kwargs.update({'flat': args.get('--flat')})
 
     Repository = repository.collection.get_repository_class({
         'recipeName': f'{recipe}-{repo_type}'})

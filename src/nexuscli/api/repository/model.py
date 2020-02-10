@@ -604,7 +604,7 @@ class DockerProxyRepository(ProxyRepository, DockerRepository):
     def __init__(self, name,
                  index_type='REGISTRY',
                  use_trust_store_for_index_access=False,
-                 index_url="https://index.docker.io/",
+                 index_url='https://index.docker.io/',
                  **kwargs):
         self.index_type = index_type
 
