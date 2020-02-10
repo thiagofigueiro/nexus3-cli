@@ -17,15 +17,16 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
+from nexuscli import exception
 from nexuscli.api import cleanup_policy
-from nexuscli.cli import errors, util
+from nexuscli.cli import util
 
 
 def cmd_list(nexus_client, _):
     """Performs ``nexus3 cleanup_policy list``"""
     policies = nexus_client.cleanup_policies.list()
     if len(policies) == 0:
-        return errors.CliReturnCode.POLICY_NOT_FOUND.value
+        return exception.CliReturnCode.POLICY_NOT_FOUND.value
 
     table = Texttable(max_width=util.TTY_MAX_WIDTH)
     table.add_row(['Name', 'Format', 'lastDownloaded', 'lastBlobUpdated'])
@@ -38,7 +39,7 @@ def cmd_list(nexus_client, _):
             p['criteria'].get('lastBlobUpdated', 'null')])
 
     print(table.draw())
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_create(nexus_client, args):
@@ -58,7 +59,7 @@ def cmd_create(nexus_client, args):
     )
 
     nexus_client.cleanup_policies.create_or_update(policy)
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def main(argv=None):
