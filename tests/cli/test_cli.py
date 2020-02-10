@@ -2,7 +2,7 @@ import pytest
 from subprocess import check_call
 from time import sleep
 
-from nexuscli import cli
+from nexuscli import cli, exception
 
 
 def test_login(mocker):
@@ -27,7 +27,7 @@ def test_list(nexus_client, faker):
     exit_code = cli.main(argv=list(filter(None, argv_list)))
 
     assert has_created
-    assert exit_code == cli.errors.CliReturnCode.SUCCESS.value
+    assert exit_code == exception.CliReturnCode.SUCCESS.value
 
 
 @pytest.mark.integration

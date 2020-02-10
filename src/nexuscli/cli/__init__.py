@@ -38,7 +38,7 @@ import sys
 from docopt import docopt, DocoptExit
 
 from nexuscli import exception
-from nexuscli.cli import errors, util
+from nexuscli.cli import util
 
 
 def _is_root_command(maybe):
@@ -86,7 +86,7 @@ def _run_subcommand(arguments, subcommand):
         subcommand_method = getattr(subcommand_module, 'main')
     except KeyError:
         print(__doc__)
-        sys.exit(errors.CliReturnCode.INVALID_SUBCOMMAND.value)
+        sys.exit(exception.CliReturnCode.INVALID_SUBCOMMAND.value)
 
     try:
         return subcommand_method(argv)
@@ -114,7 +114,7 @@ def main(argv=None):
 
     maybe_subcommand = arguments.get('<subcommand>')
 
-    exit_code = errors.CliReturnCode.UNKNOWN_ERROR.value
+    exit_code = exception.CliReturnCode.UNKNOWN_ERROR.value
     try:
         # "root" commands (ie not a subcommand)
         if maybe_subcommand is None:

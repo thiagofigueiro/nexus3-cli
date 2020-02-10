@@ -4,9 +4,9 @@ import inflect
 import sys
 import types
 
-from nexuscli import nexus_config
+from nexuscli import exception, nexus_config
 from nexuscli.nexus_client import NexusClient
-from nexuscli.cli import errors, util
+from nexuscli.cli import util
 
 
 PLURAL = inflect.engine().plural
@@ -66,9 +66,9 @@ def cmd_list(nexus_client, args):
     if isinstance(artefact_list, (list, types.GeneratorType)):
         for artefact in iter(artefact_list):
             print(artefact)
-        return errors.CliReturnCode.SUCCESS.value
+        return exception.CliReturnCode.SUCCESS.value
     else:
-        return errors.CliReturnCode.UNKNOWN_ERROR.value
+        return exception.CliReturnCode.UNKNOWN_ERROR.value
 
 
 def cmd_ls(*args, **kwargs):
@@ -81,11 +81,11 @@ def _cmd_up_down_errors(count, action):
     if count == 0:
         # FIXME: inflex the action verb to past participle
         sys.stderr.write('WARNING: no files were {}\'ed.'.format(action))
-        sys.exit(errors.CliReturnCode.NO_FILES.value)
+        sys.exit(exception.CliReturnCode.NO_FILES.value)
 
     if count == -1:
         sys.stderr.write('ERROR during {} operation.'.format(action))
-        sys.exit(errors.CliReturnCode.API_ERROR.value)
+        sys.exit(exception.CliReturnCode.API_ERROR.value)
 
 
 def cmd_upload(nexus_client, args):
@@ -104,7 +104,7 @@ def cmd_upload(nexus_client, args):
 
     file = PLURAL('file', upload_count)
     sys.stderr.write(f'Uploaded {upload_count} {file} to {destination}\n')
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_up(*args, **kwargs):
@@ -129,7 +129,7 @@ def cmd_download(nexus_client, args):
     file_word = PLURAL('file', download_count)
     sys.stderr.write(
         f'Downloaded {download_count} {file_word} to {destination}\n')
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_dl(*args, **kwargs):
@@ -146,7 +146,7 @@ def cmd_delete(nexus_client, options):
 
     file_word = PLURAL('file', delete_count)
     sys.stderr.write(f'Deleted {delete_count} {file_word}\n')
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(*args, **kwargs):

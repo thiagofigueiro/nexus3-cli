@@ -91,7 +91,7 @@ from texttable import Texttable
 
 from nexuscli import exception
 from nexuscli.api import repository
-from nexuscli.cli import errors, util
+from nexuscli.cli import util
 
 
 def cmd_list(nexus_client, _):
@@ -106,7 +106,7 @@ def cmd_list(nexus_client, _):
             [repo['name'], repo['format'], repo['type'], repo['url']])
 
     print(table.draw())
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def _args_to_repo_type(args):
@@ -185,7 +185,7 @@ def cmd_create(nexus_client, args):
 
     nexus_client.repositories.create(r)
 
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(*args, **kwargs):
@@ -199,7 +199,7 @@ def cmd_delete(nexus_client, args):
         util.input_with_default(
             'Press ENTER to confirm deletion', 'ctrl+c to cancel')
     nexus_client.repositories.delete(args.get('<repo_name>'))
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_show(nexus_client, args):
@@ -209,11 +209,11 @@ def cmd_show(nexus_client, args):
         configuration = nexus_client.repositories.get_raw_by_name(repo_name)
     except exception.NexusClientInvalidRepository:
         print(f'Repository not found: {repo_name}')
-        return errors.CliReturnCode.REPOSITORY_NOT_FOUND.value
+        return exception.CliReturnCode.REPOSITORY_NOT_FOUND.value
 
     print(json.dumps(configuration, indent=2))
 
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def main(argv=None):

@@ -17,7 +17,8 @@ Commands:
 from docopt import docopt
 from texttable import Texttable
 
-from nexuscli.cli import errors, util
+from nexuscli import exception
+from nexuscli.cli import util
 
 
 def cmd_list(nexus_client, _):
@@ -34,7 +35,7 @@ def cmd_list(nexus_client, _):
         table.add_row([script['name'], script['type'], content])
 
     print(table.draw())
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_create(nexus_client, args):
@@ -42,7 +43,7 @@ def cmd_create(nexus_client, args):
     script_content = open(args.get('<script_path>')).read()
     nexus_client.scripts.create(
         args.get('<script_name>'), script_content, args.get('--script_type'))
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_del(*args, **kwargs):
@@ -53,7 +54,7 @@ def cmd_del(*args, **kwargs):
 def cmd_delete(nexus_client, args):
     """Performs ``nexus3 script delete``"""
     nexus_client.scripts.delete(args.get('<script_name>'))
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def cmd_run(nexus_client, args):
@@ -61,7 +62,7 @@ def cmd_run(nexus_client, args):
     resp = nexus_client.scripts.run(
         args.get('<script_name>'), args.get('<script_args>'))
     print(resp)
-    return errors.CliReturnCode.SUCCESS.value
+    return exception.CliReturnCode.SUCCESS.value
 
 
 def main(argv=None):
