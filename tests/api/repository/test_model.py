@@ -110,7 +110,8 @@ def test_upload_directory(repo_class, recurse, flatten, mocker, faker):
 @pytest.mark.parametrize(
     'repo_class',
     pytest.helpers.repositories_by_type(['hosted', 'proxy', 'group']))
-def test_repository_configuration(repo_class, mock_nexus_client, faker):
+def test_repository_configuration(
+        repo_class, mock_nexus_client, faker, gpg_key_as_cwd):
     x_name = faker.word()
     x_cleanup_policy = faker.word()
     x_blob_store_name = faker.word()

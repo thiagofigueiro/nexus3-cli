@@ -28,7 +28,9 @@ def test_list(mocker):
         ['', '--cleanup=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
-def test_create_hosted(nexus_client, repo_format, w_policy, strict, c_policy):
+def test_create_hosted(
+        nexus_client, repo_format, w_policy, strict, c_policy,
+        gpg_key_as_cwd):
     strict_name = strict[2:8]
     repo_name = pytest.helpers.repo_name(
         'hosted', repo_format, w_policy, strict, c_policy)
@@ -231,17 +233,15 @@ def test_create_proxy_apt(nexus_client, flat,
 
 
 @pytest.mark.parametrize(
-    'gpg, passphrase, '
-    'w_policy, strict, c_policy', itertools.product(
-        ['tests/fixtures/apt/public.gpg.key'],  # gpg
+    'passphrase, w_policy, strict, c_policy', itertools.product(
         [None, 'a'],  # passphrase
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         ['', '--strict-content'],  # strict
         [None, 'Some'],  # c_policy
     ))
 @pytest.mark.integration
-def test_create_hosted_apt(nexus_client, gpg, passphrase,
-                           w_policy, strict, c_policy, faker):
+def test_create_hosted_apt(nexus_client, passphrase, w_policy, strict,
+                           c_policy, apt_gpg_key_path, faker):
     """
     nexus3 repository create hosted apt
          <repo_name>
@@ -258,7 +258,7 @@ def test_create_hosted_apt(nexus_client, gpg, passphrase,
 
     argv = pytest.helpers.create_argv(
         'repository create hosted apt {repo_name} '
-        '--gpg={gpg} --passphrase={passphrase} '
+        '--gpg={apt_gpg_key_path} --passphrase={passphrase} '
         '--distribution={distribution} '
         '{strict} --cleanup={c_policy} '
         '--write={w_policy} ', **locals())
