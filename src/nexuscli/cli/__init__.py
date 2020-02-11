@@ -404,6 +404,43 @@ def cleanup_policy():
     pass
 
 
+@cleanup_policy.command(name='create')
+@click.argument('name')
+@click.option(
+    '--format', default='all',
+    help='The recipe that this cleanup policy can be applied to',
+    type=click.Choice(['all'] + list(model.SUPPORTED_FORMATS)))
+@click.option(
+    '--downloaded', type=click.IntRange(min=1),
+    help='Cleanup criteria; last downloaded in this many days.')
+@click.option(
+    '--updated', type=click.IntRange(min=1),
+    help='Cleanup criteria; last updated in this many days.')
+# TODO: validate formats that accept regex
+@click.option(
+    '--regex',
+    help='Cleanup criteria; only cleanup components matching expression')
+@click.option(
+    '--notes',
+    help='Notes about your policy')
+@util.with_nexus_client
+def cleanup_policy_create(ctx: click.Context, **kwargs):
+    """
+    Create or update a cleanup policy called NAME.
+    """
+    # TODO: use a click type for this check?
+    criteria_keys = {'downloaded', 'updated', 'regex'}
+    util.move_to_key(kwargs, 'criteria', criteria_keys)
+
+    subcommand_cleanup_policy.cmd_create(ctx.obj, **kwargs)
+
+
+@cleanup_policy.command(name='list')
+@util.with_nexus_client
+def cleanup_policy_list(ctx: click.Context):
+    subcommand_cleanup_policy.cmd_list(ctx.obj)
+
+
 #############################################################################
 # script sub-commands
 @nexus_cli.group(cls=util.AliasedGroup)

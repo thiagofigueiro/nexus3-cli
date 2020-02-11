@@ -731,3 +731,6 @@ __all__ = [
     RubygemsHostedRepository, RubygemsProxyRepository,
     YumHostedRepository, YumProxyRepository,
 ]
+
+SUPPORTED_FORMATS = sorted(
+    set([recipe for cls in __all__ for recipe in cls.RECIPES]))

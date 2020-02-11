@@ -53,6 +53,14 @@ def add_options(options):
     return _add_options
 
 
+def move_to_key(mydict, new_key, keys_to_move):
+    if set(mydict.keys()).intersection(keys_to_move):
+        mydict[new_key] = {}
+        for k in keys_to_move:
+            mydict[new_key][k] = mydict[k]
+            del mydict[k]
+
+
 def mapped_commands(command_map: dict):
     """
     TODO: document command_map format

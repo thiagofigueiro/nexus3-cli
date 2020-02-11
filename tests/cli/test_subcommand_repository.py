@@ -2,11 +2,8 @@ import pytest
 import itertools
 
 from nexuscli.api import repository
+from nexuscli.api.repository.model import SUPPORTED_FORMATS
 from nexuscli.cli import subcommand_repository
-
-
-SUPPORTED_FORMATS = set(
-    [recipe for cls in repository.model.__all__ for recipe in cls.RECIPES])
 
 
 def test_list(mocker):
