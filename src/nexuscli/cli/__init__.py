@@ -449,3 +449,45 @@ def script():
     Manage scripts.
     """
     pass
+
+
+@script.command(name='create')
+@click.argument('name')
+@click.argument('file', type=click.File())
+@click.option('--script-type', default='groovy', help='Script type')
+@util.with_nexus_client
+def script_create(ctx: click.Context, name, file, **kwargs):
+    """
+    Create a new script called NAME from FILE.
+    """
+    subcommand_script.cmd_create(ctx.obj, name, file.read(), **kwargs)
+
+
+@script.command(name='delete')
+@click.argument('name')
+@util.with_nexus_client
+def script_delete(ctx: click.Context, name):
+    """
+    Delete the script called NAME.
+    """
+    subcommand_script.cmd_delete(ctx.obj, name)
+
+
+@script.command(name='list')
+@util.with_nexus_client
+def script_list(ctx: click.Context):
+    """
+    List all scripts.
+    """
+    subcommand_script.cmd_list(ctx.obj)
+
+
+@script.command(name='run')
+@click.argument('name')
+@click.option('--script-arguments', '-a')
+@util.with_nexus_client
+def script_run(ctx: click.Context, name, script_arguments):
+    """
+    Run the script called NAME.
+    """
+    subcommand_script.cmd_run(ctx.obj, name, script_arguments)
