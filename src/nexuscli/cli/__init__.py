@@ -384,6 +384,16 @@ def repository_create_proxy_maven(ctx: click.Context, **kwargs):
     _create_repository(ctx, 'proxy', **kwargs)
 
 
+@repository_create_proxy.command(name='yum')
+@util.add_options(REPOSITORY_COMMON_PROXY_OPTIONS)
+@util.with_nexus_client
+def repository_create_proxy_yum(ctx: click.Context, **kwargs):
+    """
+    Create a yum proxy repository.
+    """
+    _create_repository(ctx, 'proxy', **kwargs)
+
+
 #############################################################################
 # cleanup_policy sub-commands
 @nexus_cli.group(cls=util.AliasedGroup)

@@ -717,9 +717,12 @@ class AptProxyRepository(AptRepository, ProxyRepository):
         return repo_config
 
 
+# FIXME: these are supposed to be strings
 __all__ = [
     Repository, HostedRepository, ProxyRepository,
+    AptHostedRepository, AptProxyRepository,
     BowerHostedRepository, BowerProxyRepository,
+    DockerHostedRepository, DockerProxyRepository,
     MavenHostedRepository, MavenProxyRepository,
     NpmHostedRepository, NpmProxyRepository,
     NugetHostedRepository, NugetProxyRepository,
@@ -727,6 +730,4 @@ __all__ = [
     RawHostedRepository, RawProxyRepository,
     RubygemsHostedRepository, RubygemsProxyRepository,
     YumHostedRepository, YumProxyRepository,
-    DockerHostedRepository, DockerProxyRepository,
-    AptHostedRepository, AptProxyRepository
 ]
