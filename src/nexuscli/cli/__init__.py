@@ -51,15 +51,10 @@ REPOSITORY_COMMON_PROXY_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
     click.option('--remote-password', help='Password for remote URL'),
 ]
 
-REPOSITORY_COMMON_MAVEN_OPTIONS = [
+REPOSITORY_COMMON_APT_OPTIONS = [
     click.option(
-        '--version-policy', help='Version policy to use', default='release',
-        type=click.Choice(['release', 'snapshot', 'mixed'],
-                          case_sensitive=False)),
-    click.option(
-        '--layout-policy', help='Layout policy to use', default='strict',
-        type=click.Choice(['strict', 'permissive'],
-                          case_sensitive=False)),
+        '--distribution', required=True,
+        help='Distribution to fetch; e.g.: bionic')
 ]
 
 REPOSITORY_COMMON_DOCKER_OPTIONS = [
@@ -73,6 +68,17 @@ REPOSITORY_COMMON_DOCKER_OPTIONS = [
         '--http-port', type=click.INT, help='Port for HTTP service'),
     click.option(
         '--https-port', type=click.INT, help='Port for HTTPS service'),
+]
+
+REPOSITORY_COMMON_MAVEN_OPTIONS = [
+    click.option(
+        '--version-policy', help='Version policy to use', default='release',
+        type=click.Choice(['release', 'snapshot', 'mixed'],
+                          case_sensitive=False)),
+    click.option(
+        '--layout-policy', help='Layout policy to use', default='strict',
+        type=click.Choice(['strict', 'permissive'],
+                          case_sensitive=False)),
 ]
 
 
@@ -257,9 +263,7 @@ def repository_create_hosted_recipe(ctx: click.Context, **kwargs):
 
 @repository_create_hosted.command(name='apt')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
-@click.option(
-    '--distribution', required=True,
-    help='Distribution to fetch; e.g.: bionic')
+@util.add_options(REPOSITORY_COMMON_APT_OPTIONS)
 @click.option(
     '--gpg-keypair', required=True, type=click.File(),
     default='./private.gpg.key', help='Path to GPG signing key')
@@ -312,10 +316,12 @@ def repository_create_hosted_yum(ctx: click.Context, **kwargs):
 @repository_create.command(
     name='proxy',
     cls=util.mapped_commands({
+        'apt': model.AptProxyRepository.RECIPES,
         'docker': model.DockerProxyRepository.RECIPES,
         'maven': model.MavenProxyRepository.RECIPES,
-        'recipe': model.ProxyRepository.RECIPES,
         'yum': model.YumProxyRepository.RECIPES,
+        # remaining, generic repositories
+        'recipe': model.ProxyRepository.RECIPES,
     }))
 def repository_create_proxy():
     """
@@ -334,13 +340,15 @@ def repository_create_proxy_recipe(ctx: click.Context, **kwargs):
     _create_repository(ctx, 'proxy', **kwargs)
 
 
-@repository_create_proxy.command(name='maven')
+@repository_create_proxy.command(name='apt')
 @util.add_options(REPOSITORY_COMMON_PROXY_OPTIONS)
-@util.add_options(REPOSITORY_COMMON_MAVEN_OPTIONS)
+@util.add_options(REPOSITORY_COMMON_APT_OPTIONS)
+@click.option(
+    '--flat/--no-flat', default=False, help='Is this repository flat?')
 @util.with_nexus_client
-def repository_create_proxy_maven(ctx: click.Context, **kwargs):
+def repository_create_hosted_apt(ctx: click.Context, **kwargs):
     """
-    Create a maven proxy repository.
+    Create a hosted apt repository.
     """
     _create_repository(ctx, 'proxy', **kwargs)
 
@@ -365,15 +373,15 @@ def repository_create_proxy_docker(ctx: click.Context, **kwargs):
     _create_repository(ctx, 'proxy', **kwargs)
 
 
-# TODO:
-# proxy apt
-#      if recipe_name == 'apt':
-#         kwargs.update({'distribution': args.get('--distribution')})
-#              kwargs.update({'gpg': args.get('--gpg'),
-#                            'passphrase': args.get('--passphrase')})
-#
-#         if repo_type == 'proxy':
-#             kwargs.update({'flat': args.get('--flat')})
+@repository_create_proxy.command(name='maven')
+@util.add_options(REPOSITORY_COMMON_PROXY_OPTIONS)
+@util.add_options(REPOSITORY_COMMON_MAVEN_OPTIONS)
+@util.with_nexus_client
+def repository_create_proxy_maven(ctx: click.Context, **kwargs):
+    """
+    Create a maven proxy repository.
+    """
+    _create_repository(ctx, 'proxy', **kwargs)
 
 
 #############################################################################
