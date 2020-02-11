@@ -121,6 +121,7 @@ def delete(ctx: click.Context, repository_path):
 
 
 @nexus_cli.command()
+# TODO: use Path for src argument
 @click.argument('src')
 @click.argument('dst')
 @click.option('--flatten/--no-flatten', default=False,
@@ -213,10 +214,12 @@ def repository_create():
 @repository_create.command(
     name='hosted',
     cls=util.mapped_commands({
-        'docker': model.DockerRepository.RECIPES,
-        'maven': model.MavenRepository.RECIPES,
-        'recipe': model.Repository.RECIPES,
-        'yum': model.YumRepository.RECIPES,
+        'apt': model.AptHostedRepository.RECIPES,
+        'docker': model.DockerHostedRepository.RECIPES,
+        'maven': model.MavenHostedRepository.RECIPES,
+        'yum': model.YumHostedRepository.RECIPES,
+        # generic, remaining repositories
+        'recipe': model.HostedRepository.RECIPES,
     }))
 def repository_create_hosted():
     """
@@ -252,6 +255,34 @@ def repository_create_hosted_recipe(ctx: click.Context, **kwargs):
     _create_repository(ctx, 'hosted', **kwargs)
 
 
+@repository_create_hosted.command(name='apt')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@click.option(
+    '--distribution', required=True,
+    help='Distribution to fetch; e.g.: bionic')
+@click.option(
+    '--gpg-keypair', required=True, type=click.File(),
+    default='./private.gpg.key', help='Path to GPG signing key')
+@click.option('--passphrase', help='Passphrase for GPG key pair')
+@util.with_nexus_client
+def repository_create_hosted_apt(ctx: click.Context, **kwargs):
+    """
+    Create a hosted apt repository.
+    """
+    _create_repository(ctx, 'hosted', **kwargs)
+
+
+@repository_create_hosted.command(name='docker')
+@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
+@util.add_options(REPOSITORY_COMMON_DOCKER_OPTIONS)
+@util.with_nexus_client
+def repository_create_hosted_docker(ctx: click.Context, **kwargs):
+    """
+    Create a hosted docker repository.
+    """
+    _create_repository(ctx, 'hosted', **kwargs)
+
+
 @repository_create_hosted.command(name='maven')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
 @util.add_options(REPOSITORY_COMMON_MAVEN_OPTIONS)
@@ -272,17 +303,6 @@ def repository_create_hosted_maven(ctx: click.Context, **kwargs):
 def repository_create_hosted_yum(ctx: click.Context, **kwargs):
     """
     Create a hosted yum repository.
-    """
-    _create_repository(ctx, 'hosted', **kwargs)
-
-
-@repository_create_hosted.command(name='docker')
-@util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
-@util.add_options(REPOSITORY_COMMON_DOCKER_OPTIONS)
-@util.with_nexus_client
-def repository_create_hosted_docker(ctx: click.Context, **kwargs):
-    """
-    Create a hosted docker repository.
     """
     _create_repository(ctx, 'hosted', **kwargs)
 
@@ -343,6 +363,17 @@ def repository_create_proxy_docker(ctx: click.Context, **kwargs):
     Create a docker proxy repository.
     """
     _create_repository(ctx, 'proxy', **kwargs)
+
+
+# TODO:
+# proxy apt
+#      if recipe_name == 'apt':
+#         kwargs.update({'distribution': args.get('--distribution')})
+#              kwargs.update({'gpg': args.get('--gpg'),
+#                            'passphrase': args.get('--passphrase')})
+#
+#         if repo_type == 'proxy':
+#             kwargs.update({'flat': args.get('--flat')})
 
 
 #############################################################################

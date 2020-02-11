@@ -11,7 +11,7 @@ from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_config import NexusConfig
 
 
-APT_GPG_KEY_PATH = pathlib.Path('tests/fixtures/apt/public.gpg.key')
+APT_GPG_KEY_PATH = pathlib.Path('tests/fixtures/apt/private.gpg.key')
 
 
 @pytest.fixture
