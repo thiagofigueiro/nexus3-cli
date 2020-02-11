@@ -1,13 +1,14 @@
 import click
 import pkg_resources
 
+from nexuscli import nexus_config
 from nexuscli.api.repository import model
 from nexuscli.cli import (
     root_commands, util, subcommand_repository,
     subcommand_cleanup_policy, subcommand_script)
 
 PACKAGE_VERSION = pkg_resources.get_distribution('nexus3-cli').version
-HELP_OPTIONS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 REPOSITORY_COMMON_OPTIONS = [
     click.argument('repository-name'),
@@ -82,24 +83,34 @@ REPOSITORY_COMMON_MAVEN_OPTIONS = [
 ]
 
 
+#############################################################################
+# root commands
 # TODO: auto_envvar_prefix='NEXUS_CLI' for username, password etc
-@click.group(cls=util.AliasedGroup, context_settings=HELP_OPTIONS)
+@click.group(cls=util.AliasedGroup, context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=PACKAGE_VERSION, message='%(version)s')
 def nexus_cli():
     pass
 
 
-#############################################################################
-# root commands
 @nexus_cli.command()
-# TODO: @click.option('--password', '-P', prompt=True, hide_input=True,
-#               confirmation_prompt=True)
-#   --username etc
-def login():
+@click.option(
+    '--url', '-U', default=nexus_config.DEFAULTS['url'], prompt=True,
+    help='Nexus OSS URL', show_default=True)
+@click.option(
+    '--username', '-u', default=nexus_config.DEFAULTS['username'], prompt=True,
+    help='Nexus user', show_default=True)
+@click.option(
+    '--password', '-p', prompt=True, hide_input=True,
+    help='Password for user')
+@click.option(
+    '--x509_verify/--no-x509_verify',
+    default=nexus_config.DEFAULTS['x509_verify'], show_default=True,
+    help='Verify server certificate')
+def login(**kwargs):
     """
     Login to Nexus server, saving settings to ~/.nexus-cli.
     """
-    root_commands.cmd_login()
+    root_commands.cmd_login(**kwargs)
 
 
 @nexus_cli.command(name='list')

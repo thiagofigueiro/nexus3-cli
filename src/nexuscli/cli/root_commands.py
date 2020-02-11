@@ -1,53 +1,18 @@
 """Handles base/root commands (as opposed to subcommands)"""
-import getpass
 import inflect
 import sys
 import types
 
 from nexuscli import exception, nexus_config
 from nexuscli.nexus_client import NexusClient
-from nexuscli.cli import util
 
 
 PLURAL = inflect.engine().plural
-YESNO_OPTIONS = {  # TODO: replace with Click boolean on CLI
-    "true": True, "t": True, "yes": True, "y": True,
-    "false": False, "f": False, "no": False, "n": False,
-}
 
 
-def _input_yesno(prompt, default):
-    """
-    Prompts for a yes/true/no/false answer.
-
-    :param prompt: question to be displayed to user
-    :param default: default choice, also used for invalid answers
-    :return: choice
-    :rtype: bool
-    """
-    try:
-        return YESNO_OPTIONS[util.input_with_default(prompt, default).lower()]
-    except KeyError:
-        return default
-
-
-def cmd_login():
+def cmd_login(**kwargs):
     """Performs ``nexus3 login``"""
-    nexus_url = util.input_with_default(
-        'Nexus OSS URL', nexus_config.DEFAULTS['url'])
-    nexus_user = util.input_with_default(
-        'Nexus admin username', nexus_config.DEFAULTS['username'])
-    nexus_pass = getpass.getpass(
-        prompt=f'Nexus admin password ({nexus_config.DEFAULTS["password"]}):')
-    if not nexus_pass:
-        nexus_pass = nexus_config.DEFAULTS['password']
-
-    nexus_verify = _input_yesno(
-        'Verify server certificate', nexus_config.DEFAULTS['x509_verify'])
-
-    config = nexus_config.NexusConfig(
-        username=nexus_user, password=nexus_pass, url=nexus_url,
-        x509_verify=nexus_verify)
+    config = nexus_config.NexusConfig(**kwargs)
 
     # make sure configuration works before saving
     try:
