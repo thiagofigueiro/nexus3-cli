@@ -129,36 +129,36 @@ def test_create_proxy(
     'remote_auth_type', itertools.product(
         repository.model.MavenRepository.VERSION_POLICIES,  # v_policy
         repository.model.MavenRepository.LAYOUT_POLICIES,  # l_policy
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
-        [(None, None, None),  # remote_auth_type
-         ('username', 'username', 'password')],
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
+        [None, 'username'],  # remote-auth-type
     ))
 @pytest.mark.integration
 def test_create_proxy_maven(
-        nexus_client, v_policy, l_policy, strict,
-        c_policy, remote_auth_type, faker):
+        v_policy, l_policy, strict, c_policy, remote_auth_type, faker,
+        nexus_client, cli_runner):
     """
-    Test all variations of this command:
-
-    nexus3 repo create proxy maven <repo_name> <remote_url>
-           [--blob=<store_name>] [--version=<v_policy>]
-           [--layout=<l_policy>] [--strict-content] --cleanup c_policy
-    """
-    strict_name = strict[2:8]
+    Test all variations of the `nexus3 repo create proxy maven ` command"""
     remote_url = faker.uri()
     repo_name = pytest.helpers.repo_name(
         'proxy-maven', v_policy, l_policy, strict, c_policy,
-        remote_auth_type[0])
-    argv = pytest.helpers.create_argv(
-        'repository create proxy maven {repo_name} {remote_url} '
-        '--layout={l_policy} --version={v_policy} {strict} '
-        '--cleanup={c_policy} '
-        '--remote_auth_type={remote_auth_type[0]} '
-        '--remote_username={remote_auth_type[1]} '
-        '--remote_password={remote_auth_type[2]}', **locals())
+        remote_auth_type)
+    create_cmd = (
+        f'repository create proxy maven {repo_name} {remote_url} '
+        f'--layout-policy={l_policy} --version-policy={v_policy} {strict} '
+        f'--cleanup-policy={c_policy} ')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    if remote_auth_type is not None:
+        create_cmd += (
+            f'--remote-auth-type={remote_auth_type} '
+            f'--remote-username={faker.user_name()} '
+            f'--remote-password={faker.password()}')
+
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.parametrize(
