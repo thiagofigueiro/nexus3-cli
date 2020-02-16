@@ -263,12 +263,18 @@ def test_create_hosted_apt(
 
 
 @pytest.mark.integration
-def test_del(nexus_client):
+def test_del(cli_runner, nexus_client, faker):
     """Test that `repo rm` will remove an existing repository"""
-    # TODO: create random repo
-    argv_rm = pytest.helpers.create_argv(
-        'repository del maven-public -f', **locals())
-    subcommand_repository.main(argv=list(filter(None, argv_rm)))
-    repositories = nexus_client.repositories.raw_list()
+    repo_name = f'delete-test-{faker.pystr()}'
 
-    assert not any(r['name'] == 'maven-public' for r in repositories)
+    create_cmd = f'repository create hosted raw {repo_name}'
+    cli_runner.invoke(nexus_cli, create_cmd)
+    repositories_before = nexus_client.repositories.raw_list()
+
+    result = cli_runner.invoke(nexus_cli, f'repository del {repo_name} --yes')
+    repositories_after = nexus_client.repositories.raw_list()
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert any(r['name'] == repo_name for r in repositories_before)
+    assert not any(r['name'] == repo_name for r in repositories_after)
