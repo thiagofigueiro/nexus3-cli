@@ -446,6 +446,11 @@ def cleanup_policy_create(ctx: click.Context, **kwargs):
     criteria_keys = {'downloaded', 'updated', 'regex'}
     util.move_to_key(kwargs, 'criteria', criteria_keys)
 
+    util.rename_keys(kwargs['criteria'], {
+        'downloaded': 'lastDownloaded',
+        'updated': 'lastBlobUpdated',
+    })
+
     subcommand_cleanup_policy.cmd_create(ctx.obj, **kwargs)
 
 

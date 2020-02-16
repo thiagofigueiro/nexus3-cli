@@ -33,6 +33,7 @@ class CleanupPolicy(object):
     """
     def __init__(self, client, **kwargs):
         self._client = client
+        # TODO: validate kwargs
         self._raw = kwargs
 
     @property
