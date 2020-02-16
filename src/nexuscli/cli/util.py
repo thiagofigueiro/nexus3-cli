@@ -30,7 +30,7 @@ class AliasedGroup(click.Group):
                    if x.startswith(cmd_name)]
         if not matches:
             return None
-        elif len(matches) == 1:
+        if len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
@@ -110,19 +110,3 @@ def get_client():
             'Warning: configuration not found; proceeding with defaults.\n'
             'To remove this warning, please run `nexus3 login`\n')
     return NexusClient(config=config)
-
-
-def input_with_default(prompt, default=None):
-    """
-    Prompts for a text answer with an optional default choice.
-
-    :param prompt: question to be displayed to user
-    :param default: default choice
-    :return: user-provided answer or None, if default not provided.
-    :rtype: Union[str,None]
-    """
-    value = input(f'{prompt} ({default}):')
-    if value:
-        return str(value)
-
-    return str(default)

@@ -80,20 +80,6 @@ def nexus_client():
     return client
 
 
-@pytest.helpers.register
-def create_and_inspect(client, argv, expected_repo_name):
-    cli.main(argv=list(filter(None, argv)))
-    repositories = client.repositories.raw_list()
-
-    return any(r['name'] == expected_repo_name for r in repositories)
-
-
-@pytest.helpers.register
-def create_argv(argv_string, **kwargs):
-    argv = argv_string.format(**kwargs).split(' ')
-    return list(filter(None, argv))
-
-
 def nexus_artefact():
     """
     See nexus_util.filtered_list_gen for raw_response format.
@@ -207,7 +193,6 @@ def make_testfile(faker, tmpdir):
     The 2ns string contains a file path, relative to the current working dir,
     where the files exist in the filesystem at the given depth.
     """
-    filename = None
     with tmpdir.as_cwd():
         filename = faker.file_name()
         tmpdir.join(filename).ensure()
@@ -240,16 +225,6 @@ def repo_list(client, repo_name, expected_count, repo_path=None):
 
     # let it fail if we run out of attempts
     return file_set
-
-
-@pytest.helpers.register
-def find_file_count(dir_name):
-    """Find the number of files in a directory"""
-    file_list = [
-        f for f in os.listdir(dir_name)
-        if os.path.isfile(os.path.join(dir_name, f))
-    ]
-    return len(file_list)
 
 
 def _hosted_raw_repo_empty(faker):
@@ -307,21 +282,3 @@ def config_args(faker, tmpdir):
         'config_path': str(tmpdir.join(faker.file_name())),
     }
     return fixture
-
-
-@pytest.fixture
-def nexus_raw_repo(nexus_mock_client, faker):
-    repo_name = faker.uri_page()
-    nexus_mock_client.repositories._repositories_json.append({
-        'name': repo_name, 'format': 'raw'})
-
-    return nexus_mock_client.repositories.get_by_name(repo_name)
-
-
-@pytest.fixture
-def nexus_yum_repo(nexus_mock_client, faker):
-    repo_name = faker.uri_page()
-    nexus_mock_client.repositories._repositories_json.append({
-        'name': repo_name, 'format': 'yum'})
-
-    return nexus_mock_client.repositories.get_by_name(repo_name)

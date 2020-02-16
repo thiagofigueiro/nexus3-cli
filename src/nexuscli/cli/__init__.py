@@ -87,7 +87,6 @@ REPOSITORY_COMMON_MAVEN_OPTIONS = [
 
 #############################################################################
 # root commands
-# TODO: auto_envvar_prefix='NEXUS_CLI' for username, password etc
 @click.group(cls=util.AliasedGroup, context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=PACKAGE_VERSION, message='%(version)s')
 def nexus_cli():
@@ -242,7 +241,7 @@ def repository_create():
     }))
 def repository_create_hosted():
     """
-    Created a hosted repository.
+    Create a hosted repository.
     """
     pass
 
