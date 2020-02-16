@@ -7,7 +7,6 @@ import time
 from faker import Faker
 from subprocess import check_call
 
-from nexuscli import cli
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_config import NexusConfig
 
