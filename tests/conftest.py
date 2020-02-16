@@ -2,6 +2,7 @@ import os
 import pathlib
 import pytest
 import shutil
+import tempfile
 import time
 from faker import Faker
 from subprocess import check_call
@@ -175,6 +176,20 @@ def nexus_mock_client(mocker, faker):
     return client
 
 
+def _deep_file_tree(faker, tmp_path):
+    fixture = []
+    with tmp_path:
+        for _ in range(faker.random_int(1, 100)):
+            relative_path = faker.file_path(
+                depth=faker.random_number(1, 10))[1:]
+            fixture.append(relative_path)
+            tmp_path.joinpath(relative_path).parent.mkdir(
+                parents=True, exist_ok=True)
+            tmp_path.joinpath(relative_path).touch(exist_ok=True)
+
+    return str(tmp_path), set(fixture)
+
+
 @pytest.fixture
 def deep_file_tree(faker, tmpdir):
     """
@@ -182,15 +197,7 @@ def deep_file_tree(faker, tmpdir):
     list contains deep file paths, relative to the current working dir, where
     all files exist in the filesystem.
     """
-    fixture = []
-    with tmpdir.as_cwd():
-        for _ in range(faker.random_int(1, 100)):
-            relative_path = faker.file_path(
-                depth=faker.random_number(1, 10))[1:]
-            fixture.append(relative_path)
-            tmpdir.join(relative_path).ensure()
-
-    yield str(tmpdir), set(fixture)
+    return _deep_file_tree(faker, tmpdir)
 
 
 @pytest.fixture
@@ -245,13 +252,26 @@ def find_file_count(dir_name):
     return len(file_list)
 
 
-@pytest.fixture
-def hosted_raw_repo_empty(faker):
-    """Create an empty hosted raw repository"""
+def _hosted_raw_repo_empty(faker):
     repo_name = faker.pystr()
     command = 'nexus3 repository create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name
+
+@pytest.fixture
+def hosted_raw_repo_empty(faker):
+    """Create an empty hosted raw repository"""
+    return _hosted_raw_repo_empty(faker)
+
+
+@pytest.fixture(scope='session')
+def upload_repo(faker):
+    """
+    As per hosted_raw_repo_empty but the same one for the whole test session
+    """
+    tmp_path = pathlib.Path(tempfile.TemporaryDirectory().name)
+    src_dir, x_file_list = _deep_file_tree(faker, tmp_path)
+    return _hosted_raw_repo_empty(faker), src_dir, x_file_list
 
 
 @pytest.helpers.register
