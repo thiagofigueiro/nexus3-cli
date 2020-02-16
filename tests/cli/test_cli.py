@@ -53,7 +53,7 @@ def test_download(cli_runner, upload_repo, tmpdir):
     xcount = len(x_file_list)
 
     # Wait for Nexus 3 to reindex
-    sleep(1)
+    sleep(5)
 
     download_to = str(tmpdir)
     download_cmd = f'download {repo_name}/ {download_to}/'
