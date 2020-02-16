@@ -3,7 +3,6 @@ import itertools
 
 from nexuscli import exception
 from nexuscli.api import repository
-from nexuscli.api.repository.model import SUPPORTED_FORMATS
 from nexuscli.cli import nexus_cli, subcommand_repository
 
 
@@ -57,9 +56,9 @@ def test_create_hosted_maven(
     repo_name = pytest.helpers.repo_name(
         'hosted-maven', v_policy, l_policy, w_policy, strict, c_policy)
     create_cmd = (
-        f'repository create hosted maven {repo_name} --write-policy={w_policy} '
-        f'--layout-policy={l_policy} --version-policy={v_policy} {strict} '
-        f'{c_policy}')
+        f'repository create hosted maven {repo_name} '
+        f'--write-policy={w_policy} --layout-policy={l_policy} '
+        f'--version-policy={v_policy} {strict} {c_policy}')
 
     result = cli_runner.invoke(nexus_cli, create_cmd)
 

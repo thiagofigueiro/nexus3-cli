@@ -191,13 +191,13 @@ def _deep_file_tree(faker, tmp_path):
 
 
 @pytest.fixture
-def deep_file_tree(faker, tmpdir):
+def deep_file_tree(faker, tmp_path):
     """
     Yields a tuple(str, set). The str is the current working directory. The
     list contains deep file paths, relative to the current working dir, where
     all files exist in the filesystem.
     """
-    return _deep_file_tree(faker, tmpdir)
+    return _deep_file_tree(faker, tmp_path)
 
 
 @pytest.fixture
@@ -257,6 +257,7 @@ def _hosted_raw_repo_empty(faker):
     command = 'nexus3 repository create hosted raw {}'.format(repo_name)
     check_call(command.split())
     return repo_name
+
 
 @pytest.fixture
 def hosted_raw_repo_empty(faker):

@@ -41,7 +41,7 @@ def login_env(faker):
     return env, xargs
 
 
-def _as_bool(flag:str):
+def _as_bool(flag: str):
     if flag.startswith('--no-'):
         return False
     return True

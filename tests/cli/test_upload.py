@@ -6,7 +6,7 @@ from nexuscli.cli import nexus_cli
 
 
 @pytest.mark.integration
-def test_upload_tree(nexus_client, deep_file_tree, faker):
+def test_upload_tree(cli_runner, nexus_client, deep_file_tree, faker):
     """
     Create a repository, upload a random file tree to Nexus and check that the
     resulting list of files in nexus corresponds to the uploaded list of files.
@@ -16,8 +16,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
 
-    argv = ('repository create hosted raw {}'.format(repo_name)).split()
-    pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    cli_runner.invoke(nexus_cli, f'repository create hosted raw {repo_name}')
     nexus_client.repositories.refresh()
 
     r = nexus_client.repositories.get_by_name(repo_name)
@@ -28,7 +27,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
 
 
 @pytest.mark.integration
-def test_upload_root(nexus_client, make_testfile, faker):
+def test_upload_root(cli_runner, nexus_client, make_testfile, faker):
     """
     Create a repository, upload a random file to the root of a Nexus raw repo
     and check that the resulting list of files in nexus corresponds to
@@ -38,8 +37,7 @@ def test_upload_root(nexus_client, make_testfile, faker):
     repo_name = faker.pystr()
     dst_dir = '/'
 
-    argv = ('repository create hosted raw {}'.format(repo_name)).split()
-    pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    cli_runner.invoke(nexus_cli, f'repository create hosted raw {repo_name}')
     nexus_client.repositories.refresh()
 
     r = nexus_client.repositories.get_by_name(repo_name)
@@ -66,9 +64,9 @@ def test_upload(
         'nexuscli.cli.util.get_client', return_value=nexus_mock_client)
     mock_cmd_upload = mocker.patch('nexuscli.cli.root_commands.cmd_upload')
 
-    args, xargs = upload_args_factory(cmd, flatten, recurse)
+    cmd_upload, xargs = upload_args_factory(cmd, flatten, recurse)
 
-    result = cli_runner.invoke(nexus_cli, args)
+    result = cli_runner.invoke(nexus_cli, cmd_upload)
 
     assert result.exit_code == 0
     mock_cmd_upload.assert_called_with(nexus_mock_client, **xargs)

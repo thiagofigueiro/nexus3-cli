@@ -15,11 +15,11 @@ CONTEXT_SETTINGS = dict(
 REPOSITORY_COMMON_OPTIONS = [
     click.argument('repository-name'),
     click.option('--blob-store-name', default='default',
-                  help='Blobstore name to use with new repository'),
+                 help='Blobstore name to use with new repository'),
     click.option('--strict-content/--no-strict-content', default=False,
-                  help='Toggle strict content type validation'),
+                 help='Toggle strict content type validation'),
     click.option('--cleanup-policy',
-                  help='Name of existing clean-up policy to use'),
+                 help='Name of existing clean-up policy to use'),
 ]
 
 REPOSITORY_COMMON_HOSTED_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
@@ -360,9 +360,9 @@ def repository_create_proxy_recipe(ctx: click.Context, **kwargs):
 @click.option(
     '--flat/--no-flat', default=False, help='Is this repository flat?')
 @util.with_nexus_client
-def repository_create_hosted_apt(ctx: click.Context, **kwargs):
+def repository_create_proxy_apt(ctx: click.Context, **kwargs):
     """
-    Create a hosted apt repository.
+    Create a proxy apt repository.
     """
     _create_repository(ctx, 'proxy', **kwargs)
 
