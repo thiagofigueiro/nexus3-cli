@@ -199,41 +199,37 @@ def test_create_proxy_docker(
 
 
 @pytest.mark.parametrize(
-    'flat, '
-    'strict, c_policy, remote_auth_type', itertools.product(
-        ['', '--flat'],  # flat
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
-        [(None, None, None),  # remote_auth_type
-         ('username', 'username', 'password')],
+    'flat, strict, c_policy, remote_auth_type', itertools.product(
+        ['--no-flat', '--flat'],  # flat
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
+        [None, 'username'],  # remote-auth-type
     ))
 @pytest.mark.integration
-def test_create_proxy_apt(nexus_client, flat,
-                          strict, c_policy, remote_auth_type, faker):
-    """
-    nexus3 repository create proxy apt
-         <repo_name> <remote_url>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--remote_auth_type=<remote_auth_type>]
-         [--remote_username=<username>] [--remote_password=<password>]
-         [--flat] --distribution=<distribution>
-    """
+def test_create_proxy_apt(
+        flat, strict, c_policy, remote_auth_type, faker, nexus_client,
+        cli_runner):
+    """Test all combinations of the `repository create proxy apt` command"""
     distribution = faker.pystr()
     remote_url = faker.uri()
-    strict_name = strict[2:8]
     repo_name = pytest.helpers.repo_name(
-        'proxy-apt', distribution, flat,
-        strict, c_policy, remote_auth_type[0])
+        'proxy-apt', distribution, flat, strict, c_policy, remote_auth_type)
 
-    argv = pytest.helpers.create_argv(
-        'repository create proxy apt {repo_name} {remote_url} '
-        '{flat} --distribution={distribution} '
-        '{strict} --cleanup={c_policy} '
-        '--remote_auth_type={remote_auth_type[0]} '
-        '--remote_username={remote_auth_type[1]} '
-        '--remote_password={remote_auth_type[2]}', **locals())
+    create_cmd = (
+        f'repository create proxy apt {repo_name} {remote_url} {flat} '
+        f'--distribution={distribution} {strict} --cleanup-policy={c_policy} ')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    if remote_auth_type is not None:
+        create_cmd += (
+            f'--remote-auth-type={remote_auth_type} '
+            f'--remote-username={faker.user_name()} '
+            f'--remote-password={faker.password()}')
+
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.parametrize(

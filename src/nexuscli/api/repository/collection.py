@@ -110,7 +110,7 @@ def _add_apt_kwargs(kwargs, attributes):
         kwargs['passphrase'] = attributes['aptSigning']['passphrase']
         kwargs['keypair'] = attributes['aptSigning']['keypair']
     if 'apt' in attributes:
-        kwargs['passphrase'] = attributes['apt']['distribution']
+        kwargs['distribution'] = attributes['apt']['distribution']
         kwargs['flat'] = attributes['apt']['flat']
 
 
