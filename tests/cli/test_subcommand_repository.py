@@ -47,21 +47,25 @@ def test_create_hosted(
         repository.model.MavenRepository.VERSION_POLICIES,  # v_policy
         repository.model.MavenRepository.LAYOUT_POLICIES,  # l_policy
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
 def test_create_hosted_maven(
-        nexus_client, v_policy, l_policy, w_policy, strict, c_policy):
-    strict_name = strict[2:8]
+        v_policy, l_policy, w_policy, strict, c_policy, nexus_client,
+        cli_runner):
     repo_name = pytest.helpers.repo_name(
         'hosted-maven', v_policy, l_policy, w_policy, strict, c_policy)
-    argv = pytest.helpers.create_argv(
-        'repository create hosted maven {repo_name} --write={w_policy} '
-        '--layout={l_policy} --version={v_policy} {strict} '
-        '--cleanup={c_policy}', **locals())
+    create_cmd = (
+        f'repository create hosted maven {repo_name} --write-policy={w_policy} '
+        f'--layout-policy={l_policy} --version-policy={v_policy} {strict} '
+        f'{c_policy}')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.parametrize(
