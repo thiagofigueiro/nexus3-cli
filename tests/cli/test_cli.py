@@ -1,17 +1,20 @@
-import pytest
-from subprocess import check_call
 from time import sleep
+import click
+import pytest
 
+from nexuscli.cli import nexus_cli
 from nexuscli import cli, exception
 
 
-def test_login(mocker):
+def test_login(cli_runner, mocker, login_env):
     """Ensure it calls the expected method"""
+    env, xargs = login_env
     mock_cmd_login = mocker.patch('nexuscli.cli.root_commands.cmd_login')
 
-    cli.main(argv=['login'])
+    result = cli_runner.invoke(nexus_cli, 'login', env=env)
 
-    mock_cmd_login.assert_called_once()
+    assert result.exit_code == 0
+    mock_cmd_login.assert_called_with(**xargs)
 
 
 @pytest.mark.integration

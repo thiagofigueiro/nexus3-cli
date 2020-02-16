@@ -20,13 +20,14 @@ def test_get_by_name(cleanup_policy_collection, cleanup_policy_configuration):
     assert isinstance(cleanup_policy, CleanupPolicy)
 
 
-def test_get_by_name_exception(cleanup_policy_collection):
+def test_get_by_name_exception(cleanup_policy_collection, faker):
     """ It raises the documented exception when the policy name isn't found"""
+    xname = faker.pystr()
     cleanup_policy_collection._client.scripts.run.side_effect = \
-        exception.NexusClientAPIError
+        exception.NexusClientAPIError(xname)
 
     with pytest.raises(exception.NexusClientInvalidCleanupPolicy):
-        cleanup_policy_collection.get_by_name('dummy')
+        cleanup_policy_collection.get_by_name(xname)
 
 
 def test_create_or_update(

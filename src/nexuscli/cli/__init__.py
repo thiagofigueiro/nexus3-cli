@@ -8,7 +8,9 @@ from nexuscli.cli import (
     subcommand_cleanup_policy, subcommand_script)
 
 PACKAGE_VERSION = pkg_resources.get_distribution('nexus3-cli').version
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+ENV_VAR_PREFIX = 'NEXUS3'
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'], auto_envvar_prefix=ENV_VAR_PREFIX)
 
 REPOSITORY_COMMON_OPTIONS = [
     click.argument('repository-name'),
@@ -95,17 +97,17 @@ def nexus_cli():
 @nexus_cli.command()
 @click.option(
     '--url', '-U', default=nexus_config.DEFAULTS['url'], prompt=True,
-    help='Nexus OSS URL', show_default=True)
+    help='Nexus OSS URL', show_default=True, allow_from_autoenv=True)
 @click.option(
     '--username', '-u', default=nexus_config.DEFAULTS['username'], prompt=True,
-    help='Nexus user', show_default=True)
+    help='Nexus user', show_default=True, allow_from_autoenv=True)
 @click.option(
     '--password', '-p', prompt=True, hide_input=True,
-    help='Password for user')
+    help='Password for user', allow_from_autoenv=True)
 @click.option(
-    '--x509_verify/--no-x509_verify',
+    '--x509_verify/--no-x509_verify', prompt=True,
     default=nexus_config.DEFAULTS['x509_verify'], show_default=True,
-    help='Verify server certificate')
+    help='Verify server certificate', allow_from_autoenv=True)
 def login(**kwargs):
     """
     Login to Nexus server, saving settings to ~/.nexus-cli.
@@ -284,6 +286,7 @@ def repository_create_hosted_apt(ctx: click.Context, **kwargs):
     """
     Create a hosted apt repository.
     """
+    kwargs['gpg_keypair'] = kwargs['gpg_keypair'].read()
     _create_repository(ctx, 'hosted', **kwargs)
 
 

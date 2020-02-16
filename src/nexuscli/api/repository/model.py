@@ -681,7 +681,7 @@ class AptRepository(Repository):
 
 class AptHostedRepository(AptRepository, HostedRepository):
     def __init__(self, name,
-                 gpg_keypair=None,
+                 gpg_keypair:str = None,
                  passphrase=None,
                  **kwargs):
         self.gpg_keypair = gpg_keypair
@@ -693,7 +693,7 @@ class AptHostedRepository(AptRepository, HostedRepository):
         repo_config = super().configuration
         repo_config['attributes'].update({
             'aptSigning': {
-                'keypair': self.gpg_keypair.read(),
+                'keypair': self.gpg_keypair,
                 'passphrase': self.passphrase
             }
         })
