@@ -234,36 +234,32 @@ def test_create_proxy_apt(
 
 @pytest.mark.parametrize(
     'passphrase, w_policy, strict, c_policy', itertools.product(
-        [None, 'a'],  # passphrase
+        [None, 'passphrase'],  # passphrase
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
-def test_create_hosted_apt(nexus_client, passphrase, w_policy, strict,
-                           c_policy, apt_gpg_key_path, faker):
-    """
-    nexus3 repository create hosted apt
-         <repo_name>
-         [--blob=<store_name>] [--strict-content] [--cleanup=<c_policy>]
-         [--write=<w_policy>] --gpg=<gpg-file>
-         [--passphrase=passphrase] --distribution=<distribution>
-    """
+def test_create_hosted_apt(
+        passphrase, w_policy, strict, c_policy, apt_gpg_key_path, faker,
+        nexus_client, cli_runner):
+    """Test variations of the `repository create hosted apt` command"""
     distribution = faker.pystr()
     gpg_random = faker.pystr()
-    strict_name = strict[2:8]
     repo_name = pytest.helpers.repo_name(
-        'hosted-apt', gpg_random, distribution,
-        strict, c_policy)
+        'hosted-apt', gpg_random, distribution, strict, c_policy)
 
-    argv = pytest.helpers.create_argv(
-        'repository create hosted apt {repo_name} '
-        '--gpg={apt_gpg_key_path} --passphrase={passphrase} '
-        '--distribution={distribution} '
-        '{strict} --cleanup={c_policy} '
-        '--write={w_policy} ', **locals())
+    create_cmd = (
+        f'repository create hosted apt {repo_name} '
+        f'--gpg-keypair={apt_gpg_key_path} --passphrase={passphrase} '
+        f'--distribution={distribution} {strict} {c_policy} '
+        f'--write-policy={w_policy} ')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.integration

@@ -108,10 +108,11 @@ def _add_yum_kwargs(kwargs, attributes):
 def _add_apt_kwargs(kwargs, attributes):
     if 'aptSigning' in attributes:
         kwargs['passphrase'] = attributes['aptSigning']['passphrase']
-        kwargs['keypair'] = attributes['aptSigning']['keypair']
+        kwargs['gpg_keypair'] = attributes['aptSigning']['keypair']
     if 'apt' in attributes:
         kwargs['distribution'] = attributes['apt']['distribution']
-        kwargs['flat'] = attributes['apt']['flat']
+        if attributes['apt'].get('flat') is not None:
+            kwargs['flat'] = attributes['apt']['flat']
 
 
 def _add_hosted_kwargs(kwargs, attributes):
