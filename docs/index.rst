@@ -1,10 +1,5 @@
-.. nexus3-cli documentation master file, created by
-   sphinx-quickstart on Sat Jul 21 11:25:02 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-nexus3-cli: a Sonatype Nexus 3 client
-=====================================
+nexus3-cli: client for Sonatype's Nexus OSS 3
+=============================================
 
 .. toctree::
    :maxdepth: 2
