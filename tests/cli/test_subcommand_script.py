@@ -1,26 +1,38 @@
 import pytest
 
-from nexuscli.cli import subcommand_script
+from nexuscli.cli import nexus_cli
+
+SCRIPT_NAME = 'test_script_run'
 
 
 @pytest.mark.integration
-def test_script(nexus_client):
+def test_create(cli_runner, nexus_client):
     """Test that the `repo script` commands for create, run and rm work"""
-    x_name = 'test_script_run'
-    argv = f'script create {x_name} tests/fixtures/script.groovy'.split(' ')
-    subcommand_script.main(argv=argv)
+    cmd_create = f'script create {SCRIPT_NAME} tests/fixtures/script.groovy'
+    result = cli_runner.invoke(nexus_cli, cmd_create)
 
-    scripts = nexus_client.scripts.list()
-    script_names = [s.get('name') for s in scripts]
+    assert result.exit_code == 0
+    assert result.output == ''
+    assert SCRIPT_NAME in [s.get('name') for s in nexus_client.scripts.list()]
 
-    argv = 'script run {}'.format(x_name).split(' ')
-    subcommand_script.main(argv=argv)
 
-    argv = 'script del {}'.format(x_name).split(' ')
-    subcommand_script.main(argv=argv)
+@pytest.mark.integration
+def test_run(cli_runner, nexus_client):
+    """Test that the `repo script` commands for create, run and rm work"""
+    cmd_run = f'script run {SCRIPT_NAME}'
+    result = cli_runner.invoke(nexus_cli, cmd_run)
 
-    scripts = nexus_client.scripts.list()
-    rm_script_names = [s.get('name') for s in scripts]
+    assert result.exit_code == 0
+    assert SCRIPT_NAME in result.output
 
-    assert x_name in script_names
-    assert x_name not in rm_script_names
+
+@pytest.mark.integration
+def test_del(cli_runner, nexus_client):
+    """Test that the `repo script` commands for create, run and rm work"""
+    cmd_del = f'script del {SCRIPT_NAME}'
+    result = cli_runner.invoke(nexus_cli, cmd_del)
+
+    assert result.exit_code == 0
+    assert result.output == ''
+    assert SCRIPT_NAME not in [
+        s.get('name') for s in nexus_client.scripts.list()]
