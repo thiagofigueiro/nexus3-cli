@@ -15,7 +15,7 @@ def repo_name(basename, *args):
     return f'{name}-{_faker.pystr()}'
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def cli_runner():
     return CliRunner()
 
@@ -37,3 +37,27 @@ def login_env(faker):
     xargs.update({'x509_verify': yesno_bool[xargs['x509_verify']]})
 
     return env, xargs
+
+
+def _as_bool(flag:str):
+    if flag.startswith('--no-'):
+        return False
+    return True
+
+
+@pytest.fixture
+def upload_args_factory(faker):
+    def fixture(cmd, flatten, recurse):
+        src = faker.file_path()
+        dst = faker.file_path()
+
+        args = f'{cmd} {src} {dst} {flatten} {recurse}'
+        xargs = {
+            'src': src,
+            'dst': dst,
+            'flatten': _as_bool(flatten),
+            'recurse': _as_bool(recurse),
+        }
+        return args, xargs
+
+    return fixture

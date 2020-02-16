@@ -1,5 +1,4 @@
 from time import sleep
-import click
 import pytest
 
 from nexuscli.cli import nexus_cli

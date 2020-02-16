@@ -2,7 +2,7 @@ import itertools
 import os
 import pytest
 
-from nexuscli import cli
+from nexuscli.cli import nexus_cli
 
 
 @pytest.mark.integration
@@ -49,12 +49,14 @@ def test_upload_root(nexus_client, make_testfile, faker):
     assert file_set == set([src_file])
 
 
-@pytest.mark.parametrize('upload,flatten,norecurse', itertools.product(
+@pytest.mark.parametrize('cmd,flatten,recurse', itertools.product(
     ['up', 'upload'],
-    [[], ['--flatten']],
-    [[], ['--norecurse']]
+    ['--flatten', '--no-flatten'],
+    ['--recurse', '--no-recurse'],
 ))
-def test_upload(upload, flatten, norecurse, nexus_mock_client, faker, mocker):
+def test_upload(
+        cmd, flatten, recurse, nexus_mock_client, mocker, upload_args_factory,
+        cli_runner):
     """
     Ensure all accepted variations of the upload command result in the
     cmd_upload method being called.
@@ -64,10 +66,9 @@ def test_upload(upload, flatten, norecurse, nexus_mock_client, faker, mocker):
         'nexuscli.cli.util.get_client', return_value=nexus_mock_client)
     mock_cmd_upload = mocker.patch('nexuscli.cli.root_commands.cmd_upload')
 
-    source = faker.file_path()
-    destination = faker.file_path()
-    argv = [upload, source, destination] + flatten + norecurse
+    args, xargs = upload_args_factory(cmd, flatten, recurse)
 
-    cli.main(argv=argv)
+    result = cli_runner.invoke(nexus_cli, args)
 
-    mock_cmd_upload.assert_called_once()
+    assert result.exit_code == 0
+    mock_cmd_upload.assert_called_with(nexus_mock_client, **xargs)

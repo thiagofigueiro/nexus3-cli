@@ -3,18 +3,19 @@ import itertools
 
 from nexuscli.api import repository
 from nexuscli.api.repository.model import SUPPORTED_FORMATS
+from nexuscli.cli import nexus_cli
 from nexuscli.cli import subcommand_repository
 
 
-def test_list(mocker):
-    mocker.patch('nexuscli.cli.subcommand_repository.util.get_client')
+def test_list(cli_runner, mocker):
+    client = mocker.patch('nexuscli.cli.subcommand_repository.util.get_client')
     mocker.patch('nexuscli.cli.subcommand_repository.cmd_list')
 
-    argv = 'repository list'.split(' ')
-    subcommand_repository.main(argv=argv)
+    result = cli_runner.invoke(nexus_cli, 'repository list')
 
-    subcommand_repository.util.get_client.assert_called_once()
-    subcommand_repository.cmd_list.assert_called_once()
+    assert result.exit_code == 0
+    subcommand_repository.util.get_client.assert_called_with()
+    subcommand_repository.cmd_list.assert_called_with(client.return_value)
 
 
 @pytest.mark.parametrize(
