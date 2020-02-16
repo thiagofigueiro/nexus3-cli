@@ -137,8 +137,7 @@ def test_create_proxy(
 def test_create_proxy_maven(
         v_policy, l_policy, strict, c_policy, remote_auth_type, faker,
         nexus_client, cli_runner):
-    """
-    Test all variations of the `nexus3 repo create proxy maven ` command"""
+    """Test all variations of the `nexus3 repo create proxy maven ` command"""
     remote_url = faker.uri()
     repo_name = pytest.helpers.repo_name(
         'proxy-maven', v_policy, l_policy, strict, c_policy,
@@ -164,41 +163,39 @@ def test_create_proxy_maven(
 @pytest.mark.parametrize(
     'v1_enabled, force_basic_auth, index_type, '
     'strict, c_policy, remote_auth_type', itertools.product(
-        ['', '--v1_enabled'],  # v1_enabled
-        ['', '--force_basic_auth'],  # basic_auth
+        ['--no-v1-enabled', '--v1-enabled'],
+        ['--no-force-basic-auth', '--force-basic-auth'],
         ('registry', 'custom', 'hub'),  # index_type
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
-        [(None, None, None),  # remote_auth_type
-         ('username', 'username', 'password')],
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
+        [None, 'username'],  # remote-auth-type
     ))
 @pytest.mark.integration
 def test_create_proxy_docker(
-        nexus_client, v1_enabled, force_basic_auth,
-        index_type, strict, c_policy, remote_auth_type, faker):
-    """
-    Test all variations of this command:
-
-    nexus3 repo create proxy docker <repo_name> <remote_url>
-           [--blob=<store_name>] [--version=<v_policy>]
-           [--v1_enabled=<v1_enabled>] [--force_basic_auth=<force_basic_auth>]
-           [--index_type=<index_type] [--strict-content] --cleanup c_policy
-    """
-    strict_name = strict[2:8]
+        v1_enabled, force_basic_auth, index_type, strict, c_policy,
+        remote_auth_type, faker, nexus_client, cli_runner):
+    """Test all variations of the `repo create proxy docker` command"""
     remote_url = faker.uri()
     repo_name = pytest.helpers.repo_name(
         'proxy-docker', v1_enabled, force_basic_auth,
         index_type, strict, c_policy,
-        remote_auth_type[0])
-    argv = pytest.helpers.create_argv(
-        'repository create proxy docker {repo_name} {remote_url} '
-        '{v1_enabled} {force_basic_auth} --index_type={index_type} '
-        '{strict} --cleanup={c_policy} '
-        '--remote_auth_type={remote_auth_type[0]} '
-        '--remote_username={remote_auth_type[1]} '
-        '--remote_password={remote_auth_type[2]}', **locals())
+        remote_auth_type)
+    create_cmd = (
+        f'repository create proxy docker {repo_name} {remote_url} '
+        f'{v1_enabled} {force_basic_auth} --index-type={index_type} '
+        f'{strict} --cleanup-policy={c_policy} ')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    if remote_auth_type is not None:
+        create_cmd += (
+            f'--remote-auth-type={remote_auth_type} '
+            f'--remote-username={faker.user_name()} '
+            f'--remote-password={faker.password()}')
+
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.parametrize(
