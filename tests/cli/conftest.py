@@ -1,4 +1,6 @@
 import pytest
+import re
+
 from click.testing import CliRunner
 from faker import Faker
 
@@ -12,7 +14,7 @@ def repo_name(basename, *args):
     name = basename
     for token in args:
         name += f'-{token}'
-    return f'{name}-{_faker.pystr()}'
+    return re.sub(r'[^0-9a-zA-Z_\-]+', '_', f'{name}-{_faker.pystr()}')
 
 
 @pytest.fixture(scope='session')

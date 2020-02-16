@@ -1,10 +1,10 @@
 import pytest
 import itertools
 
+from nexuscli import exception
 from nexuscli.api import repository
 from nexuscli.api.repository.model import SUPPORTED_FORMATS
-from nexuscli.cli import nexus_cli
-from nexuscli.cli import subcommand_repository
+from nexuscli.cli import nexus_cli, subcommand_repository
 
 
 def test_list(cli_runner, mocker):
@@ -20,23 +20,26 @@ def test_list(cli_runner, mocker):
 
 @pytest.mark.parametrize(
     'repo_format, w_policy, strict, c_policy', itertools.product(
-        SUPPORTED_FORMATS,  # format
+        repository.model.HostedRepository.RECIPES,  # format
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
-        ['', '--strict-content'],  # strict
-        ['', '--cleanup=c_policy'],  # c_policy
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
 def test_create_hosted(
-        nexus_client, repo_format, w_policy, strict, c_policy,
-        gpg_key_as_cwd):
-    strict_name = strict[2:8]
+        nexus_client, cli_runner, repo_format, w_policy, strict, c_policy):
     repo_name = pytest.helpers.repo_name(
         'hosted', repo_format, w_policy, strict, c_policy)
-    argv = pytest.helpers.create_argv(
-        'repository create hosted {repo_format} {repo_name} '
-        '--write={w_policy} {strict} {c_policy}', **locals())
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    create_cmd = (
+        f'repository create hosted {repo_format} {repo_name} '
+        f'--write-policy={w_policy} {strict} {c_policy}')
+
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
 
 
 @pytest.mark.parametrize(
