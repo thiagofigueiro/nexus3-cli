@@ -72,19 +72,23 @@ def test_create_hosted_maven(
     'w_policy, depth, strict, c_policy', itertools.product(
         repository.model.HostedRepository.WRITE_POLICIES,  # w_policy
         list(range(6)),  # depth
-        ['', '--strict-content'],  # strict
-        [None, 'Some'],  # c_policy
+        ['--no-strict-content', '--strict-content'],  # strict
+        ['', '--cleanup-policy=c_policy'],  # c_policy
     ))
 @pytest.mark.integration
-def test_create_hosted_yum(nexus_client, w_policy, depth, strict, c_policy):
-    strict_name = strict[2:8]
+def test_create_hosted_yum(
+        w_policy, depth, strict, c_policy, nexus_client, cli_runner):
     repo_name = pytest.helpers.repo_name(
         'hosted-yum', w_policy, depth, strict, c_policy)
-    argv = pytest.helpers.create_argv(
-        'repository create hosted yum {repo_name} --write={w_policy} '
-        '--depth={depth} {strict} --cleanup={c_policy}', **locals())
+    create_cmd = (
+        f'repository create hosted yum {repo_name} --write-policy={w_policy} '
+        f'--depth={depth} {strict} {c_policy}')
 
-    assert pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    result = cli_runner.invoke(nexus_cli, create_cmd)
+
+    assert result.output == ''
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert nexus_client.repositories.get_by_name(repo_name).name == repo_name
     assert nexus_client.repositories.get_by_name(repo_name).depth == depth
 
 
