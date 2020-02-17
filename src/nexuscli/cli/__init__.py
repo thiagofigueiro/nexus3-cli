@@ -12,78 +12,6 @@ ENV_VAR_PREFIX = 'NEXUS3'
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help'], auto_envvar_prefix=ENV_VAR_PREFIX)
 
-REPOSITORY_COMMON_OPTIONS = [
-    click.argument('repository-name'),
-    click.option('--blob-store-name', default='default',
-                 help='Blobstore name to use with new repository'),
-    click.option('--strict-content/--no-strict-content', default=False,
-                 help='Toggle strict content type validation'),
-    click.option('--cleanup-policy',
-                 help='Name of existing clean-up policy to use'),
-]
-
-REPOSITORY_COMMON_HOSTED_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
-    click.option(
-        '--write-policy', help='Write policy to use', default='allow',
-        type=click.Choice(['allow', 'allow_once', 'deny'],
-                          case_sensitive=False))
-]
-
-REPOSITORY_COMMON_PROXY_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
-    click.argument('remote-url'),
-    click.option(
-        '--auto-block/--no-auto-block', default=True,
-        help='Disable outbound connections on remote-url access errors'),
-    click.option(
-        '--negative-cache/--no-negative-cache', default=True,
-        help='Cache responses for content missing in the remote-url'),
-    click.option(
-        '--negative-cache-ttl', type=click.INT, default=1440,
-        help='Cache time in minutes'),
-    click.option(
-        '--content-max-age', type=click.INT, default=1440,
-        help='Maximum age of cached artefacts'),
-    click.option(
-        '--metadata-max-age', type=click.INT, default=1440,
-        help='Maximum age of cached artefacts metadata'),
-    click.option(
-        '--remote-auth-type', help='Only username is supported',
-        type=click.Choice(['username'], case_sensitive=False)),
-    # TODO: require `--remote-auth-type username` when these are specified
-    click.option('--remote-username', help='Username for remote URL'),
-    click.option('--remote-password', help='Password for remote URL'),
-]
-
-REPOSITORY_COMMON_APT_OPTIONS = [
-    click.option(
-        '--distribution', required=True,
-        help='Distribution to fetch; e.g.: bionic')
-]
-
-REPOSITORY_COMMON_DOCKER_OPTIONS = [
-    click.option(
-        '--v1-enabled/--no-v1-enabled', default=False,
-        help='Enable v1 registry'),
-    click.option(
-        '--force-basic-auth/--no-force-basic-auth', default=False,
-        help='Force use of basic authentication'),
-    click.option(
-        '--http-port', type=click.INT, help='Port for HTTP service'),
-    click.option(
-        '--https-port', type=click.INT, help='Port for HTTPS service'),
-]
-
-REPOSITORY_COMMON_MAVEN_OPTIONS = [
-    click.option(
-        '--version-policy', help='Version policy to use', default='release',
-        type=click.Choice(['release', 'snapshot', 'mixed'],
-                          case_sensitive=False)),
-    click.option(
-        '--layout-policy', help='Layout policy to use', default='strict',
-        type=click.Choice(['strict', 'permissive'],
-                          case_sensitive=False)),
-]
-
 
 #############################################################################
 # root commands
@@ -263,6 +191,24 @@ def _create_repository(ctx, repo_type, **kwargs):
     subcommand_repository.cmd_create(ctx, repo_type=repo_type, **kwargs)
 
 
+REPOSITORY_COMMON_OPTIONS = [
+    click.argument('repository-name'),
+    click.option('--blob-store-name', default='default',
+                 help='Blobstore name to use with new repository'),
+    click.option('--strict-content/--no-strict-content', default=False,
+                 help='Toggle strict content type validation'),
+    click.option('--cleanup-policy',
+                 help='Name of existing clean-up policy to use'),
+]
+
+REPOSITORY_COMMON_HOSTED_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
+    click.option(
+        '--write-policy', help='Write policy to use', default='allow',
+        type=click.Choice(['allow', 'allow_once', 'deny'],
+                          case_sensitive=False))
+]
+
+
 @repository_create_hosted.command(name='recipe')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
 @util.with_nexus_client
@@ -271,6 +217,13 @@ def repository_create_hosted_recipe(ctx: click.Context, **kwargs):
     Create a hosted repository.
     """
     _create_repository(ctx, 'hosted', **kwargs)
+
+
+REPOSITORY_COMMON_APT_OPTIONS = [
+    click.option(
+        '--distribution', required=True,
+        help='Distribution to fetch; e.g.: bionic')
+]
 
 
 @repository_create_hosted.command(name='apt')
@@ -289,6 +242,20 @@ def repository_create_hosted_apt(ctx: click.Context, **kwargs):
     _create_repository(ctx, 'hosted', **kwargs)
 
 
+REPOSITORY_COMMON_DOCKER_OPTIONS = [
+    click.option(
+        '--v1-enabled/--no-v1-enabled', default=False,
+        help='Enable v1 registry'),
+    click.option(
+        '--force-basic-auth/--no-force-basic-auth', default=False,
+        help='Force use of basic authentication'),
+    click.option(
+        '--http-port', type=click.INT, help='Port for HTTP service'),
+    click.option(
+        '--https-port', type=click.INT, help='Port for HTTPS service'),
+]
+
+
 @repository_create_hosted.command(name='docker')
 @util.add_options(REPOSITORY_COMMON_HOSTED_OPTIONS)
 @util.add_options(REPOSITORY_COMMON_DOCKER_OPTIONS)
@@ -298,6 +265,18 @@ def repository_create_hosted_docker(ctx: click.Context, **kwargs):
     Create a hosted docker repository.
     """
     _create_repository(ctx, 'hosted', **kwargs)
+
+
+REPOSITORY_COMMON_MAVEN_OPTIONS = [
+    click.option(
+        '--version-policy', help='Version policy to use', default='release',
+        type=click.Choice(['release', 'snapshot', 'mixed'],
+                          case_sensitive=False)),
+    click.option(
+        '--layout-policy', help='Layout policy to use', default='strict',
+        type=click.Choice(['strict', 'permissive'],
+                          case_sensitive=False)),
+]
 
 
 @repository_create_hosted.command(name='maven')
@@ -341,6 +320,32 @@ def repository_create_proxy():
     Create a proxy repository.
     """
     pass
+
+
+REPOSITORY_COMMON_PROXY_OPTIONS = REPOSITORY_COMMON_OPTIONS + [
+    click.argument('remote-url'),
+    click.option(
+        '--auto-block/--no-auto-block', default=True,
+        help='Disable outbound connections on remote-url access errors'),
+    click.option(
+        '--negative-cache/--no-negative-cache', default=True,
+        help='Cache responses for content missing in the remote-url'),
+    click.option(
+        '--negative-cache-ttl', type=click.INT, default=1440,
+        help='Cache time in minutes'),
+    click.option(
+        '--content-max-age', type=click.INT, default=1440,
+        help='Maximum age of cached artefacts'),
+    click.option(
+        '--metadata-max-age', type=click.INT, default=1440,
+        help='Maximum age of cached artefacts metadata'),
+    click.option(
+        '--remote-auth-type', help='Only username is supported',
+        type=click.Choice(['username'], case_sensitive=False)),
+    # TODO: require `--remote-auth-type username` when these are specified
+    click.option('--remote-username', help='Username for remote URL'),
+    click.option('--remote-password', help='Password for remote URL'),
+]
 
 
 @repository_create_proxy.command(name='recipe')
