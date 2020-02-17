@@ -37,7 +37,6 @@ class NexusClient(object):
         self._cleanup_policies = None
         self._repositories = None
         self._scripts = None
-        self._verify = None
 
         self.repositories.refresh()
 

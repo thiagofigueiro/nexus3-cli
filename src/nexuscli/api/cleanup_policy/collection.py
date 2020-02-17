@@ -1,7 +1,10 @@
 import json
+import logging
 
 from nexuscli import exception, nexus_util
 from nexuscli.api.cleanup_policy import CleanupPolicy
+
+LOG = logging.getLogger(__name__)
 
 
 class CleanupPolicyCollection(object):
@@ -40,6 +43,7 @@ class CleanupPolicyCollection(object):
 
         script_args = json.dumps(cleanup_policy.configuration)
         try:
+            LOG.debug('Create/update cleanup policy: %s', script_args)
             response = self._client.scripts.run(
                 self.GROOVY_SCRIPT_NAME, data=script_args)
         except exception.NexusClientAPIError:

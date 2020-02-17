@@ -7,7 +7,7 @@ DEFAULT_CONFIG = str(Path.home().joinpath('.nexus-cli').absolute())
 DEFAULTS = {
     'api_version': 'v1',
     'username': 'admin',
-    'password': 'admin123',
+    'password': '',
     'url': 'http://localhost:8081',
     'x509_verify': True,
 }

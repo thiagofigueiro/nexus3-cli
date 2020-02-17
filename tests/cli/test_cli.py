@@ -1,89 +1,78 @@
-import pytest
-from subprocess import check_call
 from time import sleep
+import pytest
 
-from nexuscli import cli, exception
+from nexuscli.cli import nexus_cli
+from nexuscli import exception
 
 
-def test_login(mocker):
+def test_login(cli_runner, mocker, login_env):
     """Ensure it calls the expected method"""
+    env, xargs = login_env
     mock_cmd_login = mocker.patch('nexuscli.cli.root_commands.cmd_login')
 
-    cli.main(argv=['login'])
+    result = cli_runner.invoke(nexus_cli, 'login', env=env)
 
-    mock_cmd_login.assert_called_once()
+    assert result.exit_code == 0
+    mock_cmd_login.assert_called_with(**xargs)
 
 
+@pytest.mark.parametrize('repo_name', [
+    'maven-snapshots', 'maven-central', 'nuget-group', 'maven-releases',
+    'nuget-hosted'])
 @pytest.mark.integration
-def test_list(nexus_client, faker):
-    repo_name = faker.pystr()
-    argv_create = pytest.helpers.create_argv(
-        'repository create hosted raw {repo_name}', **locals())
-    argv_list = pytest.helpers.create_argv('list {repo_name}', **locals())
+def test_list(repo_name, cli_runner, faker):
+    result = cli_runner.invoke(nexus_cli, f'list {repo_name}/')
 
-    has_created = pytest.helpers.create_and_inspect(
-        nexus_client, argv_create, repo_name)
-
-    exit_code = cli.main(argv=list(filter(None, argv_list)))
-
-    assert has_created
-    assert exit_code == exception.CliReturnCode.SUCCESS.value
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert result.output == ''
 
 
+# TODO: upload to all repository types
 @pytest.mark.integration
-def test_upload(hosted_raw_repo_empty, deep_file_tree, faker):
+def test_upload(cli_runner, upload_repo, faker):
     """Ensure that `nexus3 upload` command works"""
-    src_dir, x_file_set = deep_file_tree
+    repo_name, src_dir, x_file_list = upload_repo
+    xcount = len(x_file_list)
     dst_dir = faker.uri_path() + '/'
 
-    repo_name = hosted_raw_repo_empty
-    dest_repo_path = '{}/{}'.format(repo_name, dst_dir)
-    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}'
+    upload_command = f'upload {src_dir} {repo_name}/{dst_dir}'
 
-    retcode = check_call(upload_command.split())
+    result = cli_runner.invoke(nexus_cli, upload_command)
 
-    assert retcode == 0
-
-
-@pytest.mark.xfail(reason='Nexus takes too long to index uploaded files')
-@pytest.mark.integration
-def test_download(hosted_raw_repo_empty, deep_file_tree, faker, tmpdir):
-    """Ensure that `nexus3 download` command works"""
-    src_dir, x_file_set = deep_file_tree
-    dst_dir = faker.uri_path()
-
-    repo_name = hosted_raw_repo_empty
-
-    dest_repo_path = f'{repo_name}/{dst_dir}'
-    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}/'
-    retcode = check_call(upload_command.split())
-    assert retcode == 0
-
-    # FIXME: force Nexus 3 to reindex so there's no need to sleep
-    sleep(5)
-
-    download_dest = str(tmpdir)
-    download_command = f'nexus3 download {dest_repo_path} {download_dest}/'
-    retcode = check_call(download_command.split())
-    assert retcode == 0
+    assert result.exit_code == exception.CliReturnCode.SUCCESS.value
+    assert f'\nUploaded {xcount} file' in result.output
 
 
 @pytest.mark.integration
-def test_delete(hosted_raw_repo_empty, deep_file_tree, faker):
-    """Ensure that `nexus3 delete` command works"""
-    src_dir, x_file_set = deep_file_tree
-    dst_dir = faker.uri_path() + '/'
+def test_download(cli_runner, upload_repo, tmpdir):
+    """
+    Ensure that `nexus3 download` command works. This test relies on
+    `test_upload` running in the same session.
+    """
+    repo_name, _, x_file_list = upload_repo
+    xcount = len(x_file_list)
 
-    repo_name = hosted_raw_repo_empty
-
-    dest_repo_path = '{}/{}/'.format(repo_name, dst_dir)
-    upload_command = f'nexus3 upload {src_dir} {dest_repo_path}'
-    retcode = check_call(upload_command.split())
-    assert retcode == 0
-
-    # FIXME: force Nexus 3 to reindex so there's no need to sleep
+    # Wait for Nexus 3 to reindex
     sleep(5)
 
-    delete_command = f'nexus3 delete {dest_repo_path}'
-    retcode = check_call(delete_command.split())
-    assert retcode == 0
+    download_to = str(tmpdir)
+    download_cmd = f'download {repo_name}/ {download_to}/'
+    result = cli_runner.invoke(nexus_cli, download_cmd)
+
+    assert result.exit_code == 0
+    assert f'Downloaded {xcount} file' in result.output
+
+
+@pytest.mark.integration
+def test_delete(cli_runner, upload_repo, tmpdir):
+    """
+    Ensure that `nexus3 delete` command works. This test relies on
+    `test_upload` running in the same session.
+    """
+    repo_name, _, x_file_list = upload_repo
+    xcount = len(x_file_list)
+
+    result = cli_runner.invoke(nexus_cli, f'delete {repo_name}/')
+
+    assert result.exit_code == 0
+    assert f'Deleted {xcount} file' in result.output

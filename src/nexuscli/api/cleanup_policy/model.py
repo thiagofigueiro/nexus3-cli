@@ -1,9 +1,20 @@
-from nexuscli.api.cleanup_policy import validations
-
-
 class CleanupPolicy(object):
     """
     Represents a Nexus Cleanup Policy.
+
+    Example structure and attributes common to all repositories:
+
+        >>> kwargs = {
+        >>>     'name': 'my-policy',
+        >>>     'format': 'bower',
+        >>>     'notes': 'Some comment',
+        >>>     'criteria': {
+        >>>         'lastDownloaded': 172800,
+        >>>         'lastBlobUpdated': 86400,
+        >>>         'regex': 'matchthis'
+        >>>     }
+        >>> }
+
 
     Args:
         client (nexuscli.nexus_client.NexusClient): the client instance that
@@ -11,18 +22,18 @@ class CleanupPolicy(object):
             must provide this at instantiation or set it before calling any
             methods that require connectivity to Nexus.
         name (str): name of the new policy.
-        format (str): 'all' or the name of the repository format this policy
+        format (str): 'all' or the format of the repository this policy
             applies to.
-        mode (str): 'delete'
-        criteria (dict): the deletion criteria for the policy. Supports one or
-            more of the following attributes:
-                - ``lastDownloaded`` (int): days since artefact last
-                  downloaded;
-                - ``lastBlobUpdated`` (int): days since last update to
-                  artefact;
+        lastDownloaded (int): deletion criterion: days since artefact last
+            downloaded
+        lastBlobUpdated (int): deletion criterion: days since last update to
+            artefact
+        regex (str): deletion criterion: only delete artefacts that match this
+            regular expression
     """
     def __init__(self, client, **kwargs):
         self._client = client
+        # TODO: validate kwargs
         self._raw = kwargs
 
     @property
@@ -35,25 +46,7 @@ class CleanupPolicy(object):
         :py:class:`~nexuscli.api.cleanup_policy.collection.CleanupPolicyCollection`
         methods.
 
-        Example structure and attributes common to all repositories:
-
-        >>> cleanup_policy = {
-        >>>     'name': 'my-policy',
-        >>>     'format': 'bower',
-        >>>     'mode': 'delete',
-        >>>     'criteria': {
-        >>>         'lastDownloaded': 172800,
-        >>>         'lastBlobUpdated': 86400
-        >>>     }
-        >>> }
-
-        Depending on the repository type and format (recipe), other attributes
-        will be present.
-
         :return: cleanup policy as a dict
         :rtype: dict
         """
-        # TODO: validate format, mode
-        validations.policy_criteria(self._raw)
-        validations.policy_name(self._raw)
         return self._raw

@@ -7,7 +7,6 @@ env:
 services:
   - docker
 before_install:
-  - sudo apt-get install -y expect
   - docker pull sonatype/nexus3:$NEXUS_VERSION
   - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3:$NEXUS_VERSION
   - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
@@ -22,7 +21,7 @@ script:
   - flake8 *.py src tests --format=pylint
   - pytest -m 'not integration'
   - ./tests/wait-for-nexus.sh || exit 1
-  - ./tests/nexus-login $(docker exec nexus cat /nexus-data/admin.password)
+  - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
   -  pytest -m integration
 after_success:
   - codecov

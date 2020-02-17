@@ -3,18 +3,17 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '2.3.1'
+package_version = '3.0.0'
 
 requires = [
+    'click>=7.0.0,<8',
     'clint',
-    'docopt',
     'future',
     'faker',
     'inflect',
     'future',
     'requests[security]>=2.14.2',
     'semver',
-    'six',
     'texttable'
 ]
 
@@ -44,7 +43,7 @@ setup(
     tests_require=test_requires,
     license='MIT',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'Topic :: System :: Systems Administration',
@@ -64,7 +63,7 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'nexus3=nexuscli.cli:main',
+            'nexus3=nexuscli.cli:nexus_cli',
         ],
     },
     extras_require={'test': test_requires},

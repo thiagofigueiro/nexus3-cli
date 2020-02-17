@@ -2,11 +2,11 @@ import itertools
 import os
 import pytest
 
-from nexuscli import cli
+from nexuscli.cli import nexus_cli
 
 
 @pytest.mark.integration
-def test_upload_tree(nexus_client, deep_file_tree, faker):
+def test_upload_tree(cli_runner, nexus_client, deep_file_tree, faker):
     """
     Create a repository, upload a random file tree to Nexus and check that the
     resulting list of files in nexus corresponds to the uploaded list of files.
@@ -16,8 +16,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
     dst_dir = faker.uri_path() + '/'
     path = dst_dir[:-1] + src_dir
 
-    argv = ('repository create hosted raw {}'.format(repo_name)).split()
-    pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    cli_runner.invoke(nexus_cli, f'repository create hosted raw {repo_name}')
     nexus_client.repositories.refresh()
 
     r = nexus_client.repositories.get_by_name(repo_name)
@@ -28,7 +27,7 @@ def test_upload_tree(nexus_client, deep_file_tree, faker):
 
 
 @pytest.mark.integration
-def test_upload_root(nexus_client, make_testfile, faker):
+def test_upload_root(cli_runner, nexus_client, make_testfile, faker):
     """
     Create a repository, upload a random file to the root of a Nexus raw repo
     and check that the resulting list of files in nexus corresponds to
@@ -38,8 +37,7 @@ def test_upload_root(nexus_client, make_testfile, faker):
     repo_name = faker.pystr()
     dst_dir = '/'
 
-    argv = ('repository create hosted raw {}'.format(repo_name)).split()
-    pytest.helpers.create_and_inspect(nexus_client, argv, repo_name)
+    cli_runner.invoke(nexus_cli, f'repository create hosted raw {repo_name}')
     nexus_client.repositories.refresh()
 
     r = nexus_client.repositories.get_by_name(repo_name)
@@ -49,12 +47,14 @@ def test_upload_root(nexus_client, make_testfile, faker):
     assert file_set == set([src_file])
 
 
-@pytest.mark.parametrize('upload,flatten,norecurse', itertools.product(
+@pytest.mark.parametrize('cmd,flatten,recurse', itertools.product(
     ['up', 'upload'],
-    [[], ['--flatten']],
-    [[], ['--norecurse']]
+    ['--flatten', '--no-flatten'],
+    ['--recurse', '--no-recurse'],
 ))
-def test_upload(upload, flatten, norecurse, nexus_mock_client, faker, mocker):
+def test_upload(
+        cmd, flatten, recurse, nexus_mock_client, mocker, upload_args_factory,
+        cli_runner):
     """
     Ensure all accepted variations of the upload command result in the
     cmd_upload method being called.
@@ -64,10 +64,9 @@ def test_upload(upload, flatten, norecurse, nexus_mock_client, faker, mocker):
         'nexuscli.cli.util.get_client', return_value=nexus_mock_client)
     mock_cmd_upload = mocker.patch('nexuscli.cli.root_commands.cmd_upload')
 
-    source = faker.file_path()
-    destination = faker.file_path()
-    argv = [upload, source, destination] + flatten + norecurse
+    cmd_upload, xargs = upload_args_factory(cmd, flatten, recurse)
 
-    cli.main(argv=argv)
+    result = cli_runner.invoke(nexus_cli, cmd_upload)
 
-    mock_cmd_upload.assert_called_once()
+    assert result.exit_code == 0
+    mock_cmd_upload.assert_called_with(nexus_mock_client, **xargs)

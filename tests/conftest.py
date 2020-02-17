@@ -2,16 +2,16 @@ import os
 import pathlib
 import pytest
 import shutil
+import tempfile
 import time
 from faker import Faker
 from subprocess import check_call
 
-from nexuscli import cli
 from nexuscli.nexus_client import NexusClient
 from nexuscli.nexus_config import NexusConfig
 
 
-APT_GPG_KEY_PATH = pathlib.Path('tests/fixtures/apt/public.gpg.key')
+APT_GPG_KEY_PATH = pathlib.Path('tests/fixtures/apt/private.gpg.key')
 
 
 @pytest.fixture
@@ -77,20 +77,6 @@ def nexus_client():
     config.load()
     client = NexusClient(config=config)
     return client
-
-
-@pytest.helpers.register
-def create_and_inspect(client, argv, expected_repo_name):
-    cli.main(argv=list(filter(None, argv)))
-    repositories = client.repositories.raw_list()
-
-    return any(r['name'] == expected_repo_name for r in repositories)
-
-
-@pytest.helpers.register
-def create_argv(argv_string, **kwargs):
-    argv = argv_string.format(**kwargs).split(' ')
-    return list(filter(None, argv))
 
 
 def nexus_artefact():
@@ -175,22 +161,28 @@ def nexus_mock_client(mocker, faker):
     return client
 
 
+def _deep_file_tree(faker, tmp_path):
+    fixture = []
+    with tmp_path:
+        for _ in range(faker.random_int(1, 100)):
+            relative_path = faker.file_path(
+                depth=faker.random_number(1, 10))[1:]
+            fixture.append(relative_path)
+            tmp_path.joinpath(relative_path).parent.mkdir(
+                parents=True, exist_ok=True)
+            tmp_path.joinpath(relative_path).touch(exist_ok=True)
+
+    return str(tmp_path), set(fixture)
+
+
 @pytest.fixture
-def deep_file_tree(faker, tmpdir):
+def deep_file_tree(faker, tmp_path):
     """
     Yields a tuple(str, set). The str is the current working directory. The
     list contains deep file paths, relative to the current working dir, where
     all files exist in the filesystem.
     """
-    fixture = []
-    with tmpdir.as_cwd():
-        for _ in range(faker.random_int(1, 100)):
-            relative_path = faker.file_path(
-                depth=faker.random_number(1, 10))[1:]
-            fixture.append(relative_path)
-            tmpdir.join(relative_path).ensure()
-
-    yield str(tmpdir), set(fixture)
+    return _deep_file_tree(faker, tmp_path)
 
 
 @pytest.fixture
@@ -200,7 +192,6 @@ def make_testfile(faker, tmpdir):
     The 2ns string contains a file path, relative to the current working dir,
     where the files exist in the filesystem at the given depth.
     """
-    filename = None
     with tmpdir.as_cwd():
         filename = faker.file_name()
         tmpdir.join(filename).ensure()
@@ -235,23 +226,27 @@ def repo_list(client, repo_name, expected_count, repo_path=None):
     return file_set
 
 
-@pytest.helpers.register
-def find_file_count(dir_name):
-    """Find the number of files in a directory"""
-    file_list = [
-        f for f in os.listdir(dir_name)
-        if os.path.isfile(os.path.join(dir_name, f))
-    ]
-    return len(file_list)
+def _hosted_raw_repo_empty(faker):
+    repo_name = faker.pystr()
+    command = 'nexus3 repository create hosted raw {}'.format(repo_name)
+    check_call(command.split())
+    return repo_name
 
 
 @pytest.fixture
 def hosted_raw_repo_empty(faker):
     """Create an empty hosted raw repository"""
-    repo_name = faker.pystr()
-    command = 'nexus3 repository create hosted raw {}'.format(repo_name)
-    check_call(command.split())
-    return repo_name
+    return _hosted_raw_repo_empty(faker)
+
+
+@pytest.fixture(scope='session')
+def upload_repo(faker):
+    """
+    As per hosted_raw_repo_empty but the same one for the whole test session
+    """
+    tmp_path = pathlib.Path(tempfile.TemporaryDirectory().name)
+    src_dir, x_file_list = _deep_file_tree(faker, tmp_path)
+    return _hosted_raw_repo_empty(faker), src_dir, x_file_list
 
 
 @pytest.helpers.register
@@ -286,21 +281,3 @@ def config_args(faker, tmpdir):
         'config_path': str(tmpdir.join(faker.file_name())),
     }
     return fixture
-
-
-@pytest.fixture
-def nexus_raw_repo(nexus_mock_client, faker):
-    repo_name = faker.uri_page()
-    nexus_mock_client.repositories._repositories_json.append({
-        'name': repo_name, 'format': 'raw'})
-
-    return nexus_mock_client.repositories.get_by_name(repo_name)
-
-
-@pytest.fixture
-def nexus_yum_repo(nexus_mock_client, faker):
-    repo_name = faker.uri_page()
-    nexus_mock_client.repositories._repositories_json.append({
-        'name': repo_name, 'format': 'yum'})
-
-    return nexus_mock_client.repositories.get_by_name(repo_name)

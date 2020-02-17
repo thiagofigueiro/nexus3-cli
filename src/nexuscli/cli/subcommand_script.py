@@ -1,27 +1,10 @@
-"""
-Usage:
-  nexus3 script create <script_name> <script_path> [--script_type=<type>]
-  nexus3 script list
-  nexus3 script run <script_name> [<script_args>]
-  nexus3 script (delete|del) <script_name>
-
-Options:
-  --script_type=<type>  Script type [default: groovy]
-
-Commands:
-  script create  Create or update a script using the <script_path> file
-  script list    List all scripts available on the server
-  script del     Remove existing <script_name>
-  script run     Run the existing <script_name> with optional <script_args>
-"""
-from docopt import docopt
 from texttable import Texttable
 
 from nexuscli import exception
 from nexuscli.cli import util
 
 
-def cmd_list(nexus_client, _):
+def cmd_list(nexus_client):
     """Performs ``nexus3 script list``"""
     scripts = nexus_client.scripts.list()
 
@@ -38,35 +21,20 @@ def cmd_list(nexus_client, _):
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_create(nexus_client, args):
+def cmd_create(nexus_client, name, content, **kwargs):
     """Performs ``nexus3 script create``"""
-    script_content = open(args.get('<script_path>')).read()
-    nexus_client.scripts.create(
-        args.get('<script_name>'), script_content, args.get('--script_type'))
+    nexus_client.scripts.create(name, content, **kwargs)
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_del(*args, **kwargs):
-    """Alias for :func:`cmd_delete`"""
-    return cmd_delete(*args, **kwargs)
-
-
-def cmd_delete(nexus_client, args):
+def cmd_delete(nexus_client, name):
     """Performs ``nexus3 script delete``"""
-    nexus_client.scripts.delete(args.get('<script_name>'))
+    nexus_client.scripts.delete(name)
     return exception.CliReturnCode.SUCCESS.value
 
 
-def cmd_run(nexus_client, args):
+def cmd_run(nexus_client, name, arguments):
     """Performs ``nexus3 script run``"""
-    resp = nexus_client.scripts.run(
-        args.get('<script_name>'), args.get('<script_args>'))
+    resp = nexus_client.scripts.run(name, arguments)
     print(resp)
     return exception.CliReturnCode.SUCCESS.value
-
-
-def main(argv=None):
-    """Entrypoint for ``nexus3 script`` subcommand."""
-    arguments = docopt(__doc__, argv=argv)
-    command_method = util.find_cmd_method(arguments, globals())
-    return command_method(util.get_client(), arguments)

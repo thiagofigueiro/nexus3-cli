@@ -64,8 +64,6 @@ class Repository:
         'pypi',
         'raw',
         'rubygems',
-        'docker',
-        'apt',
     )
     TYPE = None
 
@@ -606,7 +604,7 @@ class DockerProxyRepository(ProxyRepository, DockerRepository):
     def __init__(self, name,
                  index_type='REGISTRY',
                  use_trust_store_for_index_access=False,
-                 index_url="https://index.docker.io/",
+                 index_url='https://index.docker.io/',
                  **kwargs):
         self.index_type = index_type
 
@@ -683,23 +681,22 @@ class AptRepository(Repository):
 
 class AptHostedRepository(AptRepository, HostedRepository):
     def __init__(self, name,
-                 gpg='public.gpg.key',
+                 gpg_keypair: str = None,
                  passphrase=None,
                  **kwargs):
-        self.gpg = gpg
+        self.gpg_keypair = gpg_keypair
         self.passphrase = passphrase
         super().__init__(name, **kwargs)
 
     @property
     def configuration(self):
         repo_config = super().configuration
-        with open(self.gpg, 'r') as gpg_file:
-            repo_config['attributes'].update({
-                'aptSigning': {
-                    'keypair': gpg_file.read(),
-                    'passphrase': self.passphrase
-                }
-            })
+        repo_config['attributes'].update({
+            'aptSigning': {
+                'keypair': self.gpg_keypair,
+                'passphrase': self.passphrase
+            }
+        })
 
         return repo_config
 
@@ -720,9 +717,12 @@ class AptProxyRepository(AptRepository, ProxyRepository):
         return repo_config
 
 
+# FIXME: these are supposed to be strings
 __all__ = [
     Repository, HostedRepository, ProxyRepository,
+    AptHostedRepository, AptProxyRepository,
     BowerHostedRepository, BowerProxyRepository,
+    DockerHostedRepository, DockerProxyRepository,
     MavenHostedRepository, MavenProxyRepository,
     NpmHostedRepository, NpmProxyRepository,
     NugetHostedRepository, NugetProxyRepository,
@@ -730,6 +730,7 @@ __all__ = [
     RawHostedRepository, RawProxyRepository,
     RubygemsHostedRepository, RubygemsProxyRepository,
     YumHostedRepository, YumProxyRepository,
-    DockerHostedRepository, DockerProxyRepository,
-    AptHostedRepository, AptProxyRepository
 ]
+
+SUPPORTED_FORMATS = sorted(
+    set([recipe for cls in __all__ for recipe in cls.RECIPES]))
