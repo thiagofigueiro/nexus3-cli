@@ -5,9 +5,10 @@ from nexuscli.api.cleanup_policy import CleanupPolicyCollection
 
 
 @pytest.fixture
-def cleanup_policy_collection(mocker):
+def cleanup_policy_collection(mocker, nexus_mock_client):
     """An instance with a magic mock as its client"""
-    fixture = CleanupPolicyCollection(client=mocker.Mock())
+    nexus_mock_client._scripts = mocker.Mock()
+    fixture = CleanupPolicyCollection(client=nexus_mock_client)
     return fixture
 
 

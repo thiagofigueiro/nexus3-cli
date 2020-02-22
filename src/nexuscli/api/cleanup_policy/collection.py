@@ -1,10 +1,12 @@
 import json
 import logging
+import semver
 
 from nexuscli import exception, nexus_util
 from nexuscli.api.cleanup_policy import CleanupPolicy
 
 LOG = logging.getLogger(__name__)
+GROOVY_SCRIPT_VERSIONS = [semver.VersionInfo(3, 20, 0)]
 
 
 class CleanupPolicyCollection(object):
@@ -18,13 +20,24 @@ class CleanupPolicyCollection(object):
             methods that require connectivity to Nexus.
     """
     GROOVY_SCRIPT_NAME = 'nexus3-cli-cleanup-policy'
-    """Groovy script used by this class"""
+    """Default Groovy script used by this class"""
 
     def __init__(self, client=None):
         self._client = client
-        script_content = nexus_util.groovy_script(self.GROOVY_SCRIPT_NAME)
+        self._setup_script()
+
+    @property
+    def _script_name(self):
+        return nexus_util.script_for_version(
+            self.GROOVY_SCRIPT_NAME,
+            self._client.server_version,
+            GROOVY_SCRIPT_VERSIONS)
+
+    def _setup_script(self):
+
+        script_content = nexus_util.groovy_script(self._script_name)
         self._client.scripts.create_if_missing(
-            self.GROOVY_SCRIPT_NAME, script_content)
+            self._script_name, script_content)
 
     def create_or_update(self, cleanup_policy):
         """
@@ -45,7 +58,7 @@ class CleanupPolicyCollection(object):
         try:
             LOG.debug('Create/update cleanup policy: %s', script_args)
             response = self._client.scripts.run(
-                self.GROOVY_SCRIPT_NAME, data=script_args)
+                self._script_name, data=script_args)
         except exception.NexusClientAPIError:
             raise exception.NexusClientCreateCleanupPolicyError(
                 cleanup_policy.configuration['name'])
@@ -69,7 +82,7 @@ class CleanupPolicyCollection(object):
 
         try:
             response = self._client.scripts.run(
-                self.GROOVY_SCRIPT_NAME, data=script_args)
+                self._script_name, data=script_args)
         except exception.NexusClientAPIError:
             raise exception.NexusClientInvalidCleanupPolicy(name)
 
@@ -86,7 +99,7 @@ class CleanupPolicyCollection(object):
             instances.
         :rtype: list[CleanupPolicy]
         """
-        response = self._client.scripts.run(self.GROOVY_SCRIPT_NAME, data={})
+        response = self._client.scripts.run(self._script_name, data={})
 
         cleanup_policies = json.loads(response['result'])
 

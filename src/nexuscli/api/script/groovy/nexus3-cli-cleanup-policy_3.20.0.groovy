@@ -5,7 +5,6 @@ import groovy.json.JsonSlurper
 import groovy.json.JsonBuilder
 import java.util.concurrent.TimeUnit
 
-import org.sonatype.nexus.cleanup.storage.CleanupPolicy
 import org.sonatype.nexus.cleanup.storage.CleanupPolicyStorage
 import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.IS_PRERELEASE_KEY
 import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.LAST_BLOB_UPDATED_KEY
@@ -17,7 +16,7 @@ def cleanupPolicyStorage = container.lookup(CleanupPolicyStorage.class.getName()
 try {
     parsed_args = new JsonSlurper().parseText(args)
 } catch(Exception ex) {
-    // "list" operation
+    log.debug("list")
     def policies = []
     cleanupPolicyStorage.getAll().each {
         policies << toJsonString(it)
@@ -35,6 +34,7 @@ if (parsed_args.name == null) {
 
 // "get" operation
 if (parsed_args.size() == 1) {
+    log.debug("get")
     existingPolicy = cleanupPolicyStorage.get(parsed_args.name)
     return toJsonString(existingPolicy)
 }
@@ -54,14 +54,18 @@ if (cleanupPolicyStorage.exists(parsed_args.name)) {
 
 // "create" operation
 format = parsed_args.format == "all" ? "ALL_FORMATS" : parsed_args.format
+
 log.debug("Creating Cleanup Policy <name=${parsed_args.name}>")
-cleanupPolicy = new CleanupPolicy(
-        name: parsed_args.name,
-        notes: parsed_args.notes,
-        format: format,
-        mode: 'deletion',
-        criteria: criteriaMap
-)
+cleanupPolicy = cleanupPolicyStorage.newCleanupPolicy()
+
+log.debug("Configuring Cleanup Policy <policy=${cleanupPolicy}>")
+cleanupPolicy.setName(parsed_args.name)
+cleanupPolicy.setNotes(parsed_args.notes)
+cleanupPolicy.setFormat(format)
+cleanupPolicy.setMode('deletion')
+cleanupPolicy.setCriteria(criteriaMap)
+
+log.debug("Adding Cleanup Policy <policy=${cleanupPolicy}>")
 cleanupPolicyStorage.add(cleanupPolicy)
 return toJsonString(cleanupPolicy)
 
