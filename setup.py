@@ -3,7 +3,7 @@ import io
 from setuptools import find_packages, setup
 
 package_name = 'nexus3-cli'
-package_version = '3.0.3'
+package_version = '3.1.0'
 
 requires = [
     'click>=7.0.0,<8',
