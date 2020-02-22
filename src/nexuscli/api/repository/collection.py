@@ -1,8 +1,7 @@
 import json
-import pathlib
 import semver
 
-from nexuscli import exception
+from nexuscli import exception, nexus_util
 from nexuscli.api.repository import model
 
 SCRIPT_CREATE_VERSIONS = [semver.VersionInfo(3, 21, 0)]
@@ -158,29 +157,6 @@ def _repository_args_kwargs(raw_configuration):
     return args, kwargs
 
 
-def _script_for_version(script_name, server_version, versions):
-    """
-    Determine if a certain nexus server version requires a different version of
-    the given groovy script.
-
-    :param script_name: original name of the script.
-    :param server_version: VersionInfo for the Nexus server.
-    :param versions: list of VersionInfo. Each element represents an existing
-        groovy script that must be used with server_version or greater.
-    :return: the version-specific name of script_name.
-    """
-    if server_version is None:
-        return script_name
-
-    for breaking_version in sorted(versions, reverse=True):
-        if server_version >= breaking_version:
-            script_path = pathlib.Path(script_name)
-            # e.g.: nexus3-cli-repository-create_3.21.0.groovy
-            return f'{script_path.stem}_{breaking_version}{script_path.suffix}'
-
-    return script_name
-
-
 class RepositoryCollection:
     """
     A class to manage Nexus 3 repositories.
@@ -274,7 +250,7 @@ class RepositoryCollection:
         :type repository: Repository
         :raises NexusClientCreateRepositoryError: error creating repository.
         """
-        script_name = _script_for_version(
+        script_name = nexus_util.script_for_version(
             SCRIPT_NAME_CREATE,
             self._client.server_version,
             SCRIPT_CREATE_VERSIONS)
