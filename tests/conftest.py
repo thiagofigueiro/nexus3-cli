@@ -1,6 +1,7 @@
 import os
 import pathlib
 import pytest
+import semver
 import shutil
 import tempfile
 import time
@@ -157,6 +158,7 @@ def nexus_mock_client(mocker, faker):
                  return_value=ResponseMock())
 
     client = NexusClient()
+    client._server_version = semver.VersionInfo(3, 19, 0)
     client.repositories.refresh()
     return client
 
