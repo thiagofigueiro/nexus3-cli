@@ -1,0 +1,116 @@
+---
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: SAST.gitlab-ci.yml
+stages:
+  - build
+  - test
+  - report
+  - deploy
+# --------------------------------------------------------------------------
+# `build` stage
+# --------------------------------------------------------------------------
+.unit_template: &unit_template
+  before_script:
+    - pip install -e .[test]
+  variables:
+    PYTHON_VERSION: '3.8'
+  image: python:${PYTHON_VERSION}
+  stage: test
+  script:
+    - pytest -m 'not integration'
+      --junitxml=junit-${PYTHON_VERSION}.xml
+      --cov-report xml:coverage-${PYTHON_VERSION}.xml
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+  artifacts:
+    paths:
+      - coverage*.xml
+      - junit*.xml
+    reports:
+      junit: junit*.xml
+  dependencies: []
+#
+flake8:
+  <<: *unit_template
+  image: python:${PYTHON_VERSION}-alpine
+  stage: build
+  artifacts:
+  before_script:
+  script:
+    - pip install flake8
+    - flake8 *.py src tests --format=pylint
+#
+package:
+  <<: *unit_template
+  stage: build
+  script:
+    - python setup.py sdist bdist_wheel
+  artifacts:
+    paths:
+      - dist
+# --------------------------------------------------------------------------
+# `test` stage
+# --------------------------------------------------------------------------
+.integration_template: &integration_template
+  <<: *unit_template
+  image: python:3.8
+  stage: test
+  variables:
+    NEXUS_VERSION: '3.19.1'
+  services:
+    - name: "sonatype/nexus3:${NEXUS_VERSION}"
+      alias: nexus
+  script:
+    - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
+    - ./tests/wait-for-nexus.sh || exit 1
+    - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
+    - pytest -m integration --junitxml=junit-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
+    - pytest -m integration
+      --junitxml=junit-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
+      --cov-report xml:coverage-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
+  dependencies:
+    - package
+# integration tests
+int-nexus-3.19:
+  <<: *integration_template
+  variables:
+    NEXUS_VERSION: '3.19.1'
+#
+int-nexus-3.20:
+  <<: *integration_template
+  variables:
+    NEXUS_VERSION: '3.20.1'
+#
+int-nexus-3.21:
+  <<: *integration_template
+  variables:
+    NEXUS_VERSION: '3.21.1'
+# unit tests
+unit-py3.6:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.6'
+#
+unit-py3.7:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.7'
+#
+unit-py3.8:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.8'
+# --------------------------------------------------------------------------
+# `report` stage
+# --------------------------------------------------------------------------
+coverage:
+  <<: *unit_template
+  before_script:
+  dependencies:
+  image: python:${PYTHON_VERSION}-alpine
+  stage: report
+  script:
+    - pip install codecov
+    - codecov
+  when: always

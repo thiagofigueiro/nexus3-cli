@@ -1,1 +1,1 @@
-{"nexus_pass": "admin123", "nexus_url": "http://127.0.0.1:8081", "nexus_user": "admin", "nexus_verify": false}
+{"nexus_pass": "admin123", "nexus_url": "http://nexus:8081", "nexus_user": "admin", "nexus_verify": false}
