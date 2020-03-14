@@ -6,6 +6,7 @@ include:
 stages:
   - build
   - test
+  - quality
   - report
   - deploy
 # --------------------------------------------------------------------------
@@ -52,10 +53,34 @@ package:
 # --------------------------------------------------------------------------
 # `test` stage
 # --------------------------------------------------------------------------
+# unit tests
+unit-py3.6:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.6'
+#
+unit-py3.7:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.7'
+#
+unit-py3.8:
+  <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.8'
+# --------------------------------------------------------------------------
+# `quality` stage
+# --------------------------------------------------------------------------
+sast:
+  stage: quality
+code_quality:
+  stage: quality
+dependency_scanning:
+  stage: quality
 .integration_template: &integration_template
   <<: *unit_template
   image: python:3.8
-  stage: test
+  stage: quality
   variables:
     NEXUS_VERSION: '3.19.1'
   services:
@@ -86,21 +111,6 @@ int-nexus-3.21:
   <<: *integration_template
   variables:
     NEXUS_VERSION: '3.21.1'
-# unit tests
-unit-py3.6:
-  <<: *unit_template
-  variables:
-    PYTHON_VERSION: '3.6'
-#
-unit-py3.7:
-  <<: *unit_template
-  variables:
-    PYTHON_VERSION: '3.7'
-#
-unit-py3.8:
-  <<: *unit_template
-  variables:
-    PYTHON_VERSION: '3.8'
 # --------------------------------------------------------------------------
 # `report` stage
 # --------------------------------------------------------------------------
