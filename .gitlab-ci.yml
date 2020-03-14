@@ -6,6 +6,7 @@ include:
 stages:
   - build
   - test
+  - integration
   - quality
   - report
   - deploy
@@ -69,18 +70,15 @@ unit-py3.8:
   variables:
     PYTHON_VERSION: '3.8'
 # --------------------------------------------------------------------------
-# `quality` stage
+# `integration` stage
 # --------------------------------------------------------------------------
-sast:
-  stage: quality
-code_quality:
-  stage: quality
-dependency_scanning:
-  stage: quality
 .integration_template: &integration_template
   <<: *unit_template
+  before_script:
+    - pip install dist/nexus3_cli*.whl
+    - pip install .[test]
   image: python:3.8
-  stage: quality
+  stage: integration
   variables:
     NEXUS_VERSION: '3.19.1'
   services:
@@ -90,10 +88,10 @@ dependency_scanning:
     - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
     - ./tests/wait-for-nexus.sh || exit 1
     - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
-    - pytest -m integration --junitxml=junit-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
+    - pytest -m integration --junitxml=junit-integration-${NEXUS_VERSION}.xml
     - pytest -m integration
-      --junitxml=junit-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
-      --cov-report xml:coverage-integration-${NEXUS_VERSION}-${PYTHON_VERSION}.xml
+      --junitxml=junit-integration-${NEXUS_VERSION}.xml
+      --cov-report xml:coverage-integration-${NEXUS_VERSION}.xml
   dependencies:
     - package
 # integration tests
@@ -111,6 +109,15 @@ int-nexus-3.21:
   <<: *integration_template
   variables:
     NEXUS_VERSION: '3.21.1'
+# --------------------------------------------------------------------------
+# `quality` stage
+# --------------------------------------------------------------------------
+sast:
+  stage: quality
+code_quality:
+  stage: quality
+dependency_scanning:
+  stage: quality
 # --------------------------------------------------------------------------
 # `report` stage
 # --------------------------------------------------------------------------
