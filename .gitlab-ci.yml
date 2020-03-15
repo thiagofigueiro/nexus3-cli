@@ -6,7 +6,6 @@ include:
 stages:
   - build
   - test
-  - integration
   - quality
   - report
   - deploy
@@ -67,24 +66,23 @@ unit-py3.7:
 #
 unit-py3.8:
   <<: *unit_template
-  variables:
-    PYTHON_VERSION: '3.8'
-# --------------------------------------------------------------------------
-# `integration` stage
-# --------------------------------------------------------------------------
+# integration tests
 .integration_template: &integration_template
   <<: *unit_template
   before_script:
-    - pip install dist/nexus3_cli*.whl
-    - pip install .[test]
-  image: python:3.8
-  stage: integration
+    # FIXME: switch to docker-compose so python:3.8 can be used instead
+    - apk add bash curl py3-pip python3-dev gcc musl-dev linux-headers openssl-dev libffi-dev
+    - export CFLAGS=-I/usr/include
+    - pip3 install dist/nexus3_cli*.whl
+    - pip3 install .[test]
+  image: docker:latest
+  services:
+    - docker:dind
+  stage: test
   variables:
     NEXUS_VERSION: '3.19.1'
-  services:
-    - name: "sonatype/nexus3:${NEXUS_VERSION}"
-      alias: nexus
   script:
+    - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3
     - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
     - ./tests/wait-for-nexus.sh || exit 1
     - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
