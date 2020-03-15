@@ -66,14 +66,18 @@ unit-py3.7:
 #
 unit-py3.8:
   <<: *unit_template
+  variables:
+    PYTHON_VERSION: '3.8'
+#
 # integration tests
 .integration_template: &integration_template
   <<: *unit_template
   before_script:
-    # FIXME: switch to docker-compose so python:3.8 can be used instead
+    - docker info
     - apk add bash curl py3-pip python3-dev gcc musl-dev linux-headers openssl-dev libffi-dev
     - export CFLAGS=-I/usr/include
-    - pip3 install dist/nexus3_cli*.whl
+# re-enable before pushing
+#    - pip3 install dist/nexus3_cli*.whl
     - pip3 install .[test]
   image: docker:latest
   services:
