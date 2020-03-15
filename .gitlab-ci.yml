@@ -3,13 +3,12 @@ include:
   - template: Code-Quality.gitlab-ci.yml
   - template: Dependency-Scanning.gitlab-ci.yml
   - template: SAST.gitlab-ci.yml
+#
 stages:
   - build
   - test
-  - integration
   - quality
   - report
-  - deploy
 # --------------------------------------------------------------------------
 # `build` stage
 # --------------------------------------------------------------------------
@@ -46,6 +45,7 @@ flake8:
 package:
   <<: *unit_template
   stage: build
+  before_script:
   script:
     - python setup.py sdist bdist_wheel
   artifacts:
@@ -69,25 +69,30 @@ unit-py3.8:
   <<: *unit_template
   variables:
     PYTHON_VERSION: '3.8'
-# --------------------------------------------------------------------------
-# `integration` stage
-# --------------------------------------------------------------------------
+#
+# integration tests
 .integration_template: &integration_template
   <<: *unit_template
   before_script:
-    - pip install dist/nexus3_cli*.whl
-    - pip install .[test]
-  image: python:3.8
-  stage: integration
+    - docker info
+    # get nexus going since it takes a little while to start-up
+    - docker run -d --rm -p 8081:8081 --name nexus sonatype/nexus3:$NEXUS_VERSION
+    # test dependencies
+    - apk add bash curl py3-pip python3-dev gcc musl-dev linux-headers openssl-dev libffi-dev
+    - export CFLAGS=-I/usr/include
+    - pip3 install dist/nexus3_cli*.whl
+    # don't use --upgrade; we want to test the package as installed above
+    - pip3 install .[test]
+  image: docker:latest
+  services:
+    - docker:dind
+  stage: test
   variables:
     NEXUS_VERSION: '3.19.1'
-  services:
-    - name: "sonatype/nexus3:${NEXUS_VERSION}"
-      alias: nexus
   script:
     - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
-    - ./tests/wait-for-nexus.sh || exit 1
-    - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
+    - ./tests/wait-for-nexus.sh http://docker:8081 || exit 1
+    - nexus3 login -U http://docker:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
     - pytest -m integration --junitxml=junit-integration-${NEXUS_VERSION}.xml
     - pytest -m integration
       --junitxml=junit-integration-${NEXUS_VERSION}.xml
