@@ -1,7 +1,10 @@
 import click
+import logging
 import pkg_resources
 
-from nexuscli import nexus_config
+from nexuscli import (
+    LOG_LEVEL,
+    nexus_config)
 from nexuscli.api.repository import model
 from nexuscli.cli import (
     root_commands, util, subcommand_repository,
@@ -12,6 +15,7 @@ ENV_VAR_PREFIX = 'NEXUS3'
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help'], auto_envvar_prefix=ENV_VAR_PREFIX)
 
+logging.basicConfig(level=LOG_LEVEL)
 
 #############################################################################
 # root commands
