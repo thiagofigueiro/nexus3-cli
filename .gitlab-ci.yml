@@ -74,6 +74,9 @@ unit-py3.8:
   <<: *unit_template
   before_script:
     - docker info
+    # get nexus going since it takes a little while to start-up
+    - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3:$NEXUS_VERSION
+    # test dependencies
     - apk add bash curl py3-pip python3-dev gcc musl-dev linux-headers openssl-dev libffi-dev
     - export CFLAGS=-I/usr/include
 # re-enable before pushing
@@ -86,7 +89,6 @@ unit-py3.8:
   variables:
     NEXUS_VERSION: '3.19.1'
   script:
-    - docker run -d --rm -p 127.0.0.1:8081:8081 --name nexus sonatype/nexus3
     - cp -f tests/fixtures/dot-nexus-cli ~/.nexus-cli
     - ./tests/wait-for-nexus.sh 127.0.0.1 || exit 1
     - nexus3 login -U http://localhost:8081 --no-x509_verify -u admin -p $(docker exec nexus cat /nexus-data/admin.password)
