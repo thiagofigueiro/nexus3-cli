@@ -9,6 +9,7 @@ stages:
   - test
   - quality
   - report
+  - publish
 # --------------------------------------------------------------------------
 # `build` stage
 # --------------------------------------------------------------------------
@@ -136,3 +137,14 @@ coverage:
     - pip install codecov
     - codecov
   when: always
+# --------------------------------------------------------------------------
+# `publish` stage
+# --------------------------------------------------------------------------
+pypi:
+  stage: publish
+  image: python:3
+  script:
+    - pip install -U twine
+    - twine upload dist/*
+  only:
+    - tags
