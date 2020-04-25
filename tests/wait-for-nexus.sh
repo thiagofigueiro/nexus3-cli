@@ -11,6 +11,7 @@ do
   then
     echo 'Timeout-out waiting for nexus container'
     docker logs nexus
+    docker ps
     exit 1
   fi
   sleep 1
