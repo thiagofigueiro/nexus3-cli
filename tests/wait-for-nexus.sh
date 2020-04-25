@@ -7,9 +7,10 @@ count=0
 until nexus_ready
 do
   count=$((count+1))
-  if [ ${count} -gt 60 ]
+  if [ ${count} -gt 180 ]
   then
     echo 'Timeout-out waiting for nexus container'
+    docker logs nexus
     exit 1
   fi
   sleep 1
