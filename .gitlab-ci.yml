@@ -79,8 +79,8 @@ unit-py3.8:
     # test dependencies
     - apk add bash curl py3-pip python3-dev gcc musl-dev linux-headers openssl-dev libffi-dev
     - export CFLAGS=-I/usr/include
-# re-enable before pushing
-#    - pip3 install dist/nexus3_cli*.whl
+    - pip3 install dist/nexus3_cli*.whl
+    # don't use --upgrade; we want to test the package as installed above
     - pip3 install .[test]
   image: docker:latest
   services:
