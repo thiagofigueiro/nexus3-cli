@@ -35,7 +35,7 @@ setup(
     name=package_name,
     version=package_version,
     description='A python-based CLI for Sonatype Nexus OSS 3',
-    url='https://github.com/thiagofigueiro/nexus3-cli',
+    url='https://gitlab.com/thiagocsf/nexus3-cli',
     long_description=readme,
     long_description_content_type="text/markdown",
     setup_requires=["pytest-runner"],
