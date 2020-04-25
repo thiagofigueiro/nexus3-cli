@@ -3,16 +3,10 @@
 A python-based command-line interface and API client for Sonatype's [Nexus
 OSS 3](https://www.sonatype.com/download-oss-sonatype).
 
-[![Build Status](https://travis-ci.org/thiagofigueiro/nexus3-cli.svg?branch=master)](https://travis-ci.org/thiagofigueiro/nexus3-cli)
-[![CodeFactor](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli/badge)](https://www.codefactor.io/repository/github/thiagofigueiro/nexus3-cli)
-[![codecov](https://codecov.io/gh/thiagofigueiro/nexus3-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/thiagofigueiro/nexus3-cli)
-[![Documentation Status](https://readthedocs.org/projects/nexus3-cli/badge/?version=latest)](https://nexus3-cli.readthedocs.io/en/latest/?badge=latest)
-
-
 ## Features
 
 1. Compatible with [Nexus 3 OSS](https://www.sonatype.com/download-oss-sonatype)
-   1. [Nexus versions tested](https://github.com/thiagofigueiro/nexus3-cli/blob/master/.travis.yml#L3)
+   1. [Nexus versions tested](https://gitlab.com/thiagocsf/nexus3-cli/-/blob/master/.gitlab-ci.yml#L103-116)
 1. Python API and command-line support
 1. Artefact management: list, delete, bulk upload and download.
 1. Repository management:
@@ -28,8 +22,8 @@ available, otherwise a groovy script is used.
 
 Please note that some Nexus 3 features are not currently supported. Assistance
 implementing missing support is very welcome. Please have a look at the
-[issues](https://github.com/thiagofigueiro/nexus3-cli/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
-and [contribution guidelines](https://github.com/thiagofigueiro/nexus3-cli/blob/develop/CONTRIBUTING.md).
+[issues](https://gitlab.com/thiagocsf/nexus3-cli/-/issues)
+and [contribution guidelines](https://gitlab.com/thiagocsf/nexus3-cli/-/blob/master/CONTRIBUTING.md).
 
 ## Installation
 
@@ -148,7 +142,7 @@ support 1.0.x, although I'm happy to review contributions.
 
 ## Development
 
-The automated tests are configured in `.travis.yml`. To run tests locally,
+The automated tests are configured in `.gitlab-ci.yml`. To run tests locally,
 install the package with test dependencies and run pytest:
 
 ```bash
